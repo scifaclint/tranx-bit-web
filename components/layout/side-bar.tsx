@@ -283,8 +283,9 @@ const Sidebar = ({ onCollapse, userType = "user" }: SidebarProps) => {
         isOpen={showLogoutModal}
         onClose={() => setShowLogoutModal(false)}
         onConfirm={() => {
-          console.log("User confirmed logout");
-          // Add logout logic here
+          // Logout logic will be implemented when backend is ready
+          // For now, redirect to auth page
+          window.location.href = "/auth";
         }}
         title="Logout"
         description="Are you sure you want to logout? You will need to sign in again to access your account."

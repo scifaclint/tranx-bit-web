@@ -82,8 +82,10 @@ export default function OrderDetailsPage() {
   };
 
   const handleConfirmPayment = () => {
-    toast.success("Payment confirmation submitted!");
-    console.log("Payment confirmed for order:", orderId);
+    // Payment confirmation will be handled by backend
+    toast.success("Payment confirmation submitted!", {
+      description: "Your payment is being processed. You will receive a confirmation email shortly.",
+    });
   };
 
   const handleAutomatedPayment = async () => {

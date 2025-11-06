@@ -7,8 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { motion } from "framer-motion";
 import { formVariants } from "@/lib/utils";
 import { Loader } from "lucide-react";
-// import { useRouter } from "next/navigation";
-// import { toast } from "sonner";
+import { toast } from "sonner";
 
 // import { sendGAEvent } from "@next/third-parties/google";
 
@@ -35,23 +34,33 @@ export function LoginForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+
+    if (!password || password.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      if(!email || !password) {
-        throw new Error("Email and password are required");
-      }
-
-      // mock login 
-      router.push("/dashboard");
+      // Login logic will be implemented when backend is ready
+      // For now, simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       
+      toast.success("Login successful!", {
+        description: "Welcome back!",
+      });
+      router.push("/dashboard");
     } catch (error: any) {
       setPassword("");
-      //   toast.error("Login failed, please try again");
-      //   sendGAEvent("formSubmission", "submit", {
-      //     authType: "loginForm",
-      //     status: "failed",
-      //   });
+      toast.error("Login failed", {
+        description: error?.message || "Please check your credentials and try again.",
+      });
       setIsLoading(false);
     }
   };

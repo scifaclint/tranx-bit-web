@@ -147,29 +147,40 @@ export default function SellGiftCards() {
   };
 
   const handleSubmit = () => {
+    // Validate required fields
+    if (!selectedBrand) {
+      toast.error("Please select a card brand");
+      return;
+    }
+
+    if (!amount || parseFloat(amount) <= 0) {
+      toast.error("Please enter a valid card amount");
+      return;
+    }
+
+    if (cardType === "ecodes" && !giftCardCode) {
+      toast.error("Please enter your gift card code");
+      return;
+    }
+
+    if (cardType === "physical" && (!frontImage || !backImage)) {
+      toast.error("Please upload both front and back images of the card");
+      return;
+    }
+
+    if (!selectedPaymentMethod) {
+      toast.error("Please select a payment method");
+      return;
+    }
+
     // Generate order ID
     const orderId = `SELL-${Date.now()}-${Math.random()
       .toString(36)
       .substring(2, 9)
       .toUpperCase()}`;
 
-    // Handle form submission (you can save to state/API here)
-    console.log({
-      orderId,
-      cardType,
-      selectedBrand,
-      amount,
-      giftCardCode: cardType === "ecodes" ? giftCardCode : undefined,
-      images:
-        cardType === "physical"
-          ? { front: frontImage, back: backImage }
-          : undefined,
-      comment,
-      payout: calculatePayout(),
-      paymentMethod: selectedPaymentMethod,
-    });
-
-    // Navigate to order details page
+    // Form submission will be handled by backend
+    // For now, navigate to order details page
     router.push(`/sell-giftcards/${orderId}`);
   };
 
@@ -450,7 +461,9 @@ export default function SellGiftCards() {
                         <CommandItem
                           onSelect={() => {
                             setPaymentMethodOpen(false);
-                            console.log("Add payment method");
+                            toast.info("Add payment method feature coming soon", {
+                              description: "You'll be able to add new payment methods here.",
+                            });
                           }}
                           className="border-t"
                         >
@@ -745,7 +758,9 @@ export default function SellGiftCards() {
                         className="w-full justify-start gap-2"
                         onClick={() => {
                           setPaymentMethodOpen(false);
-                          console.log("Add payment method");
+                          toast.info("Add payment method feature coming soon", {
+                            description: "You'll be able to add new payment methods here.",
+                          });
                         }}
                       >
                         <Plus className="h-4 w-4" />

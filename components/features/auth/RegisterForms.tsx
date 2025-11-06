@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import { formVariants } from "@/lib/utils";
 import { Loader, Check, X, ChevronDown } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
 import {
   Popover,
   PopoverTrigger,
@@ -201,9 +202,44 @@ export const RegisterForm = ({
   const hasForbiddenPassword =
     isPasswordSameAsEmail || isPasswordSameAsUsername;
 
+  // Compute if form is valid for submission
+  const isFormValid = useMemo(() => {
+    const allPasswordRequirementsMet = Object.values(validation.password).every(Boolean);
+    const basicFieldsValid = validation.username && validation.email && validation.phone;
+    // Only check forbidden password if password is actually filled
+    const passwordNotForbidden = formData.password ? !hasForbiddenPassword : true;
+    
+    const isValid = basicFieldsValid && allPasswordRequirementsMet && passwordNotForbidden;
+    
+    // Debug: Log validation state (remove in production)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Form Validation State:', {
+        username: validation.username,
+        email: validation.email,
+        phone: validation.phone,
+        passwordRequirements: {
+          hasMinLength: validation.password.hasMinLength,
+          hasUpperCase: validation.password.hasUpperCase,
+          hasLowerCase: validation.password.hasLowerCase,
+          hasNumber: validation.password.hasNumber,
+          hasSpecialChar: validation.password.hasSpecialChar,
+          passwordsMatch: validation.password.passwordsMatch,
+        },
+        allPasswordRequirementsMet,
+        hasForbiddenPassword,
+        passwordNotForbidden,
+        isValid,
+      });
+    }
+    
+    return isValid;
+  }, [validation, hasForbiddenPassword, formData.password]);
+
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
+      e.stopPropagation();
+      
       setIsLoading(true);
 
       try {
@@ -231,19 +267,20 @@ export const RegisterForm = ({
           throw new Error("Password cannot be your username");
         }
 
-        // Registration logic here
-        console.log("Registration data:", {
-          username: formData.username,
-          email: formData.email,
-          country: formData.country,
-          phone: COUNTRIES[formData.country].code + formData.phone,
-          password: formData.password,
-        });
-      } catch (error) {
+        // Registration logic here - will be implemented when backend is ready
+        // For now, simulate successful registration
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        onRegister(formData.email);
         setIsLoading(false);
+      } catch (error: any) {
+        setIsLoading(false);
+        const errorMessage = error?.message || "Registration failed. Please try again.";
+        toast.error(errorMessage, {
+          description: "Please check your information and try again.",
+        });
       }
     },
-    [formData, validation, isPasswordSameAsEmail, isPasswordSameAsUsername]
+    [formData, validation, isPasswordSameAsEmail, isPasswordSameAsUsername, onRegister]
   );
 
   const currentCountry = COUNTRIES[formData.country];
@@ -463,15 +500,8 @@ export const RegisterForm = ({
           <Button
             variant="secondary"
             type="submit"
-            disabled={
-              isLoading ||
-              !validation.username ||
-              !validation.email ||
-              !validation.phone ||
-              !Object.values(validation.password).every(Boolean) ||
-              hasForbiddenPassword
-            }
-            className="w-full bg-black hover:bg-gray-900 text-white h-12 mt-6"
+            disabled={isLoading || !isFormValid}
+            className="w-full bg-black hover:bg-gray-900 text-white h-12 mt-6 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? (
               <>
@@ -525,6 +555,7 @@ export const RegisterForm = ({
       passwordBarColor,
       updateFormData,
       currentCountry,
+      isFormValid,
     ]
   );
 

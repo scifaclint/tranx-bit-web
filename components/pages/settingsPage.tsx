@@ -111,8 +111,8 @@ export default function SettingsPage() {
   };
 
   const handleSave = () => {
-    console.log("Save profile:", formData);
-    // Add save logic here
+    // Save logic will be implemented when backend is ready
+    toast.success("Settings saved successfully!");
   };
 
   const handleDeletePayment = (id: string) => {
@@ -131,8 +131,10 @@ export default function SettingsPage() {
   };
 
   const handleAddPayment = () => {
-    console.log("Add new payment method");
-    // Add modal/form logic here
+    // Add payment method logic will be implemented when backend is ready
+    toast.info("Add payment method feature coming soon", {
+      description: "You'll be able to add new payment methods here.",
+    });
   };
 
   const menuItems = [
@@ -487,7 +489,11 @@ export default function SettingsPage() {
                       <Button
                         variant="outline"
                         className="border-blue-600 text-blue-600 hover:bg-blue-50"
-                        onClick={() => console.log("Change phone number")}
+                        onClick={() => {
+                          toast.info("Phone number change feature coming soon", {
+                            description: "You'll be able to update your phone number here.",
+                          });
+                        }}
                       >
                         Change
                       </Button>
@@ -536,7 +542,11 @@ export default function SettingsPage() {
                         </p>
                         <Button
                           className="bg-blue-600 hover:bg-blue-700 text-white"
-                          onClick={() => console.log("Start KYC verification")}
+                          onClick={() => {
+                            toast.info("KYC verification feature coming soon", {
+                              description: "You'll be able to complete your identity verification here.",
+                            });
+                          }}
                         >
                           Complete Verification Now
                         </Button>
@@ -664,7 +674,11 @@ export default function SettingsPage() {
                         <Button
                           variant="outline"
                           className="border-blue-600 text-blue-600 hover:bg-blue-50"
-                          onClick={() => console.log("Change password")}
+                          onClick={() => {
+                            toast.info("Password change feature coming soon", {
+                              description: "You'll be able to update your password here.",
+                            });
+                          }}
                         >
                           Change Password
                         </Button>
@@ -720,7 +734,10 @@ export default function SettingsPage() {
         isOpen={deleteAccountOpen}
         onClose={() => setDeleteAccountOpen(false)}
         onConfirm={() => {
-          console.log("Delete account");
+          // Account deletion will be implemented when backend is ready
+          toast.success("Account deletion request submitted", {
+            description: "Your account will be deleted after verification. This action cannot be undone.",
+          });
         }}
         title="Delete Account"
         description={

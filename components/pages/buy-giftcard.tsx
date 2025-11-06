@@ -100,11 +100,17 @@ export default function BuyGiftCardPage() {
   };
 
   const handleBuyCard = () => {
+    if (!selectedBrand || !selectedAmount) {
+      toast.error("Please select a brand and amount");
+      return;
+    }
+
     // Generate a random order ID (you can customize the format)
     const orderId = `ORD-${Date.now()}-${Math.random()
       .toString(36)
       .substring(2, 9)
       .toUpperCase()}`;
+    
     // Navigate to the order details page
     router.push(`/buy-giftcards/${orderId}`);
   };
