@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { FileText, ShoppingBag } from "lucide-react";
@@ -20,7 +21,16 @@ interface Transaction {
 }
 
 export default function TransactionPage() {
+  const searchParams = useSearchParams();
   const [activeFilter, setActiveFilter] = useState<FilterStatus>("all");
+
+  // Read filter from URL query parameter on mount
+  useEffect(() => {
+    const filterParam = searchParams.get("filter");
+    if (filterParam && ["all", "pending", "completed", "failed"].includes(filterParam)) {
+      setActiveFilter(filterParam as FilterStatus);
+    }
+  }, [searchParams]);
 
   // Mock transactions
   const transactions: Transaction[] = [
@@ -50,6 +60,12 @@ export default function TransactionPage() {
     { label: "Completed", value: "completed" },
     { label: "Failed", value: "failed" },
   ];
+
+  // Filter transactions based on active filter
+  const filteredTransactions =
+    activeFilter === "all"
+      ? transactions
+      : transactions.filter((t) => t.status === activeFilter);
 
   return (
     <div className="w-full space-y-6">
@@ -82,7 +98,7 @@ export default function TransactionPage() {
       </div>
 
       {/* Empty State or Transactions Table */}
-      {transactions.length === 0 ? (
+      {filteredTransactions.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 px-4">
           <div className="relative mb-6">
             {/* Animated background circle */}
@@ -128,7 +144,7 @@ export default function TransactionPage() {
 
           {/* Table Body - Scrollable */}
           <div className="divide-y overflow-y-auto flex-1">
-            {transactions.map((transaction) => (
+            {filteredTransactions.map((transaction) => (
               <div
                 key={transaction.id}
                 className="grid grid-cols-5 gap-4 p-4 hover:bg-muted/30 transition-colors cursor-pointer items-center"

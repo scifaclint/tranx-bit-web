@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Bell, Wallet, ListChecks, ArrowRight } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -23,6 +23,7 @@ import {
 
 export default function HeaderWithBalance() {
   const pathname = usePathname();
+  const router = useRouter();
 
   const ads = [
     { src: "/ads/amazon-ads.svg", alt: "Amazon Gift Cards" },
@@ -172,6 +173,9 @@ export default function HeaderWithBalance() {
           <CardFooter className="pt-4">
             <div className="w-full border-t border-gray-100 dark:border-gray-700 pt-4">
               <Button
+                onClick={() => {
+                  router.push("/transactions?filter=pending");
+                }}
                 className="w-full justify-center border-black dark:border-gray-600 text-black dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-gray-400/20"
                 variant="outline"
                 aria-label="View pending orders"
