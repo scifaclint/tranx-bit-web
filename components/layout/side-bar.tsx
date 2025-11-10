@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import ConfirmationModal from "@/components/modals/confirmation-modal";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import {
   Tooltip,
   TooltipContent,
@@ -140,9 +141,9 @@ const Sidebar = ({ onCollapse, userType = "user" }: SidebarProps) => {
           ${
             isActive
               ? // Active state with fafafa background and gray text
-                "bg-[#fafafa] text-gray-600 hover:bg-gray-100"
+                "bg-[#fafafa] dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
               : // Inactive state with hover
-                "text-gray-600 hover:bg-gray-50"
+                "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"
           }
           ${isCollapsed ? "justify-center px-0" : "px-4"}
         `}
@@ -182,7 +183,7 @@ const Sidebar = ({ onCollapse, userType = "user" }: SidebarProps) => {
     <>
       {/* Logo Area */}
       <div
-        className={`p-6 bg-white border-b border-gray-200 ${
+        className={`p-6 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 ${
           isCollapsed ? "px-4" : ""
         }`}
       >
@@ -195,14 +196,17 @@ const Sidebar = ({ onCollapse, userType = "user" }: SidebarProps) => {
       </div>
 
       {/* Main Navigation */}
-      <nav className="flex-1 bg-white px-4 py-6 space-y-2 overflow-y-auto">
+      <nav className="flex-1 bg-white dark:bg-gray-900 px-4 py-6 space-y-2 overflow-y-auto">
         {navItems.map((item) => (
           <NavItem key={item.id} item={item} />
         ))}
       </nav>
 
       {/* Bottom Items */}
-      <div className="px-4 bg-white py-6 border-t border-gray-200 space-y-2">
+      <div className="px-4 bg-white dark:bg-gray-900 py-6 border-t border-gray-200 dark:border-gray-800 space-y-2">
+        <div className="mb-2">
+          <ThemeToggle />
+        </div>
         {bottomItems.map((item) => (
           <NavItem key={item.id} item={item} />
         ))}
@@ -233,7 +237,7 @@ const Sidebar = ({ onCollapse, userType = "user" }: SidebarProps) => {
       {/* Mobile Drawer */}
       <aside
         className={`
-          lg:hidden fixed top-0 left-0 h-full w-72  border-r border-gray-200 z-50 
+          lg:hidden fixed top-0 left-0 h-full w-72 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 z-50 
           transform transition-transform duration-300 ease-in-out flex flex-col
           ${isMobileOpen ? "translate-x-0" : "-translate-x-full"}
         `}
@@ -252,7 +256,7 @@ const Sidebar = ({ onCollapse, userType = "user" }: SidebarProps) => {
       {/* Desktop Sidebar */}
       <aside
         className={`
-          hidden lg:flex fixed top-0 left-0 h-full  border-r border-gray-200 z-30
+          hidden lg:flex fixed top-0 left-0 h-full bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 z-30
           flex-col transition-all duration-300 ease-in-out
           ${isCollapsed ? "w-20" : "w-72"}
         `}

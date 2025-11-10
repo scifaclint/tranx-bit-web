@@ -11,7 +11,7 @@ export default function AuthLayout({
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex bg-background dark:bg-gray-950">
       <Sidebar userType="admin" onCollapse={setIsSidebarCollapsed} />
       <main
         className={`flex-1 transition-all duration-300 

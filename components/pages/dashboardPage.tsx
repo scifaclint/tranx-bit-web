@@ -50,13 +50,13 @@ export default function DashboardPage() {
           onClick={() => {
             router.push("/buy-giftcards");
           }}
-          className="bg-cyan-50 rounded-2xl p-5 border-0 hover:shadow-md transition-all duration-200 cursor-pointer"
+          className="bg-cyan-50 dark:bg-cyan-950/30 rounded-2xl p-5 border-0 hover:shadow-md transition-all duration-200 cursor-pointer"
         >
           <div className="flex flex-col items-center text-center space-y-3">
-            <div className="w-12 h-12 bg-cyan-500 rounded-full flex items-center justify-center">
+            <div className="w-12 h-12 bg-cyan-500 dark:bg-cyan-600 rounded-full flex items-center justify-center">
               <ShoppingBag size={24} className="text-white" />
             </div>
-            <p className="font-semibold text-gray-900 dark:text-foreground text-sm">
+            <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">
               Buy Gift Card
             </p>
           </div>
@@ -66,13 +66,13 @@ export default function DashboardPage() {
           onClick={() => {
             router.push("/sell-giftcards");
           }}
-          className="bg-blue-50 rounded-2xl p-5 border-0 hover:shadow-md transition-all duration-200 cursor-pointer"
+          className="bg-blue-50 dark:bg-blue-950/30 rounded-2xl p-5 border-0 hover:shadow-md transition-all duration-200 cursor-pointer"
         >
           <div className="flex flex-col items-center text-center space-y-3">
-            <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center">
+            <div className="w-12 h-12 bg-blue-500 dark:bg-blue-600 rounded-full flex items-center justify-center">
               <CreditCard size={24} className="text-white" />
             </div>
-            <p className="font-semibold text-gray-900 dark:text-foreground text-sm">
+            <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">
               Sell Gift Card
             </p>
           </div>
@@ -85,13 +85,13 @@ export default function DashboardPage() {
               position: "bottom-right",
             });
           }}
-          className="bg-orange-50 rounded-2xl p-5 border-0 hover:shadow-md transition-all duration-200 cursor-pointer"
+          className="bg-orange-50 dark:bg-orange-950/30 rounded-2xl p-5 border-0 hover:shadow-md transition-all duration-200 cursor-pointer"
         >
           <div className="flex flex-col items-center text-center space-y-3">
-            <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center">
+            <div className="w-12 h-12 bg-orange-500 dark:bg-orange-600 rounded-full flex items-center justify-center">
               <Wallet size={24} className="text-white" />
             </div>
-            <p className="font-semibold text-gray-900 dark:text-foreground text-sm">
+            <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">
               Virtual Dollar Cards
             </p>
           </div>
@@ -104,13 +104,13 @@ export default function DashboardPage() {
               position: "bottom-right",
             });
           }}
-          className="bg-purple-50 rounded-2xl p-5 border-0 hover:shadow-md transition-all duration-200 cursor-pointer"
+          className="bg-purple-50 dark:bg-purple-950/30 rounded-2xl p-5 border-0 hover:shadow-md transition-all duration-200 cursor-pointer"
         >
           <div className="flex flex-col items-center text-center space-y-3">
-            <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center">
+            <div className="w-12 h-12 bg-purple-500 dark:bg-purple-600 rounded-full flex items-center justify-center">
               <DollarSign size={24} className="text-white" />
             </div>
-            <p className="font-semibold text-gray-900 dark:text-foreground text-sm">
+            <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">
               BTC exchange
             </p>
           </div>
@@ -121,7 +121,7 @@ export default function DashboardPage() {
       <Card className="bg-backgroundSecondary dark:bg-card rounded-2xl p-5 sm:p-6 shadow-sm border-0">
         {/* Filter Bar */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-          <h2 className="font-bold text-xl">Recent Transactions</h2>
+          <h2 className="font-bold text-xl text-gray-900 dark:text-gray-100">Recent Transactions</h2>
           <div className="flex items-center gap-3">
             <Select value={activeFilter} onValueChange={setActiveFilter}>
               <SelectTrigger className="w-[180px] border-black/10 hover:border-black/20 transition-colors">
@@ -149,7 +149,7 @@ export default function DashboardPage() {
         {filteredTransactions.length > 0 ? (
           <div className="border rounded-lg overflow-hidden max-h-[400px] flex flex-col">
             {/* Table Header - Sticky */}
-            <div className="grid grid-cols-4 gap-4 p-4 bg-white/80 border-b font-medium text-sm sticky top-0 z-10">
+            <div className="grid grid-cols-4 gap-4 p-4 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 font-medium text-sm text-gray-900 dark:text-gray-100 sticky top-0 z-10">
               <div>Transaction</div>
               <div>Type</div>
               <div>Date</div>

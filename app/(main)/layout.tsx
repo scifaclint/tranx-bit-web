@@ -106,7 +106,7 @@ export default function AuthLayout({
 
   if (showLoader) {
     return (
-      <div className="fixed inset-0 bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center z-50 overflow-hidden">
+      <div className="fixed inset-0 bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 flex items-center justify-center z-50 overflow-hidden">
         <div className="relative flex items-center justify-center">
           {/* Pulse Rings - Multiple layers */}
           {[0, 1, 2].map((index) => (
@@ -260,7 +260,7 @@ export default function AuthLayout({
   }
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex bg-background dark:bg-gray-950">
       <Sidebar onCollapse={setIsSidebarCollapsed} />
       <main
         className={`flex-1 transition-all duration-300 

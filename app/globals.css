@@ -160,6 +160,19 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+
+  /* Dark mode custom colors */
+  --color-background: #0f172a;
+  --color-backgroundSecondary: rgb(30 41 59 / 1);
+  --color-sideBarBackground: #1e293b;
+  --color-borderColorPrimary: rgba(255, 255, 255, 0.1);
+  --color-buttonBackground: #475569;
+  --color-bodyColor: #f1f5f9;
+  --color-bodyColorAlt: #1e293b;
+  --color-hoverColorPrimary: rgba(51, 65, 85, 0.664);
+  --color-secondary: #334155;
+  --color-toastBackgroundColor: #064e3b;
+  --color-infoColorPrimary: 178 60.45% 43.28%;
 }
 
 @layer base {

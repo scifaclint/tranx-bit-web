@@ -126,7 +126,7 @@ export default function BuyGiftCardPage() {
               variant="outline"
               role="combobox"
               aria-expanded={open}
-              className="w-full justify-between h-10 focus:ring-2 focus:ring-black/20 focus:border-black transition-all"
+              className="w-full justify-between h-10 focus:ring-2 focus:ring-black/20 dark:focus:ring-gray-400/20 focus:border-black dark:focus:border-gray-600 transition-all"
             >
               {selectedBrandData ? (
                 <div className="flex items-center gap-2">
@@ -174,7 +174,7 @@ export default function BuyGiftCardPage() {
                               );
                               setOpen(false);
                             }}
-                            className="flex flex-col items-center justify-center p-3 cursor-pointer hover:bg-backgroundSecondary rounded-lg border-2 border-transparent data-[selected=true]:border-black data-[selected=true]:bg-backgroundSecondary"
+                            className="flex flex-col items-center justify-center p-3 cursor-pointer hover:bg-backgroundSecondary dark:hover:bg-gray-800 rounded-lg border-2 border-transparent data-[selected=true]:border-black dark:data-[selected=true]:border-gray-600 data-[selected=true]:bg-backgroundSecondary dark:data-[selected=true]:bg-gray-800"
                           >
                             <div className="relative w-12 h-12 mb-2">
                               <Image
@@ -188,7 +188,7 @@ export default function BuyGiftCardPage() {
                               {brand.label}
                             </span>
                             {selectedBrand === brand.value && (
-                              <Check className="absolute top-1 right-1 h-4 w-4 text-black" />
+                              <Check className="absolute top-1 right-1 h-4 w-4 text-black dark:text-gray-200" />
                             )}
                           </CommandItem>
                         ))}
@@ -211,11 +211,11 @@ export default function BuyGiftCardPage() {
               key={amount}
               onClick={() => setSelectedAmount(amount)}
               className={`
-                relative p-[1px] rounded-lg border border-black/20 transition-all duration-200
+                relative p-[1px] rounded-lg border border-black/20 dark:border-gray-700 transition-all duration-200
                 ${
                   selectedAmount === amount
-                    ? "border-black"
-                    : "hover:border-black"
+                    ? "border-black dark:border-gray-400"
+                    : "hover:border-black dark:hover:border-gray-600"
                 }
               `}
             >
@@ -224,8 +224,8 @@ export default function BuyGiftCardPage() {
                 rounded-lg p-3 transition-all duration-200
                 ${
                   selectedAmount === amount
-                    ? "bg-black text-white"
-                    : "bg-backgroundSecondary"
+                    ? "bg-black dark:bg-gray-700 text-white"
+                    : "bg-backgroundSecondary dark:bg-gray-800"
                 }
               `}
               >
@@ -233,8 +233,8 @@ export default function BuyGiftCardPage() {
                 <div className="text-xs text-inherit opacity-70">USD</div>
                 {selectedAmount === amount && (
                   <div className="absolute top-1.5 right-1.5">
-                    <div className="w-3.5 h-3.5 bg-white rounded-full flex items-center justify-center">
-                      <div className="w-1.5 h-1.5 bg-black rounded-full"></div>
+                    <div className="w-3.5 h-3.5 bg-white dark:bg-gray-600 rounded-full flex items-center justify-center">
+                      <div className="w-1.5 h-1.5 bg-black dark:bg-gray-200 rounded-full"></div>
                     </div>
                   </div>
                 )}
@@ -253,7 +253,7 @@ export default function BuyGiftCardPage() {
             size="icon"
             onClick={() => handleQuantityChange(quantity - 1)}
             disabled={quantity <= 1}
-            className="h-9 w-9 rounded-lg hover:border-black hover:bg-gray-50"
+            className="h-9 w-9 rounded-lg hover:border-black dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
           >
             <Minus className="h-4 w-4" />
           </Button>
@@ -271,7 +271,7 @@ export default function BuyGiftCardPage() {
             variant="outline"
             size="icon"
             onClick={() => handleQuantityChange(quantity + 1)}
-            className="h-9 w-9 rounded-lg hover:border-black hover:bg-gray-50"
+            className="h-9 w-9 rounded-lg hover:border-black dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
           >
             <Plus className="h-4 w-4" />
           </Button>
@@ -284,12 +284,12 @@ export default function BuyGiftCardPage() {
           <span className="text-sm font-medium text-muted-foreground">
             Total Amount:
           </span>
-          <span className="text-xl font-bold text-black">
+          <span className="text-xl font-bold text-black dark:text-gray-100">
             ${calculateTotal().toFixed(2)}
           </span>
         </div>
         <Button
-          className="w-full bg-black text-white font-semibold shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[0.99] enabled:hover:bg-black/80"
+          className="w-full bg-black dark:bg-gray-800 text-white dark:text-gray-100 font-semibold shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[0.99] enabled:hover:bg-black/80 dark:enabled:hover:bg-gray-700"
           disabled={!selectedBrand || !selectedAmount}
           onClick={handleBuyCard}
         >

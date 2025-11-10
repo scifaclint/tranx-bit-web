@@ -126,7 +126,7 @@ export default function TranxbitFAQ() {
   };
 
   return (
-    <div className="py-16 px-4">
+    <div className="py-16 px-4 bg-white dark:bg-gray-950">
       <div className="max-w-5xl mx-auto">
         {/* Centered heading */}
         <motion.div
@@ -136,10 +136,10 @@ export default function TranxbitFAQ() {
           animate={headingInView ? "visible" : "hidden"}
           variants={headingVariants}
         >
-          <h1 className="text-5xl font-bold mb-4">
+          <h1 className="text-5xl font-bold mb-4 text-gray-900 dark:text-gray-100">
             Frequently Asked Questions
           </h1>
-          <span className="text-lg">
+          <span className="text-lg text-gray-600 dark:text-gray-400">
             Everything you need to know about the us.
           </span>
         </motion.div>
@@ -158,20 +158,20 @@ export default function TranxbitFAQ() {
               variants={faqItemVariants}
               className={`overflow-hidden transition-all duration-300 ${
                 openIndex !== index ? "" : ""
-              } ${index !== 0 ? "border-t border-gray-200 pt-4" : ""}`}
+              } ${index !== 0 ? "border-t border-gray-200 dark:border-gray-700 pt-4" : ""}`}
             >
               <button
                 onClick={() => toggleFAQ(index)}
-                className="w-full px-3 py-3 flex items-center justify-between text-left transition-colors"
+                className="w-full px-3 py-3 flex items-center justify-between text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-lg"
               >
-                <span className="text-lg font-semibold text-gray-900 pr-8">
+                <span className="text-lg font-semibold text-gray-900 dark:text-gray-100 pr-8">
                   {faq.question}
                 </span>
                 <div className="flex-shrink-0">
                   {openIndex === index ? (
-                    <Minus className="w-6 h-6 text-blue-600" />
+                    <Minus className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                   ) : (
-                    <Plus className="w-6 h-6 text-blue-600" />
+                    <Plus className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                   )}
                 </div>
               </button>
@@ -188,7 +188,7 @@ export default function TranxbitFAQ() {
                 }}
                 className="overflow-hidden"
               >
-                <div className="px-8 pb-8 text-gray-700 leading-relaxed">
+                <div className="px-8 pb-8 text-gray-700 dark:text-gray-300 leading-relaxed">
                   {faq.answer}
                 </div>
               </motion.div>
@@ -204,7 +204,7 @@ export default function TranxbitFAQ() {
           animate={cardInView ? "visible" : "hidden"}
           variants={cardVariants}
         >
-          <div className="w-full max-w-2xl bg-white rounded-lg shadow border border-gray-100">
+          <div className="w-full max-w-2xl bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-100 dark:border-gray-700">
             <div className="pt-6 pb-6 px-6 text-center">
               {/* Profile Images */}
               <div className="flex justify-center mb-8">
@@ -228,7 +228,7 @@ export default function TranxbitFAQ() {
                         delay: 0.2 + i * 0.1,
                         duration: 0.5,
                       }}
-                      className="w-20 h-20 rounded-full bg-gray-200 border-4 border-white overflow-hidden relative"
+                      className="w-20 h-20 rounded-full bg-gray-200 dark:bg-gray-700 border-4 border-white dark:border-gray-800 overflow-hidden relative"
                     >
                       <img
                         src={img.src}
@@ -242,12 +242,12 @@ export default function TranxbitFAQ() {
               </div>
 
               {/* Heading */}
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-4">
                 Still have questions?
               </h2>
 
               {/* Subheading */}
-              <p className="text-lg text-gray-600 mb-8">
+              <p className="text-lg text-gray-600 dark:text-gray-300 mb-8">
                 {`Can't find the answer you're looking for? Please chat to our
                 friendly team.`}
               </p>
@@ -256,10 +256,10 @@ export default function TranxbitFAQ() {
               <div className="flex justify-center">
                 <div className="relative inline-flex items-center justify-center group">
                   <div className="absolute inset-0 duration-1000 opacity-60 transition-all bg-gradient-to-r from-indigo-500 via-pink-500 to-yellow-400 rounded-xl blur-lg filter group-hover:opacity-100 group-hover:duration-200"></div>
-                  <button className="relative bg-gray-900 px-8 py-3 rounded-xl text-white transition-all duration-200 hover:bg-gray-800 hover:shadow-lg hover:-translate-y-0.5 hover:shadow-gray-600/30">
+                  <button className="relative bg-gray-900 dark:bg-gray-100 px-8 py-3 rounded-xl text-white dark:text-gray-900 transition-all duration-200 hover:bg-gray-800 dark:hover:bg-gray-200 hover:shadow-lg hover:-translate-y-0.5 hover:shadow-gray-600/30 dark:hover:shadow-gray-800/30">
                     Get in touch
                     <svg
-                      className="ml-2 inline-block stroke-white stroke-2"
+                      className="ml-2 inline-block stroke-white dark:stroke-gray-900 stroke-2"
                       fill="none"
                       width="10"
                       height="10"

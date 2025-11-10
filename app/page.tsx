@@ -16,11 +16,11 @@ export default function Home() {
     <>
       <LandingPageLayout />
 
-      <main className="bg-[#f9f9f9]">
+      <main className="bg-[#f9f9f9] dark:bg-gray-950">
         <div className="mb-2">
           <HeroSection />
         </div>
-        <div className="bg-[#f9f9f9]">
+        <div className="bg-[#f9f9f9] dark:bg-gray-950">
           <GiftCardFeatures />
         </div>
         <BrandCarousel />
