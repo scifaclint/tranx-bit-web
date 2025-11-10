@@ -85,15 +85,20 @@ export default function HeaderWithBalance() {
     <div className="w-full max-w-6xl mx-auto mb-6 sm:mb-8">
       {/* Header with User Profile and Notification */}
       <div className="flex items-center justify-between mb-6 sm:mb-8">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-lg">
+        <button
+          onClick={() => router.push("/profile")}
+          className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer group"
+        >
+          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-lg group-hover:ring-2 group-hover:ring-indigo-400 transition-all">
             JD
           </div>
           <div>
             <p className="text-gray-500 dark:text-gray-400 text-sm">Welcome,</p>
-            <p className="text-gray-900 dark:text-gray-100 font-semibold text-lg">John Doe</p>
+            <p className="text-gray-900 dark:text-gray-100 font-semibold text-lg group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+              John Doe
+            </p>
           </div>
-        </div>
+        </button>
 
         <div className="flex items-center gap-3">
           <ThemeToggle />
