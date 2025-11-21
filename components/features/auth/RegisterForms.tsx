@@ -5,8 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { motion } from "framer-motion";
-import { formVariants } from "@/lib/utils";
+// import { formVariants } from "@/lib/utils";
 import { Loader, Check, X, ChevronDown } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { toast } from "sonner";
 import {
@@ -23,6 +24,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+const formVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.3 },
+  },
+  exit: { opacity: 0, y: -20 },
+};
 interface RegisterFormProps {
   onSwitchMode: () => void;
   onRegister: (email: string) => void;
@@ -43,8 +53,8 @@ interface FormValidation {
 }
 
 const COUNTRIES = {
-  ghana: { name: "Ghana", code: "+233", flag: "🇬🇭" },
-  nigeria: { name: "Nigeria", code: "+234", flag: "🇳🇬" },
+  ghana: { name: "Ghana", code: "+233", flag: "/images/gh.svg" },
+  nigeria: { name: "Nigeria", code: "+234", flag: "/images/ng.svg" },
 };
 
 const useFormValidation = () => {
@@ -55,6 +65,7 @@ const useFormValidation = () => {
     phone: "",
     password: "",
     confirmPassword: "",
+    code: COUNTRIES["ghana"].code,
   });
 
   const [validation, setValidation] = useState<FormValidation>({
@@ -272,9 +283,12 @@ export const RegisterForm = ({
         await new Promise((resolve) => setTimeout(resolve, 1000));
         onRegister(formData.email);
         setIsLoading(false);
-      } catch (error: any) {
+      } catch (error: unknown) {
         setIsLoading(false);
-        const errorMessage = error?.message || "Registration failed. Please try again.";
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : "Registration failed. Please try again.";
         toast.error(errorMessage, {
           description: "Please check your information and try again.",
         });
@@ -335,23 +349,24 @@ export const RegisterForm = ({
               onValueChange={(value) => {
                 updateFormData("country", value);
                 updateFormData("phone", "");
+                updateFormData("code", `${value === "ghana" ? "+233" : "+234"}`);
               }}
             >
               <SelectTrigger className="border-borderColorPrimary focus-visible:outline-none h-12">
                 <SelectValue>
-                  <span className="flex items-center gap-2">
-                    <span>{currentCountry.flag}</span>
+                  <div className="flex items-center gap-2">
+                    <Image src={currentCountry.flag} alt={`${currentCountry.name} flag`} width={24} height={16} />
                     <span>{currentCountry.name}</span>
-                  </span>
+                  </div>
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {Object.entries(COUNTRIES).map(([key, country]) => (
                   <SelectItem key={key} value={key}>
-                    <span className="flex items-center gap-2">
-                      <span>{country.flag}</span>
+                    <div className="flex items-center gap-2">
+                      <Image src={country.flag} alt={`${country.name} flag`} width={24} height={16} />
                       <span>{country.name}</span>
-                    </span>
+                    </div>
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -362,7 +377,7 @@ export const RegisterForm = ({
             <div className="flex gap-2">
               <div className="flex items-center justify-center px-3 border border-borderColorPrimary rounded-md bg-muted h-12 min-w-[80px]">
                 <span className="text-sm font-medium">
-                  {currentCountry.code}
+                  {formData.code}
                 </span>
               </div>
               <Input

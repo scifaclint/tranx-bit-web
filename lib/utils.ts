@@ -30,3 +30,23 @@ export const formVariants = {
     },
   },
 };
+
+export function extractErrorMessage(error: any): string {
+  // Try to extract validation errors (e.g. { errors: { email: ["..."] } })
+  const validationErrors = error?.response?.data?.errors;
+  if (validationErrors && typeof validationErrors === "object") {
+    // Get the first error array and take its first message
+    const firstErrorKey = Object.keys(validationErrors)[0];
+    const firstErrorMsg = validationErrors[firstErrorKey]?.[0];
+    if (firstErrorMsg) return firstErrorMsg;
+  }
+
+  // Fallbacks for other possible error shapes
+  return (
+    error?.response?.data?.error || // Backend sends { error: "..." }
+    error?.response?.data?.message || // Backend sends { message: "..." }
+    error?.message ||
+    // Manually thrown Error (new Error(...))
+    "Something went wrong, please try again"
+  );
+}
