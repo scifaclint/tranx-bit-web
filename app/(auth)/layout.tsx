@@ -1,22 +1,54 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import TranxBitLoader from "@/components/design/Loading-screen";
+import LoadingAnimation from "@/components/features/LoadingAnimation";
+import { useAuthStore } from "@/stores";
+import { authApi } from "@/lib/api/auth";
+import { useRouter } from "next/navigation";
 export default function AuthLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   // Check auth on mount
+  const [authState, setAuthState] = useState<
+    "checking" | "show-auth" | "redirect"
+  >("checking");
+  const { token, setAuth, clearAuth } = useAuthStore();
+  const router = useRouter();
   useEffect(() => {
-    const checkAuth = async () => {};
+    const checkAuth = async () => {
+      if (token) {
+        try {
+          const response = await authApi.getUser();
+
+          setAuth(response.data.user, token);
+
+          if (response.data.to === "verify-email") {
+            setAuthState("show-auth");
+            const url = new URL(window.location.href);
+            url.searchParams.set("mode", "verify-email");
+            url.searchParams.set("email", response.data.user.email);
+            window.history.replaceState({}, "", url.toString());
+          } else if (response.data.to === "dashboard") {
+            router.replace("/dashboard");
+          }
+        } catch (error) {
+          clearAuth();
+          setAuthState("show-auth");
+        }
+      } else {
+        setAuthState("show-auth");
+      }
+    };
 
     checkAuth();
   }, []);
 
-  // Don't render anything while checking auth
-  //   if (authState === "checking" || authState === "redirect") {
-  //     return <LoadingScreen />;
-  //   }
+    // Don't render anything while checking auth
+    if (authState === "checking" || authState === "redirect") {
+      return <LoadingAnimation />;
+    }
 
   return (
     <div className="flex min-h-screen w-full bg-background dark:bg-gray-950">

@@ -3,17 +3,25 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-// import { GoogleButton } from "./GoogleButton";
 import { motion } from "framer-motion";
-import { formVariants } from "@/lib/utils";
 import { Loader } from "lucide-react";
 import { toast } from "sonner";
-
+import { authApi } from "@/lib/api/auth";
+import { useAuthStore } from "@/stores";
 // import { sendGAEvent } from "@next/third-parties/google";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+const formVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.3 },
+  },
+  exit: { opacity: 0, y: -20 },
+};
 interface LoginFormProps {
   onSwitchMode: () => void;
   onForgotPassword: () => void;
@@ -25,20 +33,20 @@ export function LoginForm({
   onForgotPassword,
   onVerify,
 }: LoginFormProps) {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  //   const { login } = useAuth();
+ 
+  const { setAuth } = useAuthStore();
   const router = useRouter();
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      toast.error("Please enter a valid email address");
-      return;
-    }
+
+    // if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    //   toast.error("Please enter a valid email address");
+    //   return;
+    // }
 
     if (!password || password.length < 6) {
       toast.error("Password must be at least 6 characters");
@@ -48,18 +56,22 @@ export function LoginForm({
     setIsLoading(true);
 
     try {
-      // Login logic will be implemented when backend is ready
-      // For now, simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      
-      toast.success("Login successful!", {
-        description: "Welcome back!",
+      const results = await authApi.login({
+        username,
+        password,
       });
-      router.push("/dashboard");
+      if (results && results.data.to === "verify-email") {
+        onVerify(results.data.user.email);
+        return;
+      }
+      setAuth(results.data.user, results.data.token);
+      router.replace("/dashboard");
+      setIsLoading(false);
     } catch (error: any) {
       setPassword("");
       toast.error("Login failed", {
-        description: error?.message || "Please check your credentials and try again.",
+        description:
+          error?.message || "Please check your credentials and try again.",
       });
       setIsLoading(false);
     }
@@ -90,10 +102,10 @@ export function LoginForm({
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
           <Input
-            type="email"
-            placeholder="Email Address"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            type="text"
+            placeholder="Username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
             required
             className="border-borderColorPrimary focus-visible:outline-none h-12"
           />

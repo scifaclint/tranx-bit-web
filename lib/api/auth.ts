@@ -2,16 +2,17 @@ import { toast } from "sonner";
 import api from "./axios";
 
 export interface LoginCredentials {
-  email: string;
+  username: string;
   password: string;
 }
 
 export interface RegisterCredentials {
-  first_name: string;
-  last_name: string;
+  username: string;
+  last_name?: string;
   email: string;
   password: string;
   password_confirmation: string;
+  phone?: string;
 }
 
 export interface RegisterResponse {
@@ -52,7 +53,6 @@ export interface LoginResponse {
   status: boolean;
   error?: string;
   data: {
-    plan: string | null;
     to: string;
     token: string;
     user: {
@@ -111,7 +111,7 @@ export interface User {
 
 export const authApi = {
   login: async (credentials: LoginCredentials): Promise<LoginResponse> => {
-    const response = await api.post("/login", credentials);
+    const response = await api.post("/auth/login", credentials);
     // console.log('login response data', response.data);
     return response.data;
   },
@@ -119,8 +119,8 @@ export const authApi = {
   register: async (
     credentials: RegisterCredentials
   ): Promise<RegisterResponse> => {
-    const response = await api.post("/register", credentials);
-    // console.log('register data', response.data);
+    const response = await api.post("/auth/register", credentials);
+    console.log("register data", response.data);
     return response.data;
   },
 
@@ -136,9 +136,9 @@ export const authApi = {
     return response.data;
   },
 
-  verifyEmail: async (data: { code: string }) => {
+  verifyEmail: async (data: { code: string; email: string }) => {
     try {
-      const response = await api.post("/email/verify", data);
+      const response = await api.post("/auth/verify-email", data);
       // console.log('verification data', response);
       return response.data;
     } catch (error: any) {
@@ -152,9 +152,11 @@ export const authApi = {
     }
   },
 
-  resendVerification: async (): Promise<ResendVerificationResponse> => {
+  resendVerification: async (data: {
+    email: string;
+  }): Promise<ResendVerificationResponse> => {
     try {
-      const response = await api.post("/resend/code");
+      const response = await api.post("/resend/code", data);
       if (!response.data.status) {
         toast.error(response.data.message || "Failed to send code");
         throw new Error(response.data.message || "Failed to send code");

@@ -1,10 +1,9 @@
-"use client";
-// import type { Metadata } from "next";
+
+import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 // import { ThemeProvider } from "next-themes";
 import "./globals.css";
-import { RouteGuard } from "@/components/features/auth/RouteGuard";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,10 +15,10 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-// export const metadata: Metadata = {
-//   title: "TranXbit - Gift Card Exchange Platform",
-//   description: "A platform for exchanging gift cards securely and efficiently.",
-// };
+export const metadata: Metadata = {
+  title: "TranXbit - Gift Card Exchange Platform",
+  description: "A platform for exchanging gift cards securely and efficiently.",
+};
 
 export default function RootLayout({
   children,
@@ -38,10 +37,8 @@ export default function RootLayout({
           disableTransitionOnChange={false}
         >
         </ThemeProvider> */}
-        <RouteGuard>
-          {children}
-          <Toaster position="bottom-right" visibleToasts={3} />
-        </RouteGuard>
+        {children}
+        <Toaster position="bottom-right" visibleToasts={3} />
       </body>
     </html>
   );

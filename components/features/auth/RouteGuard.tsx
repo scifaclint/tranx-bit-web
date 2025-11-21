@@ -13,14 +13,14 @@ interface RouteGuardProps {
 
 const authRoutes = ["/auth"];
 
-const publicRoutes = ["/blog"];
+const publicRoutes = ["/blog", "/"];
 
 // Create a separate component for the route guard logic
 function RouteGuardInner({ children }: RouteGuardProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { token, setAuth, clearAuth } = useAuthStore();
+  const { token,   } = useAuthStore();
   const [authState, setAuthState] = useState<
     "checking" | "authorized" | "unauthorized"
   >("checking");
@@ -42,30 +42,30 @@ function RouteGuardInner({ children }: RouteGuardProps) {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const callback = searchParams.get("callback");
-      const tokenFromUrl = searchParams.get("token");
+      // const callback = searchParams.get("callback");
+      // const tokenFromUrl = searchParams.get("token");
 
-      if (callback === "google" && tokenFromUrl) {
-        setAuth({} as User, tokenFromUrl);
-        setIsLoading(true);
+      // if (callback === "google" && tokenFromUrl) {
+      //   setAuth({} as User, tokenFromUrl);
+      //   setIsLoading(true);
 
-        try {
-          const response = await authApi.getUser();
-          // console.log(response, 'google auth response')
-          setAuth(response.data.user, tokenFromUrl, response.plan);
+      //   try {
+      //     const response = await authApi.getUser();
+      //     // console.log(response, 'google auth response')
+      //     setAuth(response.data.user, tokenFromUrl, response.plan);
 
-          router.replace("/dashboard");
-        } catch (error: any) {
-          // toast.error(error.response.data.error || error.response.data.message || 'Failed to load your data');
+      //     router.replace("/dashboard");
+      //   } catch (error: any) {
+      //     // toast.error(error.response.data.error || error.response.data.message || 'Failed to load your data');
 
-          clearAuth();
-          router.replace("/auth");
-        } finally {
-          setIsLoading(false);
-        }
+      //     clearAuth();
+      //     router.replace("/auth");
+      //   } finally {
+      //     setIsLoading(false);
+      //   }
 
-        return;
-      }
+      //   return;
+      // }
 
       // Special case: If we're on the auth page with verify-email mode
       if (pathname === "/auth" && searchParams.get("mode") === "verify-email") {

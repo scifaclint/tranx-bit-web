@@ -7,6 +7,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { motion } from "framer-motion";
 // import { formVariants } from "@/lib/utils";
 import { Loader, Check, X } from "lucide-react";
+import { authApi } from "@/lib/api/auth";
+// import { useAuthStore } from "@/stores";
 import Image from "next/image";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -167,7 +169,7 @@ export const RegisterForm = ({
 
   const { formData, validation, updateFormData } = useFormValidation();
   const [showPasswordHelp, setShowPasswordHelp] = useState(false);
-
+  // const { setAuth } = useAuthStore();
   const passwordScore = useMemo(() => {
     const passwordValidation = validation.password;
     let score = 0;
@@ -256,7 +258,7 @@ export const RegisterForm = ({
     async (e: React.FormEvent) => {
       e.preventDefault();
       e.stopPropagation();
-
+      // console.log(formData);
       setIsLoading(true);
 
       try {
@@ -286,11 +288,22 @@ export const RegisterForm = ({
 
         // Registration logic here - will be implemented when backend is ready
         // For now, simulate successful registration
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        onRegister(formData.email);
-        setIsLoading(false);
+
+        const response = await authApi.register({
+          username: formData.username,
+          email: formData.email,
+          phone: formData.code + formData.phone,
+          password: formData.password,
+          password_confirmation: formData.confirmPassword,
+        });
+
+        if (response && response.data.to === "verify-email") {
+          onRegister(formData.email);
+          setIsLoading(false);
+        }
       } catch (error: unknown) {
         setIsLoading(false);
+        // console.log(error);
         const errorMessage =
           error instanceof Error
             ? error.message
