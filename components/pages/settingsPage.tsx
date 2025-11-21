@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
+import { toast } from "sonner";
 import {
   User,
   ShieldCheck,
@@ -201,8 +202,8 @@ export default function SettingsPage() {
                     onClick={() => setActiveTab(item.id)}
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all ${
                       isActive
-                        ? "bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 font-medium"
-                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                        ? "bg-primary/10 text-primary font-medium"
+                        : "hover:bg-muted"
                     }`}
                   >
                     <Icon
@@ -490,9 +491,13 @@ export default function SettingsPage() {
                         variant="outline"
                         className="border-blue-600 text-blue-600 hover:bg-blue-50"
                         onClick={() => {
-                          toast.info("Phone number change feature coming soon", {
-                            description: "You'll be able to update your phone number here.",
-                          });
+                          toast.info(
+                            "Phone number change feature coming soon",
+                            {
+                              description:
+                                "You'll be able to update your phone number here.",
+                            }
+                          );
                         }}
                       >
                         Change
@@ -544,7 +549,8 @@ export default function SettingsPage() {
                           className="bg-blue-600 hover:bg-blue-700 text-white"
                           onClick={() => {
                             toast.info("KYC verification feature coming soon", {
-                              description: "You'll be able to complete your identity verification here.",
+                              description:
+                                "You'll be able to complete your identity verification here.",
                             });
                           }}
                         >
@@ -676,7 +682,8 @@ export default function SettingsPage() {
                           className="border-blue-600 text-blue-600 hover:bg-blue-50"
                           onClick={() => {
                             toast.info("Password change feature coming soon", {
-                              description: "You'll be able to update your password here.",
+                              description:
+                                "You'll be able to update your password here.",
                             });
                           }}
                         >
@@ -736,7 +743,8 @@ export default function SettingsPage() {
         onConfirm={() => {
           // Account deletion will be implemented when backend is ready
           toast.success("Account deletion request submitted", {
-            description: "Your account will be deleted after verification. This action cannot be undone.",
+            description:
+              "Your account will be deleted after verification. This action cannot be undone.",
           });
         }}
         title="Delete Account"

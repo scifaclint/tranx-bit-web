@@ -4,7 +4,7 @@ import Sidebar from "@/components/layout/side-bar";
 import HeaderWithBalance from "@/components/layout/header-with-balance";
 import TawkToWidget from "@/components/services/twak-to-widget";
 import { usePathname } from "next/navigation";
-
+import PageWrapper from "@/components/layout/pageWrapper";
 const userData = {
   name: "John Doe",
   email: "john@gmail.com",
@@ -20,7 +20,7 @@ export default function AuthLayout({
   const pathname = usePathname();
 
   return (
-    <div className="min-h-screen flex bg-background dark:bg-gray-950">
+    <PageWrapper>
       <Sidebar onCollapse={setIsSidebarCollapsed} />
       <main
         className={`flex-1 transition-all duration-300 
@@ -41,6 +41,6 @@ export default function AuthLayout({
           user={userData}
         />
       )}
-    </div>
+    </PageWrapper>
   );
 }

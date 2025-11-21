@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { motion } from "framer-motion";
 // import { formVariants } from "@/lib/utils";
-import { Loader, Check, X, ChevronDown } from "lucide-react";
+import { Loader, Check, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -215,16 +215,22 @@ export const RegisterForm = ({
 
   // Compute if form is valid for submission
   const isFormValid = useMemo(() => {
-    const allPasswordRequirementsMet = Object.values(validation.password).every(Boolean);
-    const basicFieldsValid = validation.username && validation.email && validation.phone;
+    const allPasswordRequirementsMet = Object.values(validation.password).every(
+      Boolean
+    );
+    const basicFieldsValid =
+      validation.username && validation.email && validation.phone;
     // Only check forbidden password if password is actually filled
-    const passwordNotForbidden = formData.password ? !hasForbiddenPassword : true;
-    
-    const isValid = basicFieldsValid && allPasswordRequirementsMet && passwordNotForbidden;
-    
+    const passwordNotForbidden = formData.password
+      ? !hasForbiddenPassword
+      : true;
+
+    const isValid =
+      basicFieldsValid && allPasswordRequirementsMet && passwordNotForbidden;
+
     // Debug: Log validation state (remove in production)
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Form Validation State:', {
+    if (process.env.NODE_ENV === "development") {
+      console.log("Form Validation State:", {
         username: validation.username,
         email: validation.email,
         phone: validation.phone,
@@ -242,7 +248,7 @@ export const RegisterForm = ({
         isValid,
       });
     }
-    
+
     return isValid;
   }, [validation, hasForbiddenPassword, formData.password]);
 
@@ -250,7 +256,7 @@ export const RegisterForm = ({
     async (e: React.FormEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      
+
       setIsLoading(true);
 
       try {
@@ -294,7 +300,13 @@ export const RegisterForm = ({
         });
       }
     },
-    [formData, validation, isPasswordSameAsEmail, isPasswordSameAsUsername, onRegister]
+    [
+      formData,
+      validation,
+      isPasswordSameAsEmail,
+      isPasswordSameAsUsername,
+      onRegister,
+    ]
   );
 
   const currentCountry = COUNTRIES[formData.country];
@@ -306,17 +318,17 @@ export const RegisterForm = ({
         initial="hidden"
         animate="visible"
         exit="exit"
-        className="space-y-8 flex flex-col justify-center max-w-md mx-auto w-full py-8"
+        className="space-y-4 flex flex-col justify-center max-w-md mx-auto w-full py-4"
       >
         {/* Registration Form */}
         <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Input
               placeholder="Username"
               value={formData.username}
               onChange={(e) => updateFormData("username", e.target.value)}
               required
-              className="border-borderColorPrimary focus-visible:outline-none h-12"
+              className="border-borderColorPrimary focus-visible:outline-none h-10"
             />
             {formData.username && (
               <ValidationItem
@@ -326,14 +338,14 @@ export const RegisterForm = ({
             )}
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Input
               type="email"
               placeholder="Email Address"
               value={formData.email}
               onChange={(e) => updateFormData("email", e.target.value)}
               required
-              className="border-borderColorPrimary focus-visible:outline-none h-12"
+              className="border-borderColorPrimary focus-visible:outline-none h-10"
             />
             {formData.email && (
               <ValidationItem
@@ -343,19 +355,27 @@ export const RegisterForm = ({
             )}
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Select
               value={formData.country}
               onValueChange={(value) => {
                 updateFormData("country", value);
                 updateFormData("phone", "");
-                updateFormData("code", `${value === "ghana" ? "+233" : "+234"}`);
+                updateFormData(
+                  "code",
+                  `${value === "ghana" ? "+233" : "+234"}`
+                );
               }}
             >
-              <SelectTrigger className="border-borderColorPrimary focus-visible:outline-none h-12">
+              <SelectTrigger className="border-borderColorPrimary focus-visible:outline-none h-10">
                 <SelectValue>
                   <div className="flex items-center gap-2">
-                    <Image src={currentCountry.flag} alt={`${currentCountry.name} flag`} width={24} height={16} />
+                    <Image
+                      src={currentCountry.flag}
+                      alt={`${currentCountry.name} flag`}
+                      width={24}
+                      height={16}
+                    />
                     <span>{currentCountry.name}</span>
                   </div>
                 </SelectValue>
@@ -364,7 +384,12 @@ export const RegisterForm = ({
                 {Object.entries(COUNTRIES).map(([key, country]) => (
                   <SelectItem key={key} value={key}>
                     <div className="flex items-center gap-2">
-                      <Image src={country.flag} alt={`${country.name} flag`} width={24} height={16} />
+                      <Image
+                        src={country.flag}
+                        alt={`${country.name} flag`}
+                        width={24}
+                        height={16}
+                      />
                       <span>{country.name}</span>
                     </div>
                   </SelectItem>
@@ -375,10 +400,8 @@ export const RegisterForm = ({
 
           <div className="space-y-2">
             <div className="flex gap-2">
-              <div className="flex items-center justify-center px-3 border border-borderColorPrimary rounded-md bg-muted h-12 min-w-[80px]">
-                <span className="text-sm font-medium">
-                  {formData.code}
-                </span>
+              <div className="flex items-center justify-center px-3 border border-borderColorPrimary rounded-md bg-muted h-10 min-w-[80px]">
+                <span className="text-sm font-medium">{formData.code}</span>
               </div>
               <Input
                 type="tel"
@@ -389,7 +412,7 @@ export const RegisterForm = ({
                   updateFormData("phone", value);
                 }}
                 required
-                className="border-borderColorPrimary focus-visible:outline-none h-12 flex-1"
+                className="border-borderColorPrimary focus-visible:outline-none h-10 flex-1"
               />
             </div>
             {formData.phone && (
@@ -414,7 +437,7 @@ export const RegisterForm = ({
                   }}
                   onFocus={() => setShowPasswordHelp(true)}
                   required
-                  className="border-borderColorPrimary focus-visible:outline-none h-12"
+                  className="border-borderColorPrimary focus-visible:outline-none h-10"
                 />
               </PopoverTrigger>
               <PopoverContent
@@ -483,7 +506,7 @@ export const RegisterForm = ({
                 updateFormData("confirmPassword", e.target.value)
               }
               required
-              className="border-borderColorPrimary focus-visible:outline-none h-12"
+              className="border-borderColorPrimary focus-visible:outline-none h-10"
             />
             {formData.confirmPassword && (
               <ValidationItem
@@ -516,7 +539,7 @@ export const RegisterForm = ({
             variant="secondary"
             type="submit"
             disabled={isLoading || !isFormValid}
-            className="w-full bg-black hover:bg-gray-900 text-white h-12 mt-6 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-black hover:bg-gray-900 text-white h-10 mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? (
               <>

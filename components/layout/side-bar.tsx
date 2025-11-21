@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import ConfirmationModal from "@/components/modals/confirmation-modal";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
+// import { ThemeToggle } from "@/components/ui/theme-toggle";
 import {
   Tooltip,
   TooltipContent,
@@ -141,9 +141,9 @@ const Sidebar = ({ onCollapse, userType = "user" }: SidebarProps) => {
           ${
             isActive
               ? // Active state with fafafa background and gray text
-                "bg-[#fafafa] dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                "bg-primary/10 text-primary"
               : // Inactive state with hover
-                "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"
+                "hover:bg-muted"
           }
           ${isCollapsed ? "justify-center px-0" : "px-4"}
         `}
@@ -183,7 +183,7 @@ const Sidebar = ({ onCollapse, userType = "user" }: SidebarProps) => {
     <>
       {/* Logo Area */}
       <div
-        className={`p-6 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 ${
+        className={`p-6 bg-background border-b border-gray-200 dark:border-gray-800 ${
           isCollapsed ? "px-4" : ""
         }`}
       >
@@ -196,16 +196,16 @@ const Sidebar = ({ onCollapse, userType = "user" }: SidebarProps) => {
       </div>
 
       {/* Main Navigation */}
-      <nav className="flex-1 bg-white dark:bg-gray-900 px-4 py-6 space-y-2 overflow-y-auto">
+      <nav className="flex-1 bg-background px-4 py-6 space-y-2 overflow-y-auto">
         {navItems.map((item) => (
           <NavItem key={item.id} item={item} />
         ))}
       </nav>
 
       {/* Bottom Items */}
-      <div className="px-4 bg-white dark:bg-gray-900 py-6 border-t border-gray-200 dark:border-gray-800 space-y-2">
+      <div className="px-4 bg-background py-6 border-t border-gray-200 dark:border-gray-800 space-y-2">
         <div className="mb-2">
-          <ThemeToggle />
+          {/* <ThemeToggle /> */}
         </div>
         {bottomItems.map((item) => (
           <NavItem key={item.id} item={item} />

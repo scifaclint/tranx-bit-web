@@ -50,7 +50,7 @@ export default function DashboardPage() {
           onClick={() => {
             router.push("/buy-giftcards");
           }}
-          className="bg-cyan-50 dark:bg-cyan-950/30 rounded-2xl p-5 border-0 hover:shadow-md transition-all duration-200 cursor-pointer"
+          className="bg-background rounded-2xl p-5 border-0 hover:shadow-md transition-all duration-200 cursor-pointer"
         >
           <div className="flex flex-col items-center text-center space-y-3">
             <div className="w-12 h-12 bg-cyan-500 dark:bg-cyan-600 rounded-full flex items-center justify-center">
@@ -66,7 +66,7 @@ export default function DashboardPage() {
           onClick={() => {
             router.push("/sell-giftcards");
           }}
-          className="bg-blue-50 dark:bg-blue-950/30 rounded-2xl p-5 border-0 hover:shadow-md transition-all duration-200 cursor-pointer"
+          className="bg-background rounded-2xl p-5 border-0 hover:shadow-md transition-all duration-200 cursor-pointer"
         >
           <div className="flex flex-col items-center text-center space-y-3">
             <div className="w-12 h-12 bg-blue-500 dark:bg-blue-600 rounded-full flex items-center justify-center">
@@ -85,7 +85,7 @@ export default function DashboardPage() {
               position: "bottom-right",
             });
           }}
-          className="bg-orange-50 dark:bg-orange-950/30 rounded-2xl p-5 border-0 hover:shadow-md transition-all duration-200 cursor-pointer"
+          className="bg-background rounded-2xl p-5 border-0 hover:shadow-md transition-all duration-200 cursor-pointer"
         >
           <div className="flex flex-col items-center text-center space-y-3">
             <div className="w-12 h-12 bg-orange-500 dark:bg-orange-600 rounded-full flex items-center justify-center">
@@ -104,7 +104,7 @@ export default function DashboardPage() {
               position: "bottom-right",
             });
           }}
-          className="bg-purple-50 dark:bg-purple-950/30 rounded-2xl p-5 border-0 hover:shadow-md transition-all duration-200 cursor-pointer"
+          className="bg-background rounded-2xl p-5 border-0 hover:shadow-md transition-all duration-200 cursor-pointer"
         >
           <div className="flex flex-col items-center text-center space-y-3">
             <div className="w-12 h-12 bg-purple-500 dark:bg-purple-600 rounded-full flex items-center justify-center">
@@ -235,7 +235,7 @@ export default function DashboardPage() {
               {/* Animated background circle */}
               <div className="absolute inset-0 bg-blue-100 dark:bg-blue-950 rounded-full opacity-20 animate-pulse"></div>
               {/* Icon */}
-              <div className="relative bg-blue-50 dark:bg-blue-950/50 rounded-full p-6">
+              <div className="relative bg-background rounded-full p-6">
                 <FileText
                   className="h-12 w-12 text-blue-600"
                   strokeWidth={1.5}

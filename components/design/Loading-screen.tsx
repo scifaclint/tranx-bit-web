@@ -187,7 +187,7 @@ const TranxBitLoader: React.FC<TranxBitLoaderProps> = ({
   };
 
   const containerClasses = isForm
-    ? `w-full min-h-screen ${colors.bg} flex items-center justify-center overflow-hidden relative`
+    ? `w-full h-full ${colors.bg} flex items-center justify-center overflow-hidden relative`
     : `fixed inset-0 bg-gradient-to-br ${colors.bg} flex items-center justify-center overflow-hidden`;
 
   return (
