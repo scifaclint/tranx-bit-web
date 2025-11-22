@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -8,8 +8,6 @@ import { Loader } from "lucide-react";
 import { toast } from "sonner";
 import { authApi } from "@/lib/api/auth";
 import { useAuthStore } from "@/stores";
-// import { sendGAEvent } from "@next/third-parties/google";
-
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -22,6 +20,7 @@ const formVariants = {
   },
   exit: { opacity: 0, y: -20 },
 };
+
 interface LoginFormProps {
   onSwitchMode: () => void;
   onForgotPassword: () => void;
@@ -33,20 +32,24 @@ export function LoginForm({
   onForgotPassword,
   onVerify,
 }: LoginFormProps) {
-  const [username, setUsername] = useState("");
+  const [identifier, setIdentifier] = useState(""); // Can be username or email
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
- 
+
   const { setAuth } = useAuthStore();
   const router = useRouter();
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
 
-    // if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    //   toast.error("Please enter a valid email address");
-    //   return;
-    // }
+  const identifierType = useMemo(() => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(identifier.trim()) ? "email" : "username";
+  }, [identifier]);
+
+  const handleSubmit = async () => {
+    if (!identifier.trim()) {
+      toast.error("Please enter your username or email");
+      return;
+    }
 
     if (!password || password.length < 6) {
       toast.error("Password must be at least 6 characters");
@@ -57,23 +60,38 @@ export function LoginForm({
 
     try {
       const results = await authApi.login({
-        username,
-        password,
+        identifier: identifier.trim(),
+        identifierType: identifierType,
+        password: password,
       });
-      if (results && results.data.to === "verify-email") {
-        onVerify(results.data.user.email);
+
+      if (results.status && results.data) {
+        if (results.data.to === "verify-email") {
+          onVerify(results.data.user.email);
+          setIsLoading(false);
+          return;
+        }
+        setAuth(results.data.user, results.data.token);
+        toast.success("Login successful");
+        router.replace("/dashboard");
         return;
+      } else {
+        throw new Error(results.error || "Login failed");
       }
-      setAuth(results.data.user, results.data.token);
-      router.replace("/dashboard");
-      setIsLoading(false);
     } catch (error: any) {
       setPassword("");
+
       toast.error("Login failed", {
-        description:
-          error?.message || "Please check your credentials and try again.",
+        description: "Please check your credentials and try again.",
       });
+    } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleSubmit();
     }
   };
 
@@ -85,28 +103,16 @@ export function LoginForm({
       exit="exit"
       className="space-y-8 flex flex-col justify-center max-w-md mx-auto w-full py-8"
     >
-      {/* Google Sign In */}
-      {/* <GoogleButton /> */}
-
-      {/* Divider */}
-      {/* <div className="relative ">
-        <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t border-gray-300" />
-        </div>
-        <div className="relative flex justify-center text-sm">
-          <span className="bg-background px-2 text-muted-foreground">OR</span>
-        </div>
-      </div> */}
-
-      {/* Email/Password Form */}
-      <form onSubmit={handleSubmit} className="space-y-5">
-        <div>
+      <div className="space-y-5">
+        <div className="space-y-1">
           <Input
             type="text"
-            placeholder="Username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            placeholder="Username or Email"
+            value={identifier}
+            onChange={(e) => setIdentifier(e.target.value)}
+            onKeyPress={handleKeyPress}
             required
+            autoComplete="username"
             className="border-borderColorPrimary focus-visible:outline-none h-12"
           />
         </div>
@@ -117,7 +123,9 @@ export function LoginForm({
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            onKeyPress={handleKeyPress}
             required
+            autoComplete="current-password"
             className="border-borderColorPrimary focus-visible:outline-none h-12"
           />
         </div>
@@ -149,7 +157,8 @@ export function LoginForm({
 
         <Button
           variant="secondary"
-          type="submit"
+          type="button"
+          onClick={handleSubmit}
           className="w-full bg-black hover:bg-gray-900 text-white h-12 mt-6"
           disabled={isLoading}
         >
@@ -161,7 +170,7 @@ export function LoginForm({
             "Sign in"
           )}
         </Button>
-      </form>
+      </div>
 
       {/* Register Link */}
       <div className="text-center text-sm">

@@ -2,7 +2,8 @@ import { toast } from "sonner";
 import api from "./axios";
 
 export interface LoginCredentials {
-  username: string;
+  identifier: string;
+  identifierType: "email" | "username";
   password: string;
 }
 
@@ -112,7 +113,9 @@ export interface User {
 export const authApi = {
   login: async (credentials: LoginCredentials): Promise<LoginResponse> => {
     const response = await api.post("/auth/login", credentials);
-    // console.log('login response data', response.data);
+    if (!response) {
+      throw new Error("Login failed");
+    }
     return response.data;
   },
 
@@ -156,7 +159,7 @@ export const authApi = {
     email: string;
   }): Promise<ResendVerificationResponse> => {
     try {
-      const response = await api.post("/resend/code", data);
+      const response = await api.post("/auth/resend-verification-code", data);
       if (!response.data.status) {
         toast.error(response.data.message || "Failed to send code");
         throw new Error(response.data.message || "Failed to send code");

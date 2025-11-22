@@ -39,27 +39,28 @@ api.interceptors.response.use(
       const error = new Error(
         response.data.error || response.data.message || "Request failed"
       );
-      (error as any).response = response; // make it look like a normal Axios error
+      (error as any).response = response;
       return Promise.reject(error);
     }
 
-    return response; // normal succes
+    return response;
   },
   (error) => {
-    // console.log(error, 'axios error code');
     if (error.response?.status === 401) {
       const currentPath = window.location.pathname;
+
       if (currentPath !== "/auth") {
         sessionStorage.setItem("returnUrl", currentPath);
+        useAuthStore.getState().clearAuth();
+        window.location.href = "/auth";
+        return;
       }
 
       useAuthStore.getState().clearAuth();
-      window.location.href = "/auth";
-      return;
+      return Promise.reject(error);
     }
 
     const message = extractErrorMessage(error);
-    // Prevent duplicate toasts (optional)
     if (!axios.isCancel(error)) {
       toast.error(message);
     }

@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import TranxBitLogo from "../design/tranx-bit-logo";
 import { usePathname } from "next/navigation";
+
 interface LoadingAnimationProps {
   logo?: React.ReactNode;
   displayText?: string;
@@ -11,6 +12,8 @@ export default function LoadingAnimation({ logo }: LoadingAnimationProps) {
     switch (true) {
       case pathname.startsWith("/auth"):
         return "Authenticating your account";
+      case pathname.startsWith("/dashboard"):
+        return "Loading your account dashboard";
       default:
         return "Loading...";
     }
@@ -86,12 +89,13 @@ export default function LoadingAnimation({ logo }: LoadingAnimationProps) {
             <motion.div
               className="h-full bg-gradient-to-r from-cyan-500 to-blue-600 rounded-full"
               animate={{
-                x: ["-100%", "100%"],
+                x: ["-100%", "200%"],
               }}
               transition={{
                 duration: 1.5,
                 repeat: Infinity,
-                ease: "easeInOut",
+                ease: "linear",
+                repeatType: "loop",
               }}
               style={{ width: "50%" }}
             />

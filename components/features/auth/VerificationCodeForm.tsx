@@ -102,15 +102,16 @@ export function VerificationCodeForm({
         throw new Error("Code must contain only numbers");
       }
 
-      const formattedCode = `A-${verificationCode}`;
+      const formattedCode = `TR-${verificationCode}`;
       const results = await authApi.verifyEmail({
         email: email,
         code: formattedCode,
       });
-      setAuth(results.data.user, results.data.token);
-      router.replace("/dashboard");
-      toast.success("Email verified");
-      onSuccess();
+      if (results.status) {
+        setAuth(results.data.user, results.data.token);
+        router.replace("/dashboard");
+      }
+      // onSuccess();
     } catch (error: any) {
       setError(error.message || "Verification failed. Please try again.");
       toast.error(`${error.message || "Please check your code and try again"}`);
@@ -207,7 +208,7 @@ export function VerificationCodeForm({
           {/* Prefix */}
           <div className="flex items-center">
             <span className="text-lg xs:text-xl font-semibold text-foreground">
-              A -
+              TR -
             </span>
           </div>
 
