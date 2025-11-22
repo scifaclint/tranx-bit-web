@@ -172,7 +172,7 @@ export const authApi = {
   },
 
   forgotPassword: async (email: string): Promise<ForgotPasswordResponse> => {
-    const response = await api.post("/forgot-password", { email });
+    const response = await api.post("/auth/request-password-reset", { email });
     return response.data;
   },
 
