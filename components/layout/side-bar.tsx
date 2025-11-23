@@ -25,7 +25,7 @@ import {
   Settings,
   Users,
   CreditCard,
-  Wallet,
+  Clock,
 } from "lucide-react";
 
 export const AdminBaseRoute = "/internal-portal-Trx13";
@@ -83,6 +83,12 @@ const Sidebar = ({ onCollapse, userType = "user" }: SidebarProps) => {
       href: `${AdminBaseRoute}/dashboard`,
     },
     {
+      id: "pending-orders",
+      label: "Pending Orders",
+      icon: Clock,
+      href: `${AdminBaseRoute}/pending-orders`,
+    },
+    {
       id: "users",
       label: "Users",
       icon: Users,
@@ -93,12 +99,6 @@ const Sidebar = ({ onCollapse, userType = "user" }: SidebarProps) => {
       label: "Cards",
       icon: CreditCard,
       href: `${AdminBaseRoute}/cards`,
-    },
-    {
-      id: "accounting",
-      label: "Accounting",
-      icon: Wallet,
-      href: `${AdminBaseRoute}/accounting`,
     },
     {
       id: "settings",
