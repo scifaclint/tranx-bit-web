@@ -5,7 +5,7 @@ import { Menu } from "lucide-react";
 import Link from "next/link";
 import { useAuthMode } from "@/stores/ui-authState";
 import { useRouter } from "next/navigation";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
+// import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 // Navigation links array for easy mapping
 const navigationLinks = [
@@ -19,7 +19,7 @@ export function Header() {
   const { setAuthMode } = useAuthMode();
   return (
     <header className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-5xl px-4">
-      <div className="bg-white dark:bg-gray-900 rounded-full shadow-xl border border-gray-100 dark:border-gray-800 px-6 py-3 flex items-center justify-between">
+      <div className="bg-sideBarBackground rounded-full shadow-xl border border-gray-100 dark:border-gray-800 px-6 py-3 flex items-center justify-between">
         <Link
           href="#"
           className="flex items-center justify-center"
@@ -45,7 +45,7 @@ export function Header() {
           ))}
         </nav>
         <div className="flex items-center gap-3">
-          <ThemeToggle />
+          {/* <ThemeToggle /> */}
           <Button
             onClick={() => {
               setAuthMode("login");
@@ -87,6 +87,7 @@ export function Header() {
             </Button>
           </div>
         </div>
+        {/* will implement later */}
         <Button variant="ghost" className="lg:hidden">
           <Menu className="h-6 w-6" />
           <span className="sr-only">Toggle menu</span>

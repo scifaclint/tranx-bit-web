@@ -4,7 +4,14 @@ import React, { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FileText, ShoppingBag } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { FileText, ShoppingBag, Filter } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -27,7 +34,10 @@ export default function TransactionPage() {
   // Read filter from URL query parameter on mount
   useEffect(() => {
     const filterParam = searchParams.get("filter");
-    if (filterParam && ["all", "pending", "completed", "failed"].includes(filterParam)) {
+    if (
+      filterParam &&
+      ["all", "pending", "completed", "failed"].includes(filterParam)
+    ) {
       setActiveFilter(filterParam as FilterStatus);
     }
   }, [searchParams]);
@@ -61,6 +71,10 @@ export default function TransactionPage() {
     { label: "Failed", value: "failed" },
   ];
 
+  const getFilterLabel = () => {
+    return filters.find((f) => f.value === activeFilter)?.label || "All";
+  };
+
   // Filter transactions based on active filter
   const filteredTransactions =
     activeFilter === "all"
@@ -69,32 +83,39 @@ export default function TransactionPage() {
 
   return (
     <div className="w-full space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold">Transactions</h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          View and manage your gift card transactions
-        </p>
-      </div>
+      {/* Header with Filter Dropdown */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Transactions</h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            View and manage your gift card transactions
+          </p>
+        </div>
 
-      {/* Filter Pills */}
-      <div className="flex flex-wrap gap-2">
-        {filters.map((filter) => (
-          <button
-            key={filter.value}
-            onClick={() => setActiveFilter(filter.value)}
-            className={`
-              px-4 py-2 rounded-full text-sm font-medium transition-all duration-200
-              ${
-                activeFilter === filter.value
-                  ? "bg-blue-600 text-white shadow-md shadow-blue-600/30"
-                  : "bg-muted text-muted-foreground hover:bg-blue-50 dark:hover:bg-blue-950 hover:text-foreground"
-              }
-            `}
-          >
-            {filter.label}
-          </button>
-        ))}
+        {/* Filter Dropdown at Far Right */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="gap-2">
+              <Filter className="h-4 w-4" />
+              {getFilterLabel()}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-40">
+            {filters.map((filter) => (
+              <DropdownMenuItem
+                key={filter.value}
+                onClick={() => setActiveFilter(filter.value)}
+                className={`cursor-pointer ${
+                  activeFilter === filter.value
+                    ? "bg-black text-white dark:bg-white dark:text-black"
+                    : ""
+                }`}
+              >
+                {filter.label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Empty State or Transactions Table */}
@@ -133,34 +154,66 @@ export default function TransactionPage() {
           </div>
         </div>
       ) : (
-        <div className="border rounded-lg overflow-hidden bg-card max-h-[600px] flex flex-col">
-          {/* Table Header - Sticky */}
-          <div className="grid grid-cols-5 gap-4 p-4 bg-muted/50 border-b font-medium text-sm sticky top-0 z-10">
-            <div className="col-span-2">Transaction</div>
+        <div className="border rounded-lg overflow-hidden bg-card">
+          {/* Fixed Table Header */}
+          <div className="grid grid-cols-6 gap-4 px-4 py-3 bg-muted/50 border-b font-medium text-sm sticky top-0 z-10">
+            <div className="col-span-2">Product name</div>
             <div>Type</div>
+            <div>Amount</div>
             <div>Date</div>
-            <div className="text-right">Amount</div>
+            <div>Status</div>
           </div>
 
-          {/* Table Body - Scrollable */}
-          <div className="divide-y overflow-y-auto flex-1">
-            {filteredTransactions.map((transaction) => (
-              <div
-                key={transaction.id}
-                className="grid grid-cols-5 gap-4 p-4 hover:bg-muted/30 transition-colors cursor-pointer items-center"
-              >
-                {/* Transaction (Brand + Status) */}
-                <div className="col-span-2 flex items-center gap-3">
-                  <div className="relative w-10 h-10 flex-shrink-0 bg-muted rounded-lg p-2">
-                    <Image
-                      src={transaction.brandLogo}
-                      alt={transaction.brand}
-                      fill
-                      className="object-contain"
-                    />
+          {/* ScrollArea wrapping the table body */}
+          <ScrollArea className="h-[300px]">
+            <div className="divide-y">
+              {filteredTransactions.map((transaction) => (
+                <div
+                  key={transaction.id}
+                  className="grid grid-cols-6 gap-4 px-4 py-2.5 hover:bg-muted/30 transition-colors cursor-pointer items-center"
+                >
+                  {/* Product name (Brand) */}
+                  <div className="col-span-2 flex items-center gap-3">
+                    <div className="relative w-8 h-8 flex-shrink-0 bg-muted rounded-lg p-1.5">
+                      <Image
+                        src={transaction.brandLogo}
+                        alt={transaction.brand}
+                        fill
+                        className="object-contain"
+                      />
+                    </div>
+                    <span className="font-medium text-sm">
+                      {transaction.brand}
+                    </span>
                   </div>
-                  <div className="flex flex-col">
-                    <span className="font-medium">{transaction.brand}</span>
+
+                  {/* Type */}
+                  <div>
+                    <Badge
+                      variant="outline"
+                      className={`text-xs ${
+                        transaction.type === "buy"
+                          ? "border-green-500 text-green-700 dark:text-green-400"
+                          : "border-blue-500 text-blue-700 dark:text-blue-400"
+                      }`}
+                    >
+                      {transaction.type.charAt(0).toUpperCase() +
+                        transaction.type.slice(1)}
+                    </Badge>
+                  </div>
+
+                  {/* Amount */}
+                  <div className="font-semibold text-sm">
+                    ${transaction.amount.toFixed(2)}
+                  </div>
+
+                  {/* Date */}
+                  <div className="text-sm text-muted-foreground">
+                    {transaction.date}
+                  </div>
+
+                  {/* Status */}
+                  <div>
                     <Badge
                       variant={
                         transaction.status === "completed"
@@ -169,7 +222,7 @@ export default function TransactionPage() {
                           ? "secondary"
                           : "destructive"
                       }
-                      className={`w-fit mt-1 ${
+                      className={`w-fit text-xs ${
                         transaction.status === "completed"
                           ? "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400"
                           : transaction.status === "pending"
@@ -182,34 +235,9 @@ export default function TransactionPage() {
                     </Badge>
                   </div>
                 </div>
-
-                {/* Type */}
-                <div>
-                  <Badge
-                    variant="outline"
-                    className={`${
-                      transaction.type === "buy"
-                        ? "border-green-500 text-green-700 dark:text-green-400"
-                        : "border-blue-500 text-blue-700 dark:text-blue-400"
-                    }`}
-                  >
-                    {transaction.type.charAt(0).toUpperCase() +
-                      transaction.type.slice(1)}
-                  </Badge>
-                </div>
-
-                {/* Date */}
-                <div className="text-sm text-muted-foreground">
-                  {transaction.date}
-                </div>
-
-                {/* Amount */}
-                <div className="text-right font-semibold">
-                  ${transaction.amount.toFixed(2)}
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </ScrollArea>
         </div>
       )}
     </div>

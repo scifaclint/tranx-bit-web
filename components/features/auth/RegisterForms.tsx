@@ -5,8 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { motion } from "framer-motion";
-import { formVariants } from "@/lib/utils";
-import { Loader, Check, X, ChevronDown } from "lucide-react";
+// import { formVariants } from "@/lib/utils";
+import { Loader, Check, X } from "lucide-react";
+import { authApi } from "@/lib/api/auth";
+// import { useAuthStore } from "@/stores";
+import Image from "next/image";
 import Link from "next/link";
 import { toast } from "sonner";
 import {
@@ -23,6 +26,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+const formVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.3 },
+  },
+  exit: { opacity: 0, y: -20 },
+};
 interface RegisterFormProps {
   onSwitchMode: () => void;
   onRegister: (email: string) => void;
@@ -43,8 +55,8 @@ interface FormValidation {
 }
 
 const COUNTRIES = {
-  ghana: { name: "Ghana", code: "+233", flag: "🇬🇭" },
-  nigeria: { name: "Nigeria", code: "+234", flag: "🇳🇬" },
+  ghana: { name: "Ghana", code: "+233", flag: "/images/gh.svg" },
+  nigeria: { name: "Nigeria", code: "+234", flag: "/images/ng.svg" },
 };
 
 const useFormValidation = () => {
@@ -55,6 +67,7 @@ const useFormValidation = () => {
     phone: "",
     password: "",
     confirmPassword: "",
+    code: COUNTRIES["ghana"].code,
   });
 
   const [validation, setValidation] = useState<FormValidation>({
@@ -156,7 +169,7 @@ export const RegisterForm = ({
 
   const { formData, validation, updateFormData } = useFormValidation();
   const [showPasswordHelp, setShowPasswordHelp] = useState(false);
-
+  // const { setAuth } = useAuthStore();
   const passwordScore = useMemo(() => {
     const passwordValidation = validation.password;
     let score = 0;
@@ -204,16 +217,22 @@ export const RegisterForm = ({
 
   // Compute if form is valid for submission
   const isFormValid = useMemo(() => {
-    const allPasswordRequirementsMet = Object.values(validation.password).every(Boolean);
-    const basicFieldsValid = validation.username && validation.email && validation.phone;
+    const allPasswordRequirementsMet = Object.values(validation.password).every(
+      Boolean
+    );
+    const basicFieldsValid =
+      validation.username && validation.email && validation.phone;
     // Only check forbidden password if password is actually filled
-    const passwordNotForbidden = formData.password ? !hasForbiddenPassword : true;
-    
-    const isValid = basicFieldsValid && allPasswordRequirementsMet && passwordNotForbidden;
-    
+    const passwordNotForbidden = formData.password
+      ? !hasForbiddenPassword
+      : true;
+
+    const isValid =
+      basicFieldsValid && allPasswordRequirementsMet && passwordNotForbidden;
+
     // Debug: Log validation state (remove in production)
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Form Validation State:', {
+    if (process.env.NODE_ENV === "development") {
+      console.log("Form Validation State:", {
         username: validation.username,
         email: validation.email,
         phone: validation.phone,
@@ -231,7 +250,7 @@ export const RegisterForm = ({
         isValid,
       });
     }
-    
+
     return isValid;
   }, [validation, hasForbiddenPassword, formData.password]);
 
@@ -239,7 +258,7 @@ export const RegisterForm = ({
     async (e: React.FormEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      
+      // console.log(formData);
       setIsLoading(true);
 
       try {
@@ -269,18 +288,40 @@ export const RegisterForm = ({
 
         // Registration logic here - will be implemented when backend is ready
         // For now, simulate successful registration
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        onRegister(formData.email);
+
+        const response = await authApi.register({
+          username: formData.username,
+          email: formData.email,
+          phone: formData.code + formData.phone,
+          password: formData.password,
+          password_confirmation: formData.confirmPassword,
+          country: formData.country,
+
+        });
+
+        if (response && response.data.to === "verify-email") {
+          onRegister(formData.email);
+          setIsLoading(false);
+        }
+      } catch (error: unknown) {
         setIsLoading(false);
-      } catch (error: any) {
-        setIsLoading(false);
-        const errorMessage = error?.message || "Registration failed. Please try again.";
+        // console.log(error);
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : "Registration failed. Please try again.";
         toast.error(errorMessage, {
           description: "Please check your information and try again.",
         });
       }
     },
-    [formData, validation, isPasswordSameAsEmail, isPasswordSameAsUsername, onRegister]
+    [
+      formData,
+      validation,
+      isPasswordSameAsEmail,
+      isPasswordSameAsUsername,
+      onRegister,
+    ]
   );
 
   const currentCountry = COUNTRIES[formData.country];
@@ -292,17 +333,17 @@ export const RegisterForm = ({
         initial="hidden"
         animate="visible"
         exit="exit"
-        className="space-y-8 flex flex-col justify-center max-w-md mx-auto w-full py-8"
+        className="space-y-4 flex flex-col justify-center max-w-md mx-auto w-full py-4"
       >
         {/* Registration Form */}
         <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Input
               placeholder="Username"
               value={formData.username}
               onChange={(e) => updateFormData("username", e.target.value)}
               required
-              className="border-borderColorPrimary focus-visible:outline-none h-12"
+              className="border-borderColorPrimary focus-visible:outline-none h-10"
             />
             {formData.username && (
               <ValidationItem
@@ -312,14 +353,14 @@ export const RegisterForm = ({
             )}
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Input
               type="email"
               placeholder="Email Address"
               value={formData.email}
               onChange={(e) => updateFormData("email", e.target.value)}
               required
-              className="border-borderColorPrimary focus-visible:outline-none h-12"
+              className="border-borderColorPrimary focus-visible:outline-none h-10"
             />
             {formData.email && (
               <ValidationItem
@@ -329,29 +370,43 @@ export const RegisterForm = ({
             )}
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Select
               value={formData.country}
               onValueChange={(value) => {
                 updateFormData("country", value);
                 updateFormData("phone", "");
+                updateFormData(
+                  "code",
+                  `${value === "ghana" ? "+233" : "+234"}`
+                );
               }}
             >
-              <SelectTrigger className="border-borderColorPrimary focus-visible:outline-none h-12">
+              <SelectTrigger className="border-borderColorPrimary focus-visible:outline-none h-10">
                 <SelectValue>
-                  <span className="flex items-center gap-2">
-                    <span>{currentCountry.flag}</span>
+                  <div className="flex items-center gap-2">
+                    <Image
+                      src={currentCountry.flag}
+                      alt={`${currentCountry.name} flag`}
+                      width={24}
+                      height={16}
+                    />
                     <span>{currentCountry.name}</span>
-                  </span>
+                  </div>
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {Object.entries(COUNTRIES).map(([key, country]) => (
                   <SelectItem key={key} value={key}>
-                    <span className="flex items-center gap-2">
-                      <span>{country.flag}</span>
+                    <div className="flex items-center gap-2">
+                      <Image
+                        src={country.flag}
+                        alt={`${country.name} flag`}
+                        width={24}
+                        height={16}
+                      />
                       <span>{country.name}</span>
-                    </span>
+                    </div>
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -360,10 +415,8 @@ export const RegisterForm = ({
 
           <div className="space-y-2">
             <div className="flex gap-2">
-              <div className="flex items-center justify-center px-3 border border-borderColorPrimary rounded-md bg-muted h-12 min-w-[80px]">
-                <span className="text-sm font-medium">
-                  {currentCountry.code}
-                </span>
+              <div className="flex items-center justify-center px-3 border border-borderColorPrimary rounded-md bg-muted h-10 min-w-[80px]">
+                <span className="text-sm font-medium">{formData.code}</span>
               </div>
               <Input
                 type="tel"
@@ -374,7 +427,7 @@ export const RegisterForm = ({
                   updateFormData("phone", value);
                 }}
                 required
-                className="border-borderColorPrimary focus-visible:outline-none h-12 flex-1"
+                className="border-borderColorPrimary focus-visible:outline-none h-10 flex-1"
               />
             </div>
             {formData.phone && (
@@ -399,7 +452,7 @@ export const RegisterForm = ({
                   }}
                   onFocus={() => setShowPasswordHelp(true)}
                   required
-                  className="border-borderColorPrimary focus-visible:outline-none h-12"
+                  className="border-borderColorPrimary focus-visible:outline-none h-10"
                 />
               </PopoverTrigger>
               <PopoverContent
@@ -468,7 +521,7 @@ export const RegisterForm = ({
                 updateFormData("confirmPassword", e.target.value)
               }
               required
-              className="border-borderColorPrimary focus-visible:outline-none h-12"
+              className="border-borderColorPrimary focus-visible:outline-none h-10"
             />
             {formData.confirmPassword && (
               <ValidationItem
@@ -501,7 +554,7 @@ export const RegisterForm = ({
             variant="secondary"
             type="submit"
             disabled={isLoading || !isFormValid}
-            className="w-full bg-black hover:bg-gray-900 text-white h-12 mt-6 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-black hover:bg-gray-900 text-white h-10 mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? (
               <>

@@ -3,9 +3,10 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { Bell, Wallet, ListChecks, ArrowRight } from "lucide-react";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
+// import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import ProfileDropdown from "../profileDropdown";
 import { toast } from "sonner";
 import {
   Popover,
@@ -49,7 +50,7 @@ export default function HeaderWithBalance() {
   }, [emblaApi, isPaused]);
 
   // Pages where header should not be shown
-  const hiddenPages = ["/settings"];
+  const hiddenPages = ["/settings", "/transactions"];
 
   // Check if pathname matches hidden pages or dynamic routes for buy/sell
   const shouldHideHeader = () => {
@@ -85,46 +86,50 @@ export default function HeaderWithBalance() {
     <div className="w-full max-w-6xl mx-auto mb-6 sm:mb-8">
       {/* Header with User Profile and Notification */}
       <div className="flex items-center justify-between mb-6 sm:mb-8">
-        <button
-          onClick={() => router.push("/profile")}
+        <div
+          // onClick={() => router.push("/profile")}
           className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer group"
         >
-          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-lg group-hover:ring-2 group-hover:ring-indigo-400 transition-all">
-            JD
-          </div>
           <div>
-            <p className="text-gray-500 dark:text-gray-400 text-sm">Welcome,</p>
-            <p className="text-gray-900 dark:text-gray-100 font-semibold text-lg group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+            <p className="text-muted-foreground">Welcome,</p>
+            <p className="text-xl font-semibold">
               John Doe
             </p>
           </div>
-        </button>
+        </div>
 
         <div className="flex items-center gap-3">
-          <ThemeToggle />
+          {/* <ThemeToggle /> */}
           <Popover open={notificationOpen} onOpenChange={setNotificationOpen}>
-          <PopoverTrigger asChild>
-            <button className="relative p-3 rounded-full bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 shadow-sm">
-              <Bell size={20} className="text-gray-700 dark:text-gray-300" />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
-            </button>
-          </PopoverTrigger>
-          <PopoverContent className="w-80" align="end">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-gray-900 dark:text-gray-100">Notifications</h3>
-                <span className="text-xs text-gray-500 dark:text-gray-400">0 new</span>
+            <PopoverTrigger asChild>
+              <button className="relative p-3 rounded-full bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 shadow-sm">
+                <Bell size={20} className="text-gray-700 dark:text-gray-300" />
+                <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80" align="end">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                    Notifications
+                  </h3>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    0 new
+                  </span>
+                </div>
+                <div className="text-center py-6">
+                  <Bell className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                  <p className="text-gray-500 dark:text-gray-400 text-sm">
+                    No notifications yet
+                  </p>
+                  <p className="text-gray-400 dark:text-gray-500 text-xs mt-1">
+                    We&apos;ll notify you when something important happens
+                  </p>
+                </div>
               </div>
-              <div className="text-center py-8">
-                <Bell className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-                <p className="text-gray-500 dark:text-gray-400 text-sm">No notifications yet</p>
-                <p className="text-gray-400 dark:text-gray-500 text-xs mt-1">
-                  We&apos;ll notify you when something important happens
-                </p>
-              </div>
-            </div>
-          </PopoverContent>
-        </Popover>
+            </PopoverContent>
+          </Popover>
+          <ProfileDropdown />
         </div>
       </div>
 
@@ -135,8 +140,12 @@ export default function HeaderWithBalance() {
           <CardContent className="pt-6 pb-4">
             <div className="flex items-start justify-between">
               <div>
-                <h2 className="text-4xl font-bold text-gray-900 dark:text-gray-100">$0.1</h2>
-                <p className="text-gray-500 dark:text-gray-400 mt-2">Available Credits</p>
+                <h2 className="text-4xl font-bold text-gray-900 dark:text-gray-100">
+                  $0.1
+                </h2>
+                <p className="text-gray-500 dark:text-gray-400 mt-2">
+                  Available Credits
+                </p>
               </div>
               <div className="bg-black dark:bg-gray-700 p-4 rounded-full">
                 <Wallet className="w-8 h-8 text-white" />
@@ -167,8 +176,12 @@ export default function HeaderWithBalance() {
           <CardContent className="pt-6 pb-4">
             <div className="flex items-start justify-between">
               <div>
-                <h2 className="text-4xl font-bold text-gray-900 dark:text-gray-100">0</h2>
-                <p className="text-gray-500 dark:text-gray-400 mt-2">Pending Orders</p>
+                <h2 className="text-4xl font-bold text-gray-900 dark:text-gray-100">
+                  0
+                </h2>
+                <p className="text-gray-500 dark:text-gray-400 mt-2">
+                  Pending Orders
+                </p>
               </div>
               <div className="bg-black dark:bg-gray-700 p-4 rounded-full">
                 <ListChecks className="w-8 h-8 text-white" />
