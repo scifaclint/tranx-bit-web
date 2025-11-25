@@ -50,7 +50,7 @@ export default function HeaderWithBalance() {
   }, [emblaApi, isPaused]);
 
   // Pages where header should not be shown
-  const hiddenPages = ["/settings"];
+  const hiddenPages = ["/settings", "/transactions"];
 
   // Check if pathname matches hidden pages or dynamic routes for buy/sell
   const shouldHideHeader = () => {

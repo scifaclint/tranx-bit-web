@@ -295,6 +295,8 @@ export const RegisterForm = ({
           phone: formData.code + formData.phone,
           password: formData.password,
           password_confirmation: formData.confirmPassword,
+          country: formData.country,
+
         });
 
         if (response && response.data.to === "verify-email") {

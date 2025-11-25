@@ -380,7 +380,8 @@ export default function OrderDetailsPage() {
                         </p>
                         <Button
                           onClick={handleConfirmPayment}
-                          className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                          className="w-full "
+                          variant={"default"}
                         >
                           <Check className="w-4 h-4 mr-2" />I have sent the
                           funds
@@ -592,7 +593,8 @@ export default function OrderDetailsPage() {
                       disabled={
                         !selectedNetwork || !phoneNumber || isProcessing
                       }
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+                      className="w-full "
+                      variant={"default"}
                     >
                       {isProcessing ? (
                         <>

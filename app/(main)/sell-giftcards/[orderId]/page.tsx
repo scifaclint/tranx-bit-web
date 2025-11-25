@@ -192,7 +192,8 @@ export default function SellGiftcardOrderPage() {
         <div className="flex gap-4">
           <Button
             onClick={handleStartTrade}
-            className="flex-1 h-12 bg-blue-600 hover:bg-blue-700 text-white"
+            variant={"default"}
+            className="flex-1 h-12  "
           >
             Start Trade
           </Button>

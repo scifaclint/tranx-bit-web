@@ -14,6 +14,8 @@ export interface RegisterCredentials {
   password: string;
   password_confirmation: string;
   phone?: string;
+  country?: string;
+  code?: string;
 }
 
 export interface RegisterResponse {
@@ -69,6 +71,7 @@ export interface LoginResponse {
       registration_type: string;
       email_verified_at?: string | null;
       survey_remind?: boolean;
+      country?:string
     };
   };
 }
@@ -134,7 +137,7 @@ export const authApi = {
   },
 
   getUser: async (): Promise<AuthResponse> => {
-    const response = await api.post("/auth");
+    const response = await api.post("/auth/user");
     // console.log('checked', response.data);
     return response.data;
   },

@@ -6,6 +6,7 @@ import TawkToWidget from "@/components/services/twak-to-widget";
 import { usePathname } from "next/navigation";
 import PageWrapper from "@/components/layout/pageWrapper";
 import { RouteGuard } from "@/components/features/auth/RouteGuard";
+import DashBoardHeader from "@/components/layout/dashboardHeader";
 const userData = {
   name: "John Doe",
   email: "john@gmail.com",
