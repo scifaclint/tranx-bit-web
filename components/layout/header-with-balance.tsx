@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, Wallet, ListChecks, ArrowRight } from "lucide-react";
+import { Bell, Wallet, ListChecks, ArrowRight, LayoutDashboard } from "lucide-react";
 // import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,11 +21,19 @@ import {
   CarouselPrevious,
   type CarouselApi,
 } from "@/components/ui/carousel";
+import { useAuthStore } from "@/stores";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export default function HeaderWithBalance() {
   const pathname = usePathname();
   const router = useRouter();
-
+  const { user } = useAuthStore();
+  console.log(user)
   const ads = [
     { src: "/ads/amazon-ads.svg", alt: "Amazon Gift Cards" },
     { src: "/ads/netflix-ads.svg", alt: "Netflix Subscriptions" },
@@ -56,6 +64,9 @@ export default function HeaderWithBalance() {
   const shouldHideHeader = () => {
     // Hide on exact match pages
     if (hiddenPages.includes(pathname)) {
+      return true;
+    }
+    if (pathname.startsWith("/transactions/")) {
       return true;
     }
 
@@ -100,6 +111,25 @@ export default function HeaderWithBalance() {
 
         <div className="flex items-center gap-3">
           {/* <ThemeToggle /> */}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="rounded-xl border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 shadow-sm hidden sm:flex"
+                  onClick={() => {
+                    window.open('/internal-portal-Trx13/cards', '_blank');
+                  }}
+                >
+                  Admin Portal
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Switch to Admin Panel</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
           <Popover open={notificationOpen} onOpenChange={setNotificationOpen}>
             <PopoverTrigger asChild>
               <button className="relative p-3 rounded-full bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 shadow-sm">
@@ -141,7 +171,7 @@ export default function HeaderWithBalance() {
             <div className="flex items-start justify-between">
               <div>
                 <h2 className="text-4xl font-bold text-gray-900 dark:text-gray-100">
-                  $0.1
+                  $0.00
                 </h2>
                 <p className="text-gray-500 dark:text-gray-400 mt-2">
                   Available Credits

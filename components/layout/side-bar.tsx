@@ -76,18 +76,12 @@ const Sidebar = ({ onCollapse, userType = "user" }: SidebarProps) => {
 
   // Admin navigation items
   const adminNavItems = [
-    {
-      id: "dashboard",
-      label: "Dashboard",
-      icon: LayoutDashboard,
-      href: `${AdminBaseRoute}/dashboard`,
-    },
-    {
-      id: "users",
-      label: "Users",
-      icon: Users,
-      href: `${AdminBaseRoute}/users`,
-    },
+    // {
+    //   id: "dashboard",
+    //   label: "Dashboard",
+    //   icon: LayoutDashboard,
+    //   href: `${AdminBaseRoute}/dashboard`,
+    // },
     {
       id: "cards",
       label: "Cards",
@@ -95,17 +89,23 @@ const Sidebar = ({ onCollapse, userType = "user" }: SidebarProps) => {
       href: `${AdminBaseRoute}/cards`,
     },
     {
-      id: "accounting",
-      label: "Accounting",
-      icon: Wallet,
-      href: `${AdminBaseRoute}/accounting`,
+      id: "orders",
+      label: "Orders",
+      icon: Receipt,
+      href: `${AdminBaseRoute}/orders`,
     },
-    {
-      id: "settings",
-      label: "Settings",
-      icon: Settings,
-      href: `${AdminBaseRoute}/settings`,
-    },
+    // {
+    //   id: "users",
+    //   label: "Users",
+    //   icon: Users,
+    //   href: `${AdminBaseRoute}/users`,
+    // },
+    // {
+    //   id: "settings",
+    //   label: "Settings",
+    //   icon: Settings,
+    //   href: `${AdminBaseRoute}/settings`,
+    // },
   ];
 
   const navItems = userType === "admin" ? adminNavItems : userNavItems;
@@ -118,7 +118,10 @@ const Sidebar = ({ onCollapse, userType = "user" }: SidebarProps) => {
   const NavItem = ({ item }: { item: (typeof navItems)[number] }) => {
     // Use startsWith for buy and sell routes to keep them active on sub-routes
     const isActive =
-      item.href === "/buy-giftcards" || item.href === "/sell-giftcards"
+      item.href === "/buy-giftcards" ||
+        item.href === "/sell-giftcards" ||
+        item.href === "/transactions" ||
+        item.href.includes(`${AdminBaseRoute}/`)
         ? pathname.startsWith(item.href)
         : pathname === item.href;
 
@@ -131,19 +134,18 @@ const Sidebar = ({ onCollapse, userType = "user" }: SidebarProps) => {
         onClick={
           isLogout
             ? (e) => {
-                e.preventDefault();
-                setShowLogoutModal(true);
-              }
+              e.preventDefault();
+              setShowLogoutModal(true);
+            }
             : undefined
         }
         className={`
           w-full flex items-center gap-3 justify-start h-12 rounded-lg transition-all duration-300
-          ${
-            isActive
-              ? // Active state with fafafa background and gray text
-                "bg-primary/10 text-primary"
-              : // Inactive state with hover
-                "hover:bg-muted"
+          ${isActive
+            ? // Active state with fafafa background and gray text
+            "bg-primary/10 text-primary"
+            : // Inactive state with hover
+            "hover:bg-muted"
           }
           ${isCollapsed ? "justify-center px-0" : "px-4"}
         `}
@@ -183,9 +185,8 @@ const Sidebar = ({ onCollapse, userType = "user" }: SidebarProps) => {
     <>
       {/* Logo Area */}
       <div
-        className={`p-6 bg-background border-b border-gray-200 dark:border-gray-800 ${
-          isCollapsed ? "px-4" : ""
-        }`}
+        className={`p-6 bg-background border-b border-gray-200 dark:border-gray-800 ${isCollapsed ? "px-4" : ""
+          }`}
       >
         {/* <TranxBitLogo size="medium" variant="dark" /> */}
         {isCollapsed ? (

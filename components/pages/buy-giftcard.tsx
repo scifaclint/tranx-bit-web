@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/command";
 import { Minus, Plus, Check, ChevronDown, Loader2 } from "lucide-react";
 import Image from "next/image";
+import { toast } from "sonner";
 // import { cn } from "@/lib/utils";
 
 const brands = [
@@ -65,6 +66,7 @@ export default function BuyGiftCardPage() {
   const [selectedBrand, setSelectedBrand] = useState("");
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [quantity, setQuantity] = useState(1);
+  const [email, setEmail] = useState("");
 
   const amounts = [25, 30, 50];
 
@@ -105,12 +107,17 @@ export default function BuyGiftCardPage() {
       return;
     }
 
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+
     // Generate a random order ID (you can customize the format)
     const orderId = `ORD-${Date.now()}-${Math.random()
       .toString(36)
       .substring(2, 9)
       .toUpperCase()}`;
-    
+
     // Navigate to the order details page
     router.push(`/buy-giftcards/${orderId}`);
   };
@@ -212,21 +219,19 @@ export default function BuyGiftCardPage() {
               onClick={() => setSelectedAmount(amount)}
               className={`
                 relative p-[1px] rounded-lg border border-black/20 dark:border-gray-700 transition-all duration-200
-                ${
-                  selectedAmount === amount
-                    ? "border-black dark:border-gray-400"
-                    : "hover:border-black dark:hover:border-gray-600"
+                ${selectedAmount === amount
+                  ? "border-black dark:border-gray-400"
+                  : "hover:border-black dark:hover:border-gray-600"
                 }
               `}
             >
               <div
                 className={`
                 rounded-lg p-3 transition-all duration-200
-                ${
-                  selectedAmount === amount
+                ${selectedAmount === amount
                     ? "bg-black dark:bg-gray-700 text-white"
                     : "bg-backgroundSecondary dark:bg-gray-800"
-                }
+                  }
               `}
               >
                 <div className="text-base font-bold">${amount}</div>
@@ -276,6 +281,22 @@ export default function BuyGiftCardPage() {
             <Plus className="h-4 w-4" />
           </Button>
         </div>
+      </div>
+
+      {/* Email Address */}
+      <div className="space-y-2">
+        <Label htmlFor="email">Receiving Email Address</Label>
+        <Input
+          id="email"
+          type="email"
+          placeholder="Enter email address"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="h-10 focus:ring-2 focus:ring-black/20 dark:focus:ring-gray-400/20 focus:border-black dark:focus:border-gray-600 transition-all"
+        />
+        <p className="text-xs text-muted-foreground">
+          The gift card code will be sent to this email address.
+        </p>
       </div>
 
       {/* Calculated Total */}

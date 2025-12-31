@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -10,12 +10,22 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
-import { FileText, ShoppingBag, Filter } from "lucide-react";
-import Link from "next/link";
+import {
+  Filter,
+  ChevronRight,
+  TrendingUp,
+  TrendingDown,
+  Clock,
+  CheckCircle2,
+  XCircle,
+} from "lucide-react";
 import Image from "next/image";
 
 type FilterStatus = "all" | "pending" | "completed" | "failed";
+type FilterType = "all" | "buy" | "sell";
 
 interface Transaction {
   id: string;
@@ -28,63 +38,126 @@ interface Transaction {
 }
 
 export default function TransactionPage() {
+  const router = useRouter();
   const searchParams = useSearchParams();
-  const [activeFilter, setActiveFilter] = useState<FilterStatus>("all");
+  const [statusFilter, setStatusFilter] = useState<FilterStatus>("all");
+  const [typeFilter, setTypeFilter] = useState<FilterType>("all");
 
-  // Read filter from URL query parameter on mount
+  // Read filters from URL query parameters on mount
   useEffect(() => {
-    const filterParam = searchParams.get("filter");
+    const statusParam = searchParams.get("status");
+    const typeParam = searchParams.get("type");
+
     if (
-      filterParam &&
-      ["all", "pending", "completed", "failed"].includes(filterParam)
+      statusParam &&
+      ["all", "pending", "completed", "failed"].includes(statusParam)
     ) {
-      setActiveFilter(filterParam as FilterStatus);
+      setStatusFilter(statusParam as FilterStatus);
+    }
+
+    if (typeParam && ["all", "buy", "sell"].includes(typeParam)) {
+      setTypeFilter(typeParam as FilterType);
     }
   }, [searchParams]);
 
-  // Mock transactions
+  // Mock transactions - expanded for better demo
   const transactions: Transaction[] = [
     {
-      id: "1",
+      id: "TXN-2025-001",
       brand: "Amazon",
       brandLogo: "/brands/logo-amazon.svg",
       type: "sell",
-      date: "Oct 28, 2025",
+      date: "Dec 15, 2025",
       amount: 25.0,
       status: "completed",
     },
     {
-      id: "2",
+      id: "TXN-2025-002",
       brand: "iTunes",
       brandLogo: "/brands/itunes-1.svg",
       type: "buy",
-      date: "Oct 27, 2025",
+      date: "Dec 14, 2025",
       amount: 50.0,
+      status: "pending",
+    },
+    {
+      id: "TXN-2025-003",
+      brand: "Steam",
+      brandLogo: "/brands/steam-1.svg",
+      type: "buy",
+      date: "Dec 13, 2025",
+      amount: 100.0,
+      status: "completed",
+    },
+    {
+      id: "TXN-2025-004",
+      brand: "PlayStation",
+      brandLogo: "/brands/playstation-6.svg",
+      type: "sell",
+      date: "Dec 12, 2025",
+      amount: 75.0,
+      status: "failed",
+    },
+    {
+      id: "TXN-2025-005",
+      brand: "Apple",
+      brandLogo: "/brands/apple-11.svg",
+      type: "buy",
+      date: "Dec 11, 2025",
+      amount: 200.0,
       status: "pending",
     },
   ];
 
-  const filters: { label: string; value: FilterStatus }[] = [
-    { label: "All", value: "all" },
-    { label: "Pending", value: "pending" },
-    { label: "Completed", value: "completed" },
-    { label: "Failed", value: "failed" },
+  const statusFilters: {
+    label: string;
+    value: FilterStatus;
+    icon: React.ElementType;
+  }[] = [
+    { label: "All Status", value: "all", icon: Filter },
+    { label: "Pending", value: "pending", icon: Clock },
+    { label: "Completed", value: "completed", icon: CheckCircle2 },
+    { label: "Failed", value: "failed", icon: XCircle },
   ];
 
-  const getFilterLabel = () => {
-    return filters.find((f) => f.value === activeFilter)?.label || "All";
+  const typeFilters: {
+    label: string;
+    value: FilterType;
+    icon: React.ElementType;
+  }[] = [
+    { label: "All Types", value: "all", icon: Filter },
+    { label: "Buy", value: "buy", icon: TrendingUp },
+    { label: "Sell", value: "sell", icon: TrendingDown },
+  ];
+
+  const getStatusLabel = () => {
+    return (
+      statusFilters.find((f) => f.value === statusFilter)?.label || "All Status"
+    );
   };
 
-  // Filter transactions based on active filter
-  const filteredTransactions =
-    activeFilter === "all"
-      ? transactions
-      : transactions.filter((t) => t.status === activeFilter);
+  const getTypeLabel = () => {
+    return (
+      typeFilters.find((f) => f.value === typeFilter)?.label || "All Types"
+    );
+  };
+
+  // Filter transactions based on active filters
+  const filteredTransactions = transactions.filter((t) => {
+    const statusMatch = statusFilter === "all" || t.status === statusFilter;
+    const typeMatch = typeFilter === "all" || t.type === typeFilter;
+    return statusMatch && typeMatch;
+  });
+
+  // Handle row click
+  const handleRowClick = (transactionId: string) => {
+    router.push(`/transactions/${transactionId}`);
+  };
 
   return (
     <div className="w-full space-y-6">
-      {/* Header with Filter Dropdown */}
-      <div className="flex items-center justify-between">
+      {/* Header with Filter Dropdowns */}
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-2xl font-bold">Transactions</h1>
           <p className="text-muted-foreground text-sm mt-1">
@@ -92,110 +165,127 @@ export default function TransactionPage() {
           </p>
         </div>
 
-        {/* Filter Dropdown at Far Right */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="gap-2">
-              <Filter className="h-4 w-4" />
-              {getFilterLabel()}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-40">
-            {filters.map((filter) => (
-              <DropdownMenuItem
-                key={filter.value}
-                onClick={() => setActiveFilter(filter.value)}
-                className={`cursor-pointer ${
-                  activeFilter === filter.value
-                    ? "bg-black text-white dark:bg-white dark:text-black"
-                    : ""
-                }`}
-              >
-                {filter.label}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {/* Filter Controls */}
+        <div className="flex items-center gap-3">
+          {/* Status Filter */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="gap-2 min-w-[140px]">
+                <Filter className="h-4 w-4" />
+                {getStatusLabel()}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuLabel className="text-xs text-muted-foreground">
+                Filter by Status
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {statusFilters.map((filter) => {
+                const Icon = filter.icon;
+                return (
+                  <DropdownMenuItem
+                    key={filter.value}
+                    onClick={() => setStatusFilter(filter.value)}
+                    className={`cursor-pointer flex items-center gap-2 ${
+                      statusFilter === filter.value
+                        ? "bg-black text-white dark:bg-white dark:text-black"
+                        : ""
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {filter.label}
+                  </DropdownMenuItem>
+                );
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Type Filter */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="gap-2 min-w-[130px]">
+                <Filter className="h-4 w-4" />
+                {getTypeLabel()}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44">
+              <DropdownMenuLabel className="text-xs text-muted-foreground">
+                Filter by Type
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {typeFilters.map((filter) => {
+                const Icon = filter.icon;
+                return (
+                  <DropdownMenuItem
+                    key={filter.value}
+                    onClick={() => setTypeFilter(filter.value)}
+                    className={`cursor-pointer flex items-center gap-2 ${
+                      typeFilter === filter.value
+                        ? "bg-black text-white dark:bg-white dark:text-black"
+                        : ""
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {filter.label}
+                  </DropdownMenuItem>
+                );
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
-      {/* Empty State or Transactions Table */}
+      {/* Transaction Table */}
       {filteredTransactions.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 px-4">
-          <div className="relative mb-6">
-            {/* Animated background circle */}
-            <div className="absolute inset-0 bg-blue-100 dark:bg-blue-950 rounded-full opacity-20 animate-pulse"></div>
-            {/* Icon */}
-            <div className="relative bg-blue-50 dark:bg-blue-950/50 rounded-full p-6">
-              <FileText className="h-12 w-12 text-blue-600" strokeWidth={1.5} />
-            </div>
-          </div>
-
-          <h3 className="text-xl font-semibold mb-2">No Transactions Yet</h3>
-          <p className="text-muted-foreground text-center mb-6 max-w-md">
-            Your transaction history will appear here once you start buying or
-            selling gift cards.
-          </p>
-
-          <div className="flex flex-wrap gap-3 justify-center">
-            <Link href="/buy-giftcards">
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-600/30">
-                <ShoppingBag className="h-4 w-4 mr-2" />
-                Buy Gift Card
-              </Button>
-            </Link>
-            <Link href="/sell-giftcards">
-              <Button
-                variant="outline"
-                className="hover:bg-blue-50 dark:hover:bg-blue-950 hover:border-blue-500"
-              >
-                Sell Gift Card
-              </Button>
-            </Link>
-          </div>
+        <div className="text-center py-12 border rounded-lg bg-muted/20">
+          <p className="text-muted-foreground">No transactions found</p>
         </div>
       ) : (
-        <div className="border rounded-lg overflow-hidden bg-card">
-          {/* Fixed Table Header */}
-          <div className="grid grid-cols-6 gap-4 px-4 py-3 bg-muted/50 border-b font-medium text-sm sticky top-0 z-10">
-            <div className="col-span-2">Product name</div>
+        <div className="border rounded-lg overflow-hidden bg-card shadow-sm">
+          {/* Table Header */}
+          <div className="grid grid-cols-[2fr_1fr_1fr_1.2fr_1fr_auto] gap-4 px-6 py-4 bg-muted/50 border-b font-semibold text-sm">
+            <div>Product name</div>
             <div>Type</div>
             <div>Amount</div>
             <div>Date</div>
             <div>Status</div>
+            <div className="w-8"></div>
           </div>
 
-          {/* ScrollArea wrapping the table body */}
-          <ScrollArea className="h-[300px]">
-            <div className="divide-y">
+          {/* Table Body with ScrollArea */}
+          <ScrollArea className="h-[500px]">
+            <div className="divide-y divide-border/50">
               {filteredTransactions.map((transaction) => (
                 <div
                   key={transaction.id}
-                  className="grid grid-cols-6 gap-4 px-4 py-2.5 hover:bg-muted/30 transition-colors cursor-pointer items-center"
+                  onClick={() => handleRowClick(transaction.id)}
+                  className="grid grid-cols-[2fr_1fr_1fr_1.2fr_1fr_auto] gap-4 px-6 py-4 hover:bg-muted/40 transition-all duration-200 cursor-pointer items-center group"
                 >
                   {/* Product name (Brand) */}
-                  <div className="col-span-2 flex items-center gap-3">
-                    <div className="relative w-8 h-8 flex-shrink-0 bg-muted rounded-lg p-1.5">
+                  <div className="flex items-center gap-3">
+                    <div className="relative w-10 h-10 flex-shrink-0 bg-muted/60 rounded-lg p-2 ring-1 ring-border/50 group-hover:ring-border transition-all">
                       <Image
                         src={transaction.brandLogo}
                         alt={transaction.brand}
                         fill
-                        className="object-contain"
+                        className="object-contain p-1"
                       />
                     </div>
-                    <span className="font-medium text-sm">
-                      {transaction.brand}
-                    </span>
+                    <div className="flex flex-col">
+                      <span className="font-medium text-sm group-hover:text-foreground/80 transition-colors">
+                        {transaction.brand}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {transaction.id}
+                      </span>
+                    </div>
                   </div>
 
                   {/* Type */}
                   <div>
                     <Badge
                       variant="outline"
-                      className={`text-xs ${
-                        transaction.type === "buy"
-                          ? "border-green-500 text-green-700 dark:text-green-400"
-                          : "border-blue-500 text-blue-700 dark:text-blue-400"
-                      }`}
+                      className="text-xs font-medium w-fit"
                     >
                       {transaction.type.charAt(0).toUpperCase() +
                         transaction.type.slice(1)}
@@ -203,7 +293,7 @@ export default function TransactionPage() {
                   </div>
 
                   {/* Amount */}
-                  <div className="font-semibold text-sm">
+                  <div className="font-semibold text-sm tabular-nums">
                     ${transaction.amount.toFixed(2)}
                   </div>
 
@@ -215,24 +305,32 @@ export default function TransactionPage() {
                   {/* Status */}
                   <div>
                     <Badge
-                      variant={
+                      variant="outline"
+                      className={`w-fit text-xs font-medium flex items-center gap-1.5 ${
                         transaction.status === "completed"
-                          ? "default"
+                          ? "border-green-300 bg-green-50 text-green-700 dark:border-green-700 dark:bg-green-950/30 dark:text-green-400"
                           : transaction.status === "pending"
-                          ? "secondary"
-                          : "destructive"
-                      }
-                      className={`w-fit text-xs ${
-                        transaction.status === "completed"
-                          ? "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400"
-                          : transaction.status === "pending"
-                          ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-400"
-                          : ""
+                          ? "border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-400"
+                          : "border-red-300 bg-red-50 text-red-700 dark:border-red-700 dark:bg-red-950/30 dark:text-red-400"
                       }`}
                     >
+                      {transaction.status === "completed" && (
+                        <CheckCircle2 className="h-3 w-3" />
+                      )}
+                      {transaction.status === "pending" && (
+                        <Clock className="h-3 w-3" />
+                      )}
+                      {transaction.status === "failed" && (
+                        <XCircle className="h-3 w-3" />
+                      )}
                       {transaction.status.charAt(0).toUpperCase() +
                         transaction.status.slice(1)}
                     </Badge>
+                  </div>
+
+                  {/* Arrow Icon */}
+                  <div className="flex items-center justify-end">
+                    <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground group-hover:translate-x-1 transition-all" />
                   </div>
                 </div>
               ))}

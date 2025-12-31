@@ -100,7 +100,7 @@ export default function DashboardPage() {
         <Card
           onClick={() => {
             toast.info("Coming Soon!", {
-              description: "BTC exchange feature is coming soon.",
+              description: "P2P   feature is coming soon.",
               position: "bottom-right",
             });
           }}
@@ -111,7 +111,7 @@ export default function DashboardPage() {
               <DollarSign size={24} className="text-white" />
             </div>
             <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">
-              BTC exchange
+              P2P
             </p>
           </div>
         </Card>
@@ -182,18 +182,17 @@ export default function DashboardPage() {
                           transaction.status === "completed"
                             ? "default"
                             : transaction.status === "pending"
-                            ? "secondary"
-                            : "destructive"
+                              ? "secondary"
+                              : "destructive"
                         }
-                        className={`w-fit mt-1 text-xs ${
-                          transaction.status === "completed"
-                            ? "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400"
-                            : transaction.status === "pending"
+                        className={`w-fit mt-1 text-xs ${transaction.status === "completed"
+                          ? "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400"
+                          : transaction.status === "pending"
                             ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-400"
                             : transaction.status === "review"
-                            ? "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400"
-                            : ""
-                        }`}
+                              ? "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400"
+                              : ""
+                          }`}
                       >
                         {transaction.status.charAt(0).toUpperCase() +
                           transaction.status.slice(1)}
@@ -205,11 +204,10 @@ export default function DashboardPage() {
                   <div>
                     <Badge
                       variant="outline"
-                      className={`text-xs ${
-                        transaction.type === "buy"
-                          ? "border-green-500 text-green-700 dark:text-green-400"
-                          : "border-blue-500 text-blue-700 dark:text-blue-400"
-                      }`}
+                      className={`text-xs ${transaction.type === "buy"
+                        ? "border-green-500 text-green-700 dark:text-green-400"
+                        : "border-blue-500 text-blue-700 dark:text-blue-400"
+                        }`}
                     >
                       {transaction.type.charAt(0).toUpperCase() +
                         transaction.type.slice(1)}

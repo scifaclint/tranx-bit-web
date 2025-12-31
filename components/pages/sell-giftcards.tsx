@@ -33,8 +33,6 @@ import {
   Info,
   Upload,
   X,
-  Eye,
-  EyeOff,
   Plus,
 } from "lucide-react";
 import Image from "next/image";
@@ -83,7 +81,6 @@ export default function SellGiftCards() {
   const [selectedBrand, setSelectedBrand] = useState("");
   const [amount, setAmount] = useState("");
   const [giftCardCode, setGiftCardCode] = useState("");
-  const [showCode, setShowCode] = useState(false);
   const [comment, setComment] = useState("");
   const [frontImage, setFrontImage] = useState<File | null>(null);
   const [backImage, setBackImage] = useState<File | null>(null);
@@ -376,26 +373,13 @@ export default function SellGiftCards() {
             {/* Gift Card Code */}
             <div className="space-y-2">
               <Label>Gift Card Code</Label>
-              <div className="relative">
-                <Input
-                  type={showCode ? "text" : "password"}
-                  placeholder="Enter your gift card code"
-                  value={giftCardCode}
-                  onChange={(e) => setGiftCardCode(e.target.value)}
-                  className="pr-10 focus:ring-2 focus:ring-black/20 focus:border-black transition-all"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowCode(!showCode)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  {showCode ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </button>
-              </div>
+              <Input
+                type="text"
+                placeholder="Enter your gift card code"
+                value={giftCardCode}
+                onChange={(e) => setGiftCardCode(e.target.value)}
+                className="focus:ring-2 focus:ring-black/20 focus:border-black transition-all"
+              />
             </div>
 
             {/* Payment Method Selector */}
@@ -449,11 +433,10 @@ export default function SellGiftCards() {
                             }}
                           >
                             <Check
-                              className={`mr-2 h-4 w-4 ${
-                                selectedPaymentMethod === method.value
+                              className={`mr-2 h-4 w-4 ${selectedPaymentMethod === method.value
                                   ? "opacity-100"
                                   : "opacity-0"
-                              }`}
+                                }`}
                             />
                             {method.label}
                           </CommandItem>
@@ -785,11 +768,10 @@ export default function SellGiftCards() {
                               }}
                             >
                               <Check
-                                className={`mr-2 h-4 w-4 ${
-                                  selectedPaymentMethod === method.value
+                                className={`mr-2 h-4 w-4 ${selectedPaymentMethod === method.value
                                     ? "opacity-100"
                                     : "opacity-0"
-                                }`}
+                                  }`}
                               />
                               {method.label}
                             </CommandItem>
