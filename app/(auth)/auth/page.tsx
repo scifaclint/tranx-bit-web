@@ -21,7 +21,7 @@ import TranxBitLoader from "@/components/design/Loading-screen";
 //   | "verify-email";
 
 function AuthPageInner() {
-  const { theme } = useTheme();
+  const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const { authMode, setAuthMode, initializeFromUrl } = useAuthMode();
   const [resetEmail, setResetEmail] = useState<string>("");
@@ -142,7 +142,7 @@ function AuthPageInner() {
     <div className="max-w-md mx-auto">
       <div className="flex items-center justify-center gap-2 mb-8">
         <TranxBitLogo
-          variant={mounted && theme === "dark" ? "light" : "dark"}
+          variant={mounted && resolvedTheme === "dark" ? "light" : "dark"}
           size="medium"
         />
       </div>
@@ -163,7 +163,7 @@ function AuthPageInner() {
 }
 
 export default function AuthPage() {
-  const { theme } = useTheme();
+  const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -174,7 +174,7 @@ export default function AuthPage() {
     <Suspense
       fallback={
         <TranxBitLoader
-          variant={mounted && theme === "dark" ? "dark" : "light"}
+          variant={mounted && resolvedTheme === "dark" ? "dark" : "light"}
           isForm={true}
         />
       }

@@ -8,7 +8,7 @@ export default function AuthLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { theme } = useTheme();
+  const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -28,7 +28,7 @@ export default function AuthLayout({
           {/* inner container to center / size the visual area */}
           <div className="absolute inset-0 flex items-center justify-center">
             {/* TranxBitLoader cannot accept className, so we wrap it */}
-            <TranxBitLoader variant={mounted && theme === "dark" ? "dark" : "light"} isForm />
+            <TranxBitLoader variant={mounted && resolvedTheme === "dark" ? "dark" : "light"} isForm />
           </div>
         </div>
       </div>
