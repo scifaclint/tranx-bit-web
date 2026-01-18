@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -20,12 +20,15 @@ import {
   Smartphone,
   Bitcoin,
   AlertCircle,
-  Loader2,
+  Loader,
   Info,
   ArrowLeft,
+
 } from "lucide-react";
 import Image from "next/image";
 import { toast } from "sonner";
+import { ordersApi, OrderDetailsResponse } from "@/lib/api/orders";
+import { PAYMENT_LOGOS, NETWORK_LABELS } from "@/lib/payment-constants";
 
 type PaymentMethod = "mobile_money" | "bitcoin" | "";
 type PaymentMode = "manual" | "automated";
@@ -45,24 +48,36 @@ export default function OrderDetailsPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentSent, setPaymentSent] = useState(false);
 
-  // Mock order data
-  const orderData = {
-    id: orderId,
-    brand: {
-      name: "Amazon",
-      logo: "/brands/logo-amazon.svg",
-    },
-    amount: 50,
-    quantity: 2,
-    total: 100,
-    status: "pending_payment",
-    createdAt: new Date().toISOString(),
-  };
+  // Order data state
+  const [orderData, setOrderData] = useState<OrderDetailsResponse["data"] | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchOrder = async () => {
+      try {
+        const response = await ordersApi.getOrderDetails(orderId);
+        if (response.status && response.data) {
+          setOrderData(response.data);
+        } else {
+          toast.error("Order not found");
+          router.push("/buy-giftcards");
+        }
+      } catch (error: any) {
+        const errorMessage = error?.response?.data?.message || "Failed to load order";
+        toast.error(errorMessage);
+        router.push("/buy-giftcards");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchOrder();
+  }, [orderId, router]);
 
   // Mock payment details
   const paymentDetails = {
     mobile_money: {
-      network: "MTN Mobile Money",
+      network: NETWORK_LABELS.telecel,
       phoneNumber: "+233 24 123 4567",
       amount: "GHS 450.00",
       reference: "4fGH8K",
@@ -70,7 +85,7 @@ export default function OrderDetailsPage() {
     bitcoin: {
       address: "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh",
       amount: "0.00123",
-      amountUsd: orderData.total,
+      amountUsd: orderData?.totalAmount || 0,
     },
   };
 
@@ -82,8 +97,10 @@ export default function OrderDetailsPage() {
   };
 
   const handleConfirmPayment = () => {
-    toast.success("Payment confirmation submitted!");
-    console.log("Payment confirmed for order:", orderId);
+    // Payment confirmation will be handled by backend
+    toast.success("Payment confirmation submitted!", {
+      description: "Your payment is being processed. You will receive a confirmation email shortly.",
+    });
   };
 
   const handleAutomatedPayment = async () => {
@@ -101,6 +118,27 @@ export default function OrderDetailsPage() {
       toast.success("Payment request sent to your phone!");
     }, 2000);
   };
+
+  if (isLoading) {
+    return (
+      <div className="w-full max-w-6xl mx-auto flex items-center justify-center min-h-[400px]">
+        <div className="flex flex-col items-center gap-3">
+          <Loader className="h-8 w-8 animate-spin text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">Loading order details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!orderData) {
+    return null;
+  }
+
+  const firstItem = orderData.items?.[0];
+  const cardBrand = firstItem?.cardBrand || "Gift Card";
+  const cardAmount = firstItem?.unitPrice || 0;
+  const quantity = firstItem?.quantity || orderData.totalItems || 1;
+  const totalAmount = orderData.totalAmount || 0;
 
   return (
     <div className="w-full max-w-6xl mx-auto space-y-6">
@@ -130,10 +168,10 @@ export default function OrderDetailsPage() {
             Order ID:
           </span>
           <code className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded text-sm font-mono">
-            {orderId}
+            {orderData.orderNumber}
           </code>
           <button
-            onClick={() => handleCopy(orderId, "orderId")}
+            onClick={() => handleCopy(orderData.orderNumber, "orderId")}
             className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
           >
             {copiedField === "orderId" ? (
@@ -156,17 +194,12 @@ export default function OrderDetailsPage() {
           <div className="space-y-4">
             {/* Brand Info */}
             <div className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
-              <div className="relative w-16 h-16 flex-shrink-0">
-                <Image
-                  src={orderData.brand.logo}
-                  alt={orderData.brand.name}
-                  fill
-                  className="object-contain"
-                />
+              <div className="relative w-16 h-16 flex-shrink-0 bg-muted rounded-lg flex items-center justify-center">
+                <span className="text-xs font-bold">{cardBrand.substring(0, 2).toUpperCase()}</span>
               </div>
               <div>
                 <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-                  {orderData.brand.name} Gift Card
+                  {cardBrand} Gift Card
                 </h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   Digital delivery
@@ -181,7 +214,7 @@ export default function OrderDetailsPage() {
                   Card Value
                 </span>
                 <span className="font-medium text-gray-900 dark:text-gray-100">
-                  ${orderData.amount}
+                  ${cardAmount.toFixed(2)}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
@@ -189,7 +222,7 @@ export default function OrderDetailsPage() {
                   Quantity
                 </span>
                 <span className="font-medium text-gray-900 dark:text-gray-100">
-                  {orderData.quantity}
+                  {quantity}
                 </span>
               </div>
               <div className="border-t border-gray-200 dark:border-gray-700 pt-2 mt-2">
@@ -198,7 +231,7 @@ export default function OrderDetailsPage() {
                     Total Amount
                   </span>
                   <span className="text-xl font-bold text-blue-600">
-                    ${orderData.total}
+                    ${totalAmount.toFixed(2)}
                   </span>
                 </div>
               </div>
@@ -235,21 +268,19 @@ export default function OrderDetailsPage() {
               <div className="grid grid-cols-2 gap-2 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg">
                 <button
                   onClick={() => setPaymentMode("manual")}
-                  className={`px-4 py-2.5 rounded-md font-medium text-sm transition-all ${
-                    paymentMode === "manual"
-                      ? "bg-white dark:bg-gray-900 text-blue-600 shadow-sm"
-                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
-                  }`}
+                  className={`px-4 py-2.5 rounded-md font-medium text-sm transition-all ${paymentMode === "manual"
+                    ? "bg-white dark:bg-gray-900 text-blue-600 shadow-sm"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+                    }`}
                 >
                   Manual Payment
                 </button>
                 <button
                   onClick={() => setPaymentMode("automated")}
-                  className={`px-4 py-2.5 rounded-md font-medium text-sm transition-all ${
-                    paymentMode === "automated"
-                      ? "bg-white dark:bg-gray-900 text-blue-600 shadow-sm"
-                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
-                  }`}
+                  className={`px-4 py-2.5 rounded-md font-medium text-sm transition-all ${paymentMode === "automated"
+                    ? "bg-white dark:bg-gray-900 text-blue-600 shadow-sm"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+                    }`}
                 >
                   Automated Payment
                 </button>
@@ -291,8 +322,16 @@ export default function OrderDetailsPage() {
                 {/* Mobile Money Payment Details */}
                 {paymentMethod === "mobile_money" && (
                   <Card className="p-4 border-2 border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20">
-                    <div className="flex items-center gap-2 mb-4">
-                      <Smartphone className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-8 h-8 flex items-center justify-center p-1 bg-white dark:bg-gray-900 rounded-md border border-gray-200 dark:border-gray-800">
+                        <Image
+                          src={PAYMENT_LOGOS.mtn} // Defaulting to MTN logo for generic momo manual view if no network known, but usually we know it from paymentDetails
+                          alt="Mobile Money"
+                          width={24}
+                          height={24}
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
                       <h3 className="font-semibold text-gray-900 dark:text-gray-100">
                         Mobile Money Payment
                       </h3>
@@ -378,7 +417,8 @@ export default function OrderDetailsPage() {
                         </p>
                         <Button
                           onClick={handleConfirmPayment}
-                          className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                          className="w-full "
+                          variant={"default"}
                         >
                           <Check className="w-4 h-4 mr-2" />I have sent the
                           funds
@@ -391,8 +431,16 @@ export default function OrderDetailsPage() {
                 {/* Bitcoin Payment Details */}
                 {paymentMethod === "bitcoin" && (
                   <Card className="p-4 border-2 border-orange-200 dark:border-orange-800 bg-orange-50/50 dark:bg-orange-950/20">
-                    <div className="flex items-center gap-2 mb-4">
-                      <Bitcoin className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-8 h-8 flex items-center justify-center p-1 bg-white dark:bg-gray-900 rounded-md border border-gray-200 dark:border-gray-800">
+                        <Image
+                          src={PAYMENT_LOGOS.btc}
+                          alt="Bitcoin"
+                          width={24}
+                          height={24}
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
                       <h3 className="font-semibold text-gray-900 dark:text-gray-100">
                         Bitcoin (BTC) Payment
                       </h3>
@@ -505,20 +553,26 @@ export default function OrderDetailsPage() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="mtn">
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+                            <div className="flex items-center gap-3">
+                              <div className="w-5 h-5 flex-shrink-0">
+                                <Image src={PAYMENT_LOGOS.mtn} alt="MTN" width={20} height={20} className="w-full h-full object-contain" />
+                              </div>
                               <span>MTN Mobile Money</span>
                             </div>
                           </SelectItem>
-                          <SelectItem value="vodafone">
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                              <span>Vodafone Cash</span>
+                          <SelectItem value="telecel">
+                            <div className="flex items-center gap-3">
+                              <div className="w-5 h-5 flex-shrink-0">
+                                <Image src={PAYMENT_LOGOS.telecel} alt="Telecel" width={20} height={20} className="w-full h-full object-contain" />
+                              </div>
+                              <span>Telecel Cash</span>
                             </div>
                           </SelectItem>
                           <SelectItem value="airteltigo">
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                            <div className="flex items-center gap-3">
+                              <div className="w-5 h-5 flex-shrink-0">
+                                <Image src={PAYMENT_LOGOS.airteltigo} alt="AirtelTigo" width={20} height={20} className="w-full h-full object-contain" />
+                              </div>
                               <span>AirtelTigo Money</span>
                             </div>
                           </SelectItem>
@@ -590,11 +644,12 @@ export default function OrderDetailsPage() {
                       disabled={
                         !selectedNetwork || !phoneNumber || isProcessing
                       }
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+                      className="w-full "
+                      variant={"default"}
                     >
                       {isProcessing ? (
                         <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          <Loader className="w-4 h-4 mr-2 animate-spin" />
                           Processing...
                         </>
                       ) : (
@@ -617,7 +672,7 @@ export default function OrderDetailsPage() {
                           Please check your phone for a prompt from{" "}
                           <span className="font-medium">
                             {selectedNetwork === "mtn" && "MTN Mobile Money"}
-                            {selectedNetwork === "vodafone" && "Vodafone Cash"}
+                            {selectedNetwork === "telecel" && "Telecel Cash"}
                             {selectedNetwork === "airteltigo" &&
                               "AirtelTigo Money"}
                           </span>{" "}
@@ -630,7 +685,7 @@ export default function OrderDetailsPage() {
                           the transaction
                         </p>
                         <div className="flex items-center justify-center gap-2 text-gray-500 dark:text-gray-400 mt-3">
-                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <Loader className="w-4 h-4 animate-spin" />
                           <span className="text-sm">
                             Waiting for confirmation...
                           </span>

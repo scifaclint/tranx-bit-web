@@ -13,12 +13,12 @@ export default function HeroSection() {
     router.push("/auth");
   };
   return (
-    <div className="relative w-full h-screen overflow-hidden bg-[#f9f9f9]">
+    <div className="relative w-full h-screen overflow-hidden bg-[#f9f9f9] dark:bg-gray-950">
       {/* Large Organic Blob Shapes - Layered */}
 
       {/* Blob 1 - Large light blue (back layer) */}
       <div
-        className="absolute -right-32 top-0 w-[800px] h-[800px] bg-blue-100 opacity-60"
+        className="absolute -right-32 top-0 w-[800px] h-[800px] bg-blue-100 dark:bg-blue-900/30 opacity-60 dark:opacity-20"
         style={{
           borderRadius: "40% 60% 70% 30% / 40% 50% 60% 50%",
           transform: "rotate(-15deg)",
@@ -27,7 +27,7 @@ export default function HeroSection() {
 
       {/* Blob 2 - Medium cyan blue */}
       <div
-        className="absolute right-24 top-32 w-[650px] h-[650px] bg-cyan-200 opacity-50"
+        className="absolute right-24 top-32 w-[650px] h-[650px] bg-cyan-200 dark:bg-cyan-900/30 opacity-50 dark:opacity-15"
         style={{
           borderRadius: "60% 40% 30% 70% / 60% 30% 70% 40%",
           transform: "rotate(25deg)",
@@ -36,7 +36,7 @@ export default function HeroSection() {
 
       {/* Blob 3 - Large deep blue (front layer) */}
       <div
-        className="absolute right-0 bottom-0 w-[700px] h-[700px] bg-blue-300 opacity-40"
+        className="absolute right-0 bottom-0 w-[700px] h-[700px] bg-blue-300 dark:bg-blue-800/30 opacity-40 dark:opacity-15"
         style={{
           borderRadius: "30% 70% 70% 30% / 30% 30% 70% 70%",
           transform: "rotate(10deg)",
@@ -45,7 +45,7 @@ export default function HeroSection() {
 
       {/* Blob 4 - Small accent blob */}
       <div
-        className="absolute right-64 top-1/2 w-[400px] h-[400px] bg-sky-200 opacity-35"
+        className="absolute right-64 top-1/2 w-[400px] h-[400px] bg-sky-200 dark:bg-sky-900/30 opacity-35 dark:opacity-15"
         style={{
           borderRadius: "70% 30% 50% 50% / 60% 60% 40% 40%",
           transform: "rotate(-30deg)",
@@ -54,7 +54,7 @@ export default function HeroSection() {
 
       {/* Blob 5 - Left side subtle blob for transition */}
       <div
-        className="absolute left-1/3 bottom-24 w-[500px] h-[500px] bg-blue-50 opacity-30"
+        className="absolute left-1/3 bottom-24 w-[500px] h-[500px] bg-blue-50 dark:bg-blue-900/20 opacity-30 dark:opacity-10"
         style={{
           borderRadius: "50% 50% 30% 70% / 40% 60% 40% 60%",
           transform: "rotate(45deg)",
@@ -62,21 +62,55 @@ export default function HeroSection() {
       />
 
       {/* Decorative Elements Layer */}
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          .hero-svg-path-1 {
+            stroke: rgba(59, 130, 246, 0.3);
+          }
+          .dark .hero-svg-path-1 {
+            stroke: rgba(96, 165, 250, 0.2);
+          }
+          .hero-svg-path-2 {
+            stroke: rgba(34, 211, 238, 0.25);
+          }
+          .dark .hero-svg-path-2 {
+            stroke: rgba(34, 211, 238, 0.15);
+          }
+          .hero-svg-path-3 {
+            stroke: rgba(59, 130, 246, 0.3);
+          }
+          .dark .hero-svg-path-3 {
+            stroke: rgba(96, 165, 250, 0.2);
+          }
+          .hero-svg-circle {
+            stroke: rgba(125, 211, 252, 0.25);
+          }
+          .dark .hero-svg-circle {
+            stroke: rgba(125, 211, 252, 0.15);
+          }
+          .hero-svg-path-4 {
+            stroke: rgba(59, 130, 246, 0.2);
+          }
+          .dark .hero-svg-path-4 {
+            stroke: rgba(96, 165, 250, 0.15);
+          }
+        `
+      }} />
       <div className="absolute inset-0 pointer-events-none">
         {/* X Marks - Scattered */}
-        <div className="absolute top-32 right-48 text-4xl font-light text-blue-400 opacity-40">
+        <div className="absolute top-32 right-48 text-4xl font-light text-blue-400 dark:text-blue-500 opacity-40 dark:opacity-30">
           ×
         </div>
-        <div className="absolute top-64 right-72 text-3xl font-light text-cyan-400 opacity-30">
+        <div className="absolute top-64 right-72 text-3xl font-light text-cyan-400 dark:text-cyan-500 opacity-30 dark:opacity-25">
           ×
         </div>
-        <div className="absolute bottom-48 right-56 text-5xl font-light text-blue-300 opacity-35">
+        <div className="absolute bottom-48 right-56 text-5xl font-light text-blue-300 dark:text-blue-600 opacity-35 dark:opacity-25">
           ×
         </div>
-        <div className="absolute top-1/2 right-1/4 text-3xl font-light text-sky-400 opacity-25">
+        <div className="absolute top-1/2 right-1/4 text-3xl font-light text-sky-400 dark:text-sky-500 opacity-25 dark:opacity-20">
           ×
         </div>
-        <div className="absolute bottom-1/3 right-96 text-4xl font-light text-blue-400 opacity-30">
+        <div className="absolute bottom-1/3 right-96 text-4xl font-light text-blue-400 dark:text-blue-500 opacity-30 dark:opacity-25">
           ×
         </div>
 
@@ -85,7 +119,7 @@ export default function HeroSection() {
           {[...Array(9)].map((_, i) => (
             <div
               key={i}
-              className="w-1.5 h-1.5 bg-blue-400 rounded-full opacity-40"
+              className="w-1.5 h-1.5 bg-blue-400 dark:bg-blue-500 rounded-full opacity-40 dark:opacity-30"
             />
           ))}
         </div>
@@ -94,7 +128,7 @@ export default function HeroSection() {
           {[...Array(9)].map((_, i) => (
             <div
               key={i}
-              className="w-1.5 h-1.5 bg-cyan-400 rounded-full opacity-35"
+              className="w-1.5 h-1.5 bg-cyan-400 dark:bg-cyan-500 rounded-full opacity-35 dark:opacity-25"
             />
           ))}
         </div>
@@ -103,7 +137,7 @@ export default function HeroSection() {
           {[...Array(9)].map((_, i) => (
             <div
               key={i}
-              className="w-1 h-1 bg-sky-400 rounded-full opacity-30"
+              className="w-1 h-1 bg-sky-400 dark:bg-sky-500 rounded-full opacity-30 dark:opacity-20"
             />
           ))}
         </div>
@@ -115,19 +149,19 @@ export default function HeroSection() {
         >
           <path
             d="M 1100 250 Q 1250 200, 1350 280"
-            stroke="rgba(59, 130, 246, 0.3)"
+            className="hero-svg-path-1"
             strokeWidth="2"
             fill="none"
           />
           <path
             d="M 1000 500 Q 1150 450, 1250 550"
-            stroke="rgba(34, 211, 238, 0.25)"
+            className="hero-svg-path-2"
             strokeWidth="2"
             fill="none"
           />
           <path
             d="M 900 700 A 80 80 0 0 1 1050 750"
-            stroke="rgba(59, 130, 246, 0.3)"
+            className="hero-svg-path-3"
             strokeWidth="2"
             fill="none"
           />
@@ -135,24 +169,24 @@ export default function HeroSection() {
             cx="1200"
             cy="400"
             r="50"
-            stroke="rgba(125, 211, 252, 0.25)"
+            className="hero-svg-circle"
             strokeWidth="2"
             fill="none"
           />
           <path
             d="M 850 350 Q 950 300, 1050 350"
-            stroke="rgba(59, 130, 246, 0.2)"
+            className="hero-svg-path-4"
             strokeWidth="2"
             fill="none"
           />
         </svg>
 
         {/* Individual Scattered Dots */}
-        <div className="absolute top-20 right-64 w-2 h-2 bg-blue-400 rounded-full opacity-40" />
-        <div className="absolute top-40 right-40 w-1.5 h-1.5 bg-cyan-400 rounded-full opacity-35" />
-        <div className="absolute top-80 right-80 w-2 h-2 bg-sky-400 rounded-full opacity-30" />
-        <div className="absolute bottom-32 right-48 w-1.5 h-1.5 bg-blue-400 rounded-full opacity-40" />
-        <div className="absolute bottom-80 right-32 w-2 h-2 bg-cyan-400 rounded-full opacity-35" />
+        <div className="absolute top-20 right-64 w-2 h-2 bg-blue-400 dark:bg-blue-500 rounded-full opacity-40 dark:opacity-30" />
+        <div className="absolute top-40 right-40 w-1.5 h-1.5 bg-cyan-400 dark:bg-cyan-500 rounded-full opacity-35 dark:opacity-25" />
+        <div className="absolute top-80 right-80 w-2 h-2 bg-sky-400 dark:bg-sky-500 rounded-full opacity-30 dark:opacity-20" />
+        <div className="absolute bottom-32 right-48 w-1.5 h-1.5 bg-blue-400 dark:bg-blue-500 rounded-full opacity-40 dark:opacity-30" />
+        <div className="absolute bottom-80 right-32 w-2 h-2 bg-cyan-400 dark:bg-cyan-500 rounded-full opacity-35 dark:opacity-25" />
       </div>
 
       {/* Content Container */}
@@ -164,13 +198,13 @@ export default function HeroSection() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: "easeOut" }}
           >
-            <h1 className="text-5xl lg:text-6xl font-bold text-gray-800 mb-6 leading-tight">
-              <span className="bg-gradient-to-r from-gray-800 via-gray-700 to-gray-900 bg-clip-text text-transparent">
+            <h1 className="text-5xl lg:text-6xl font-bold text-gray-800 dark:text-gray-100 mb-6 leading-tight">
+              <span className="bg-gradient-to-r from-gray-800 via-gray-700 to-gray-900 dark:from-gray-100 dark:via-gray-200 dark:to-gray-300 bg-clip-text text-transparent">
                 TranxBit
               </span>{" "}
               — Your Gateway to Gift Cards &amp; Digital Payments
             </h1>
-            <p className="text-xl text-gray-600 mb-8 leading-relaxed">
+            <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 leading-relaxed">
               Buy, sell, and trade gift cards with ease. Explore secure virtual
               cards and seamless digital payment solutions — all in one
               platform.
@@ -178,7 +212,7 @@ export default function HeroSection() {
             <div className="relative inline-flex items-center justify-center group">
               <div className="absolute inset-0 duration-1000 opacity-60 transition-all bg-gradient-to-r from-indigo-500 via-pink-500 to-yellow-400 rounded-xl blur-lg filter group-hover:opacity-100 group-hover:duration-200"></div>
               <motion.button
-                className="relative bg-gray-900 px-8 py-3 rounded-xl text-white transition-all duration-200 hover:bg-gray-800 hover:shadow-lg hover:-translate-y-0.5 hover:shadow-gray-600/30"
+                className="relative bg-gray-900 dark:bg-gray-100 px-8 py-3 rounded-xl text-white dark:text-gray-900 transition-all duration-200 hover:bg-gray-800 dark:hover:bg-gray-200 hover:shadow-lg hover:-translate-y-0.5 hover:shadow-gray-600/30 dark:hover:shadow-gray-800/30"
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.98 }}
                 initial={{ opacity: 0 }}
@@ -188,7 +222,7 @@ export default function HeroSection() {
               >
                 Get Started Now
                 <svg
-                  className="ml-2 inline-block stroke-white stroke-2"
+                  className="ml-2 inline-block stroke-white dark:stroke-gray-900 stroke-2"
                   fill="none"
                   width="10"
                   height="10"
@@ -240,7 +274,7 @@ export default function HeroSection() {
               alt="Gift Card"
               width={300}
               height={188}
-              className="rounded-xl shadow-2xl border-4 border-white"
+              className="rounded-xl shadow-2xl border-4 border-white dark:border-gray-800"
             />
           </motion.div>
 
@@ -273,7 +307,7 @@ export default function HeroSection() {
               alt="Gift Card"
               width={300}
               height={188}
-              className="rounded-xl shadow-2xl border-4 border-white"
+              className="rounded-xl shadow-2xl border-4 border-white dark:border-gray-800"
             />
           </motion.div>
 
@@ -306,7 +340,7 @@ export default function HeroSection() {
               alt="E-Gift Card"
               width={300}
               height={188}
-              className="rounded-xl shadow-2xl border-4 border-white"
+              className="rounded-xl shadow-2xl border-4 border-white dark:border-gray-800"
             />
           </motion.div>
         </div>

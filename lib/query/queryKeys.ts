@@ -1,0 +1,29 @@
+export const queryKeys = {
+  orders: {
+    all: ["orders"] as const,
+    user: (page?: number) => ["orders", "user", page] as const,
+    detail: (orderId: string) => ["orders", "detail", orderId] as const,
+  },
+  cards: {
+    all: ["cards", "all"] as const,
+    detail: (cardId: string) => ["cards", "detail", cardId] as const,
+  },
+  admin: {
+    orders: {
+      all: ["admin", "orders"] as const,
+      list: (params?: { page?: number; limit?: number; status?: string }) =>
+        ["admin", "orders", "list", params] as const,
+      byStatus: (status: string, page?: number) =>
+        ["admin", "orders", "status", status, page] as const,
+    },
+    cards: {
+      all: ["admin", "cards"] as const,
+      list: () => ["admin", "cards", "list"] as const,
+    },
+  },
+  payments: {
+    all: ["payments"] as const,
+    list: () => ["payments", "list"] as const,
+    supported: () => ["payments", "supported"] as const,
+  },
+};

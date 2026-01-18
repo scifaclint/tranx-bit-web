@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
+import { toast } from "sonner";
 import {
   User,
   ShieldCheck,
@@ -18,6 +19,7 @@ import {
   Globe,
   Bell,
   Mail,
+  Loader,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -34,11 +36,40 @@ import {
 import ConfirmationModal from "@/components/modals/confirmation-modal";
 import Image from "next/image";
 
+import { authApi } from "@/lib/api/auth";
+import { useAuthStore } from "@/stores";
+import {
+  usePaymentMethods,
+  useDeletePaymentMethod,
+  useSetDefaultPaymentMethod,
+  useAddPaymentMethod,
+  useSupportedPaymentMethods,
+  useUpdatePaymentMethod,
+} from "@/hooks/usePayments";
+import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { MoreVertical, Star, CheckCircle2 } from "lucide-react";
+import { PAYMENT_LOGOS, NETWORK_LABELS } from "@/lib/payment-constants";
+
 type TabType = "general" | "personal" | "kyc" | "payment" | "security";
 
 type PaymentMethod = {
   id: string;
-  type: "crypto" | "mobile_money" | "bank";
+  type: "btc" | "mobile_money" | "bank";
   label: string;
   details: string;
   icon?: string;
@@ -49,55 +80,108 @@ export default function SettingsPage() {
   const { theme = "system", setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
   const [language, setLanguage] = useState("en");
   const [notifications, setNotifications] = useState({
     email: true,
     push: true,
     marketing: false,
   });
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Get user from auth store
+  const { user, setAuth } = useAuthStore();
+
+  // Debug: Check what's in the store
+  console.log("User from store:", user);
 
   useEffect(() => {
     setMounted(true);
   }, []);
-  const [formData, setFormData] = useState({
-    firstName: "Clinton",
-    lastName: "Acheampong",
-    email: "clinton@example.com",
-    phone: "+1 234 567 8900",
+
+  // Initialize form data from user store - use lazy initialization
+  const [formData, setFormData] = useState(() => {
+    const initialData = {
+      firstName: user?.first_name || "",
+      lastName: user?.last_name || "",
+      email: user?.email || "",
+      phone: user?.phone || "",
+    };
+    console.log("Initial formData:", initialData);
+    return initialData;
   });
 
-  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([
-    {
-      id: "1",
-      type: "crypto",
-      label: "Bitcoin (BTC)",
-      details: "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh",
-    },
-    {
-      id: "2",
-      type: "mobile_money",
-      label: "MTN Mobile Money",
-      details: "+233 24 123 4567",
-    },
-    {
-      id: "3",
-      type: "crypto",
-      label: "Ethereum (ETH)",
-      details: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb9",
-    },
-  ]);
+  // Update form when user data changes (e.g., after login or store rehydration)
+  useEffect(() => {
+    console.log("useEffect triggered, user:", user);
+    if (user) {
+      const updatedData = {
+        firstName: user.first_name || "",
+        lastName: user.last_name || "",
+        email: user.email || "",
+        phone: user.phone || "",
+      };
+      console.log("Updating formData to:", updatedData);
+      setFormData(updatedData);
+      setProfileImage(user.photo_url || null);
+    }
+  }, [user]);
+
+  // Payment Methods Hooks
+  const { data: paymentsData, isLoading: isLoadingPayments } =
+    usePaymentMethods();
+  const { data: supportedData } = useSupportedPaymentMethods();
+  const deletePaymentMutation = useDeletePaymentMethod();
+  const setDefaultPaymentMutation = useSetDefaultPaymentMethod();
+  const addPaymentMutation = useAddPaymentMethod();
+  const updatePaymentMutation = useUpdatePaymentMethod();
+
+  const paymentMethods = paymentsData?.data || [];
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [methodToDelete, setMethodToDelete] = useState<string | null>(null);
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [deleteAccountOpen, setDeleteAccountOpen] = useState(false);
 
+  // Add Payment Modal State
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [addMethodType, setAddMethodType] = useState<"mobile_money" | "btc">(
+    "mobile_money",
+  );
+  const [paymentForm, setPaymentForm] = useState({
+    name: "",
+    mobileNetwork: "mtn" as any,
+    mobileNumber: "",
+    accountName: "",
+    btcAddress: "",
+    btcNetwork: "bitcoin",
+  });
+  const [editingMethodId, setEditingMethodId] = useState<string | null>(null);
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Validate file size (3MB = 3 * 1024 * 1024 bytes)
+      const maxSize = 3 * 1024 * 1024;
+      if (file.size > maxSize) {
+        toast.error("Image too large", {
+          description: "Please select an image smaller than 3MB",
+        });
+        return;
+      }
+
+      // Validate file type
+      if (!file.type.startsWith("image/")) {
+        toast.error("Invalid file type", {
+          description: "Please select an image file",
+        });
+        return;
+      }
+
       const reader = new FileReader();
       reader.onloadend = () => {
         setProfileImage(reader.result as string);
+        setProfileImageFile(file);
       };
       reader.readAsDataURL(file);
     }
@@ -110,9 +194,39 @@ export default function SettingsPage() {
     });
   };
 
-  const handleSave = () => {
-    console.log("Save profile:", formData);
-    // Add save logic here
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      // Create FormData
+      const formDataToSend = new FormData();
+      formDataToSend.append("first_name", formData.firstName);
+      formDataToSend.append("last_name", formData.lastName);
+
+      // Only append image if a new one was selected
+      if (profileImageFile) {
+        formDataToSend.append("photo", profileImageFile);
+      }
+
+      // Call API
+      const response = await authApi.updateUser(formDataToSend);
+
+      if (response.status && response.data.user) {
+        // Update the store with new user data
+        const token = useAuthStore.getState().token;
+        if (token) {
+          setAuth(response.data.user);
+        }
+
+        toast.success("Profile updated successfully!");
+        setProfileImageFile(null); // Clear the file after successful upload
+      }
+    } catch (error: any) {
+      toast.error("Failed to update profile", {
+        description: error?.message || "Please try again later",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleDeletePayment = (id: string) => {
@@ -120,19 +234,116 @@ export default function SettingsPage() {
     setDeleteDialogOpen(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (methodToDelete) {
-      setPaymentMethods(
-        paymentMethods.filter((method) => method.id !== methodToDelete)
-      );
-      setMethodToDelete(null);
+      try {
+        await deletePaymentMutation.mutateAsync(methodToDelete);
+        toast.success("Payment method deleted");
+      } catch (error) {
+        toast.error("Failed to delete payment method");
+      } finally {
+        setMethodToDelete(null);
+        setDeleteDialogOpen(false);
+      }
     }
-    setDeleteDialogOpen(false);
+  };
+
+  const handleSetDefault = async (id: string) => {
+    try {
+      await setDefaultPaymentMutation.mutateAsync(id);
+      toast.success("Default payment method updated");
+    } catch (error) {
+      toast.error("Failed to update default payment method");
+    }
   };
 
   const handleAddPayment = () => {
-    console.log("Add new payment method");
-    // Add modal/form logic here
+    setEditingMethodId(null);
+    setPaymentForm({
+      name: "",
+      mobileNetwork: "mtn",
+      mobileNumber: "",
+      accountName: "",
+      btcAddress: "",
+      btcNetwork: "bitcoin",
+    });
+    setIsAddModalOpen(true);
+  };
+
+  const handleEditPayment = (method: any) => {
+    setEditingMethodId(method._id);
+    setAddMethodType(method.type);
+    setPaymentForm({
+      name: method.name || "",
+      mobileNetwork: method.mobileNetwork || "mtn",
+      mobileNumber: method.mobileNumber || "",
+      accountName: method.accountName || "",
+      btcAddress: method.btcAddress || "",
+      btcNetwork: method.btcNetwork || "bitcoin",
+    });
+    setIsAddModalOpen(true);
+  };
+
+  const handleAddSubmit = async () => {
+    if (addMethodType === "mobile_money") {
+      if (!paymentForm.accountName || !paymentForm.mobileNumber) {
+        toast.error("Please fill in all fields");
+        return;
+      }
+    } else {
+      if (!paymentForm.btcAddress) {
+        toast.error("Please enter BTC address");
+        return;
+      }
+    }
+
+    try {
+      const payload =
+        addMethodType === "mobile_money"
+          ? {
+            type: "mobile_money" as const,
+            name:
+              paymentForm.name ||
+              `${paymentForm.mobileNetwork.toUpperCase()} - ${paymentForm.accountName}`,
+            mobileNetwork: paymentForm.mobileNetwork,
+            mobileNumber: paymentForm.mobileNumber,
+            accountName: paymentForm.accountName,
+          }
+          : {
+            type: "btc" as const,
+            name: paymentForm.name || "My BTC Wallet",
+            btcAddress: paymentForm.btcAddress,
+            btcNetwork: paymentForm.btcNetwork,
+          };
+
+      if (editingMethodId) {
+        await updatePaymentMutation.mutateAsync({
+          id: editingMethodId,
+          payload,
+        });
+        toast.success("Payment method updated successfully");
+      } else {
+        await addPaymentMutation.mutateAsync(payload);
+        toast.success("Payment method added successfully");
+      }
+
+      setIsAddModalOpen(false);
+      setEditingMethodId(null);
+      setPaymentForm({
+        name: "",
+        mobileNetwork: "mtn",
+        mobileNumber: "",
+        accountName: "",
+        btcAddress: "",
+        btcNetwork: "bitcoin",
+      });
+    } catch (error) {
+      toast.error(
+        editingMethodId
+          ? "Failed to update payment method"
+          : "Failed to add payment method",
+      );
+    }
   };
 
   const menuItems = [
@@ -188,7 +399,7 @@ export default function SettingsPage() {
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Left Navigation Menu */}
         <div className="w-full lg:w-64 flex-shrink-0">
-          <Card className="p-2">
+          <Card className="p-2 dark:bg-background border-borderColorPrimary">
             <nav className="space-y-1">
               {menuItems.map((item) => {
                 const Icon = item.icon;
@@ -197,16 +408,14 @@ export default function SettingsPage() {
                   <button
                     key={item.id}
                     onClick={() => setActiveTab(item.id)}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all ${
-                      isActive
-                        ? "bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 font-medium"
-                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
-                    }`}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all ${isActive
+                      ? "bg-primary/10 text-primary font-medium"
+                      : "hover:bg-muted"
+                      }`}
                   >
                     <Icon
-                      className={`h-5 w-5 ${
-                        isActive ? "text-blue-600 dark:text-blue-400" : ""
-                      }`}
+                      className={`h-5 w-5 ${isActive ? "text-blue-700" : ""}`}
+                      strokeWidth={isActive ? 2.5 : 1.5}
                     />
                     <span className="text-sm">{item.label}</span>
                   </button>
@@ -218,7 +427,7 @@ export default function SettingsPage() {
 
         {/* Right Content Area */}
         <div className="flex-1">
-          <Card className="p-6 min-h-[500px]">
+          <Card className="p-6 min-h-[500px] dark:bg-background border-borderColorPrimary">
             {activeTab === "general" && (
               <div className="animate-in fade-in-0 slide-in-from-bottom-2 duration-300">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-6">
@@ -227,7 +436,7 @@ export default function SettingsPage() {
 
                 <div className="space-y-6 max-w-2xl">
                   {/* Appearance */}
-                  <Card className="p-6">
+                  <Card className="p-6 dark:bg-background border-borderColorPrimary">
                     <div className="mb-4">
                       <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">
                         Appearance
@@ -246,7 +455,10 @@ export default function SettingsPage() {
                       </Label>
                       {mounted && (
                         <Select value={theme} onValueChange={setTheme}>
-                          <SelectTrigger id="theme" className="w-full">
+                          <SelectTrigger
+                            id="theme"
+                            className="w-full bg-backgroundSecondary border-borderColorPrimary dark:border-white/10"
+                          >
                             <SelectValue placeholder="Select theme" />
                           </SelectTrigger>
                           <SelectContent>
@@ -260,7 +472,7 @@ export default function SettingsPage() {
                   </Card>
 
                   {/* Language */}
-                  <Card className="p-6">
+                  <Card className="p-6 dark:bg-background border-borderColorPrimary">
                     <div className="mb-4">
                       <div className="flex items-center gap-2 mb-2">
                         <Globe className="w-5 h-5 text-gray-700 dark:text-gray-300" />
@@ -281,7 +493,10 @@ export default function SettingsPage() {
                         Preferred Language
                       </Label>
                       <Select value={language} onValueChange={setLanguage}>
-                        <SelectTrigger id="language" className="w-full">
+                        <SelectTrigger
+                          id="language"
+                          className="w-full bg-backgroundSecondary border-borderColorPrimary dark:border-white/10"
+                        >
                           <SelectValue placeholder="Select language" />
                         </SelectTrigger>
                         <SelectContent>
@@ -296,7 +511,7 @@ export default function SettingsPage() {
                   </Card>
 
                   {/* Notifications */}
-                  <Card className="p-6">
+                  <Card className="p-6 dark:bg-background border-borderColorPrimary">
                     <div className="mb-4">
                       <div className="flex items-center gap-2 mb-2">
                         <Bell className="w-5 h-5 text-gray-700 dark:text-gray-300" />
@@ -425,10 +640,11 @@ export default function SettingsPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-                      {formData.firstName} {formData.lastName}
+                      {formData.firstName || user?.first_name || "User"}{" "}
+                      {formData.lastName || user?.last_name || ""}
                     </h3>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {formData.email}
+                      {formData.email || user?.email || ""}
                     </p>
                   </div>
                 </div>
@@ -466,7 +682,7 @@ export default function SettingsPage() {
                       type="email"
                       value={formData.email}
                       readOnly
-                      className="bg-gray-50 dark:bg-gray-900 cursor-not-allowed"
+                      className="bg-backgroundSecondary cursor-not-allowed border-borderColorPrimary dark:border-white/10"
                     />
                     <p className="text-xs text-gray-500 dark:text-gray-400">
                       Email cannot be changed
@@ -482,12 +698,20 @@ export default function SettingsPage() {
                         type="tel"
                         value={formData.phone}
                         readOnly
-                        className="flex-1 bg-gray-50 dark:bg-gray-900 cursor-not-allowed"
+                        className="flex-1 bg-backgroundSecondary cursor-not-allowed border-borderColorPrimary dark:border-white/10"
                       />
                       <Button
                         variant="outline"
                         className="border-blue-600 text-blue-600 hover:bg-blue-50"
-                        onClick={() => console.log("Change phone number")}
+                        onClick={() => {
+                          toast.info(
+                            "Phone number change feature coming soon",
+                            {
+                              description:
+                                "You'll be able to update your phone number here.",
+                            },
+                          );
+                        }}
                       >
                         Change
                       </Button>
@@ -500,9 +724,17 @@ export default function SettingsPage() {
                   <div className="pt-4">
                     <Button
                       onClick={handleSave}
+                      disabled={isSaving}
                       className="bg-blue-600 hover:bg-blue-700 text-white"
                     >
-                      Save Changes
+                      {isSaving ? (
+                        <>
+                          <Loader className="mr-2 h-4 w-4 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        "Save Changes"
+                      )}
                     </Button>
                   </div>
                 </div>
@@ -536,7 +768,12 @@ export default function SettingsPage() {
                         </p>
                         <Button
                           className="bg-blue-600 hover:bg-blue-700 text-white"
-                          onClick={() => console.log("Start KYC verification")}
+                          onClick={() => {
+                            toast.info("KYC verification feature coming soon", {
+                              description:
+                                "You'll be able to complete your identity verification here.",
+                            });
+                          }}
                         >
                           Complete Verification Now
                         </Button>
@@ -564,53 +801,120 @@ export default function SettingsPage() {
 
                 {/* Payment Methods List */}
                 <div className="space-y-4 max-w-3xl">
-                  {paymentMethods.map((method) => (
-                    <Card key={method.id} className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 bg-blue-50 dark:bg-blue-950 rounded-full flex items-center justify-center">
-                            {method.type === "crypto" ? (
-                              <Wallet className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                            ) : (
-                              <Smartphone className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                            )}
-                          </div>
-                          <div className="flex-1">
-                            <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-                              {method.label}
-                            </h3>
-                            <p className="text-sm text-gray-500 dark:text-gray-400 font-mono">
-                              {method.details}
-                            </p>
-                          </div>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDeletePayment(method.id)}
-                          className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </Card>
-                  ))}
-
-                  {paymentMethods.length === 0 && (
-                    <div className="text-center py-12">
-                      <CreditCard className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-500 dark:text-gray-400 mb-4">
-                        No payment methods added yet
+                  {isLoadingPayments ? (
+                    <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                      <Loader className="h-8 w-8 animate-spin text-blue-600" />
+                      <p className="text-sm text-muted-foreground">
+                        Loading your payment methods...
                       </p>
-                      <Button
-                        onClick={handleAddPayment}
-                        variant="outline"
-                        className="border-blue-600 text-blue-600 hover:bg-blue-50"
-                      >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add Your First Payment Method
-                      </Button>
                     </div>
+                  ) : (
+                    <>
+                      {paymentMethods.map((method) => (
+                        <Card
+                          key={method._id}
+                          className={`p-4 transition-all hover:shadow-md border border-borderColorPrimary dark:bg-background ${method.isDefault ? "border-blue-500/50 bg-blue-500/5" : ""}`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                              <div
+                                className={`w-12 h-12 rounded-full flex items-center justify-center p-2.5 ${method.type === "btc" ? "bg-orange-100 dark:bg-orange-950/30" : "bg-blue-100 dark:bg-blue-950/30"}`}
+                              >
+                                {method.type === "btc" || (method.type === "mobile_money" && PAYMENT_LOGOS[method.mobileNetwork]) ? (
+                                  <Image
+                                    src={PAYMENT_LOGOS[method.type === "btc" ? "btc" : method.mobileNetwork]}
+                                    alt={method.type}
+                                    width={24}
+                                    height={24}
+                                    className="w-full h-full object-contain"
+                                  />
+                                ) : (
+                                  <Smartphone className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                                )}
+                              </div>
+                              <div className="flex-1 space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <h3 className="font-semibold text-gray-900 dark:text-gray-100 capitalize">
+                                    {method.type === "mobile_money"
+                                      ? NETWORK_LABELS[method.mobileNetwork] || method.mobileNetwork
+                                      : NETWORK_LABELS.btc}
+                                  </h3>
+                                  {method.isDefault && (
+                                    <Badge
+                                      variant="secondary"
+                                      className="bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 text-[10px] h-5"
+                                    >
+                                      Default
+                                    </Badge>
+                                  )}
+                                  {method.isVerified && (
+                                    <div
+                                      className="flex items-center text-green-600 dark:text-green-500"
+                                      title="Verified"
+                                    >
+                                      <CheckCircle2 className="w-3.5 h-3.5" />
+                                    </div>
+                                  )}
+                                </div>
+                                <p className="text-sm text-gray-500 dark:text-gray-400 font-mono break-all">
+                                  {method.type === "mobile_money"
+                                    ? method.accountName
+                                    : method.btcAddress}
+                                </p>
+                              </div>
+                            </div>
+
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                >
+                                  <MoreVertical className="w-4 h-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  onClick={() => handleEditPayment(method)}
+                                >
+                                  <Plus className="w-4 h-4 mr-2" />
+                                  Edit Account
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    handleDeletePayment(method._id)
+                                  }
+                                  className="text-red-600 focus:text-red-600"
+                                >
+                                  <Trash2 className="w-4 h-4 mr-2" />
+                                  Delete Account
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </Card>
+                      ))}
+
+                      {paymentMethods.length === 0 && (
+                        <div className="text-center py-12 bg-backgroundSecondary/20 border-2 border-dashed border-borderColorPrimary rounded-2xl">
+                          <CreditCard className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                          <h3 className="font-medium text-gray-900 dark:text-gray-100">
+                            No payment methods yet
+                          </h3>
+                          <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 mt-1">
+                            Add an account to receive your payouts automatically
+                          </p>
+                          <Button
+                            onClick={handleAddPayment}
+                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                          >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Add Your First Method
+                          </Button>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
@@ -624,7 +928,7 @@ export default function SettingsPage() {
 
                 <div className="space-y-6 max-w-2xl">
                   {/* Two-Factor Authentication */}
-                  <Card className="p-6">
+                  <Card className="p-6 dark:bg-background border-borderColorPrimary">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
@@ -648,7 +952,7 @@ export default function SettingsPage() {
                   </Card>
 
                   {/* Change Password */}
-                  <Card className="p-6">
+                  <Card className="p-6 dark:bg-background border-borderColorPrimary">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
@@ -664,7 +968,12 @@ export default function SettingsPage() {
                         <Button
                           variant="outline"
                           className="border-blue-600 text-blue-600 hover:bg-blue-50"
-                          onClick={() => console.log("Change password")}
+                          onClick={() => {
+                            toast.info("Password change feature coming soon", {
+                              description:
+                                "You'll be able to update your password here.",
+                            });
+                          }}
                         >
                           Change Password
                         </Button>
@@ -673,7 +982,7 @@ export default function SettingsPage() {
                   </Card>
 
                   {/* Delete Account */}
-                  <Card className="p-6 border-red-200 dark:border-red-800">
+                  <Card className="p-6 dark:bg-background border-red-500/20 bg-red-500/5">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
@@ -720,7 +1029,11 @@ export default function SettingsPage() {
         isOpen={deleteAccountOpen}
         onClose={() => setDeleteAccountOpen(false)}
         onConfirm={() => {
-          console.log("Delete account");
+          // Account deletion will be implemented when backend is ready
+          toast.success("Account deletion request submitted", {
+            description:
+              "Your account will be deleted after verification. This action cannot be undone.",
+          });
         }}
         title="Delete Account"
         description={
@@ -744,6 +1057,236 @@ export default function SettingsPage() {
         cancelText="Cancel"
         variant="danger"
       />
+
+      {/* Add Payment Method Modal */}
+      <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+        <DialogContent className="sm:max-w-[450px] dark:bg-background border-borderColorPrimary dark:border-white/20">
+          <DialogHeader>
+            <DialogTitle>
+              {editingMethodId ? "Edit Payment Method" : "Add Payment Method"}
+            </DialogTitle>
+            <DialogDescription>
+              {editingMethodId
+                ? "Update your account details below."
+                : "Choose a payment type and enter your details to receive payouts."}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6 pt-4">
+            <RadioGroup
+              defaultValue="mobile_money"
+              value={addMethodType}
+              onValueChange={(val: any) => setAddMethodType(val)}
+              className="grid grid-cols-2 gap-4"
+            >
+              <div>
+                <RadioGroupItem
+                  value="mobile_money"
+                  id="mm"
+                  className="peer sr-only"
+                />
+                <Label
+                  htmlFor="mm"
+                  className="flex flex-col items-center justify-between rounded-md border-2 border-borderColorPrimary bg-backgroundSecondary/50 p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-blue-600 [&:has([data-state=checked])]:border-blue-600 cursor-pointer"
+                >
+                  <Smartphone className="mb-3 h-6 w-6" />
+                  Mobile Money
+                </Label>
+              </div>
+              <div>
+                <RadioGroupItem value="btc" id="btc" className="peer sr-only" />
+                <Label
+                  htmlFor="btc"
+                  className="flex flex-col items-center justify-between rounded-md border-2 border-borderColorPrimary bg-backgroundSecondary/50 p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-orange-500 [&:has([data-state=checked])]:border-orange-500 cursor-pointer"
+                >
+                  <Wallet className="mb-3 h-6 w-6" />
+                  Bitcoin (BTC)
+                </Label>
+              </div>
+            </RadioGroup>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="method-name">
+                  Account Name (for your reference)
+                </Label>
+                <Input
+                  id="method-name"
+                  placeholder="e.g. My Savings Wallet"
+                  value={paymentForm.name}
+                  onChange={(e) =>
+                    setPaymentForm({ ...paymentForm, name: e.target.value })
+                  }
+                />
+              </div>
+
+              {addMethodType === "mobile_money" ? (
+                <>
+                  <div className="space-y-2">
+                    <Select
+                      value={paymentForm.mobileNetwork}
+                      onValueChange={(val) =>
+                        setPaymentForm({ ...paymentForm, mobileNetwork: val })
+                      }
+                    >
+                      <SelectTrigger id="network">
+                        <SelectValue placeholder="Select network" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {supportedData?.data.supportedMethods.mobile_money.networks.map(
+                          (net) => (
+                            <SelectItem key={net.id} value={net.id}>
+                              <div className="flex items-center gap-3">
+                                {PAYMENT_LOGOS[net.id] ? (
+                                  <div className="w-5 h-5 flex-shrink-0">
+                                    <Image
+                                      src={PAYMENT_LOGOS[net.id]}
+                                      alt={net.name}
+                                      width={20}
+                                      height={20}
+                                      className="w-full h-full object-contain"
+                                    />
+                                  </div>
+                                ) : (
+                                  <Smartphone className="w-4 h-4 text-muted-foreground" />
+                                )}
+                                <span>{NETWORK_LABELS[net.id] || net.name}</span>
+                              </div>
+                            </SelectItem>
+                          ),
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="account-name">Account Holder Name</Label>
+                    <Input
+                      id="account-name"
+                      placeholder="Enter full name"
+                      value={paymentForm.accountName}
+                      onChange={(e) =>
+                        setPaymentForm({
+                          ...paymentForm,
+                          accountName: e.target.value,
+                        })
+                      }
+                    />
+                    {supportedData?.data.supportedMethods.mobile_money.fields
+                      .validation.accountName && (
+                        <p className="text-[10px] text-muted-foreground ml-1">
+                          {
+                            supportedData.data.supportedMethods.mobile_money
+                              .fields.validation.accountName
+                          }
+                        </p>
+                      )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="mobile-number">Mobile Number</Label>
+                    <Input
+                      id="mobile-number"
+                      placeholder="e.g. 024XXXXXXX"
+                      value={paymentForm.mobileNumber}
+                      onChange={(e) =>
+                        setPaymentForm({
+                          ...paymentForm,
+                          mobileNumber: e.target.value,
+                        })
+                      }
+                    />
+                    {supportedData?.data.supportedMethods.mobile_money.fields
+                      .validation.mobileNumber && (
+                        <p className="text-[10px] text-muted-foreground ml-1">
+                          {
+                            supportedData.data.supportedMethods.mobile_money
+                              .fields.validation.mobileNumber
+                          }
+                        </p>
+                      )}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="btc-address">BTC Wallet Address</Label>
+                    <Input
+                      id="btc-address"
+                      placeholder="Paste your BTC address here"
+                      value={paymentForm.btcAddress}
+                      onChange={(e) =>
+                        setPaymentForm({
+                          ...paymentForm,
+                          btcAddress: e.target.value,
+                        })
+                      }
+                    />
+                    {supportedData?.data.supportedMethods.btc.fields.validation
+                      .btcAddress && (
+                        <p className="text-[10px] text-muted-foreground ml-1">
+                          {
+                            supportedData.data.supportedMethods.btc.fields
+                              .validation.btcAddress
+                          }
+                        </p>
+                      )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="btc-network">Network</Label>
+                    <Select
+                      value={paymentForm.btcNetwork}
+                      onValueChange={(val) =>
+                        setPaymentForm({ ...paymentForm, btcNetwork: val })
+                      }
+                    >
+                      <SelectTrigger id="btc-network">
+                        <SelectValue placeholder="Select network" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {supportedData?.data.supportedMethods.btc.networks.map(
+                          (net) => (
+                            <SelectItem key={net.id} value={net.id}>
+                              {net.name}
+                            </SelectItem>
+                          ),
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter className="pt-4">
+            <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAddSubmit}
+              disabled={
+                addPaymentMutation.isPending || updatePaymentMutation.isPending
+              }
+              className={
+                addMethodType === "btc"
+                  ? "bg-orange-500 hover:bg-orange-600 text-white"
+                  : "bg-blue-600 hover:bg-blue-700 text-white"
+              }
+            >
+              {addPaymentMutation.isPending ||
+                updatePaymentMutation.isPending ? (
+                <>
+                  <Loader className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : editingMethodId ? (
+                "Update Account"
+              ) : (
+                "Save Account"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

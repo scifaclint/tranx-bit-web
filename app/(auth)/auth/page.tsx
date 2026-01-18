@@ -1,74 +1,97 @@
 "use client";
 
 import { Suspense } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
-// import { useRouter } from "next/navigation";
+import { useTheme } from "next-themes";
 import TranxBitLogo from "@/components/design/tranx-bit-logo";
-// import Image from "next/image";
 import { LoginForm } from "@/components/features/auth/LoginForm";
 import { RegisterForm } from "@/components/features/auth/RegisterForms";
 import { ForgotPasswordForm } from "@/components/features/auth/ForgotPasswordForm";
 import { ResetPasswordSuccess } from "@/components/features/auth/ResetPasswordSuccess";
 import { VerificationCodeForm } from "@/components/features/auth/VerificationCodeForm";
 import { useAuthMode } from "@/stores/ui-authState";
-// import { useTheme } from "next-themes";
-
-// import { useAuthCheck } from "@/hooks/use-auth-check";
 import TranxBitLoader from "@/components/design/Loading-screen";
-// import { sendGAEvent } from "@next/third-parties/google";
 
-type AuthMode =
-  | "login"
-  | "register"
-  | "forgot-password"
-  | "reset-success"
-  | "verify-email";
+// type AuthMode =
+//   | "login"
+//   | "register"
+//   | "forgot-password"
+//   | "reset-success"
+//   | "verify-email";
 
-// Create an inner component for the auth page logic
 function AuthPageInner() {
-  const { authMode, setAuthMode } = useAuthMode();
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  const { authMode, setAuthMode, initializeFromUrl } = useAuthMode();
   const [resetEmail, setResetEmail] = useState<string>("");
   const [email, setEmail] = useState("");
-  const [mounted, setMounted] = useState(false);
- 
-  //   const { theme, resolvedTheme } = useTheme();
 
   useEffect(() => {
     setMounted(true);
-
-    // Get URL parameters
+  }, []);
+  useEffect(() => {
+    initializeFromUrl();
     const params = new URLSearchParams(window.location.search);
-    const mode = params.get("mode");
     const emailParam = params.get("email");
-
-    // Set auth mode and email if provided in URL
-    if (mode === "verify-email" && emailParam) {
-      setAuthMode("verify-email");
+    if (emailParam) {
       setEmail(emailParam);
     }
-  }, []);
+  }, [initializeFromUrl]);
+  const updateUrlMode = (mode: string, emailParam?: string) => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("mode", mode);
+
+    // Add email if provided
+    if (emailParam) {
+      url.searchParams.set("email", emailParam);
+    } else {
+      url.searchParams.delete("email");
+    }
+
+    // Preserve redirect parameter if it exists
+    const redirectUrl =
+      new URLSearchParams(window.location.search).get("redirect") ||
+      new URLSearchParams(window.location.search).get("returnUrl") ||
+      new URLSearchParams(window.location.search).get("return");
+    if (redirectUrl && !url.searchParams.has("redirect")) {
+      url.searchParams.set("redirect", redirectUrl);
+    }
+
+    window.history.replaceState({}, "", url.toString());
+  };
+
+  const handleSwitchToLogin = () => {
+    setAuthMode("login");
+    updateUrlMode("login");
+  };
+
+  const handleSwitchToRegister = () => {
+    setAuthMode("register");
+    updateUrlMode("register");
+  };
 
   const handleForgotPassword = () => {
     setAuthMode("forgot-password");
-    // sendGAEvent("formSubmission", "forgottenPassword", {
-    //   formType: "loginForm",
-    // });
+    updateUrlMode("forgot-password");
   };
 
   const handleResetSuccess = (email: string) => {
     setResetEmail(email);
     setAuthMode("reset-success");
+    updateUrlMode("reset-success");
   };
 
   const handleVerification = (email: string) => {
     setEmail(email);
     setAuthMode("verify-email");
+    updateUrlMode("verify-email", email);
   };
 
   const handleRegister = (email: string) => {
     setEmail(email);
     setAuthMode("verify-email");
+    updateUrlMode("verify-email", email);
   };
 
   const renderAuthContent = () => {
@@ -76,7 +99,7 @@ function AuthPageInner() {
       case "login":
         return (
           <LoginForm
-            onSwitchMode={() => setAuthMode("register")}
+            onSwitchMode={handleSwitchToRegister}
             onForgotPassword={handleForgotPassword}
             onVerify={handleVerification}
           />
@@ -84,21 +107,21 @@ function AuthPageInner() {
       case "register":
         return (
           <RegisterForm
-            onSwitchMode={() => setAuthMode("login")}
+            onSwitchMode={handleSwitchToLogin}
             onRegister={handleRegister}
           />
         );
       case "forgot-password":
         return (
           <ForgotPasswordForm
-            onSwitchMode={() => setAuthMode("login")}
+            onSwitchMode={handleSwitchToLogin}
             onSuccess={handleResetSuccess}
           />
         );
       case "reset-success":
         return (
           <ResetPasswordSuccess
-            onBackToLogin={() => setAuthMode("login")}
+            onBackToLogin={handleSwitchToLogin}
             email={resetEmail}
           />
         );
@@ -108,22 +131,22 @@ function AuthPageInner() {
             email={email}
             onSuccess={() => {
               // Handle successful verification
-              // Maybe redirect to dashboard or show success message
             }}
-            onBackToLogin={() => setAuthMode("login")}
+            onBackToLogin={handleSwitchToLogin}
           />
         );
     }
   };
 
   return (
-    <div className="max-w-md   mx-auto">
-      {/* Logo */}
+    <div className="max-w-md mx-auto">
       <div className="flex items-center justify-center gap-2 mb-8">
-        <TranxBitLogo variant="dark" size="medium" />
+        <TranxBitLogo
+          variant={mounted && theme === "dark" ? "light" : "dark"}
+          size="medium"
+        />
       </div>
 
-      {/* Auth form container */}
       <div>
         <h2 className="text-muted-foreground mb-6 text-center">
           {authMode === "login" && "Login to your account"}
@@ -139,10 +162,23 @@ function AuthPageInner() {
   );
 }
 
-// Main component wrapped in Suspense
 export default function AuthPage() {
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   return (
-    <Suspense fallback={<TranxBitLoader variant="light" isForm={true} />}>
+    <Suspense
+      fallback={
+        <TranxBitLoader
+          variant={mounted && theme === "dark" ? "dark" : "light"}
+          isForm={true}
+        />
+      }
+    >
       <div className="">
         <AuthPageInner />
       </div>

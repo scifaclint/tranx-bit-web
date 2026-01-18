@@ -5,6 +5,7 @@ import { Menu } from "lucide-react";
 import Link from "next/link";
 import { useAuthMode } from "@/stores/ui-authState";
 import { useRouter } from "next/navigation";
+// import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 // Navigation links array for easy mapping
 const navigationLinks = [
@@ -18,7 +19,7 @@ export function Header() {
   const { setAuthMode } = useAuthMode();
   return (
     <header className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-5xl px-4">
-      <div className="bg-white rounded-full shadow-xl border border-gray-100 px-6 py-3 flex items-center justify-between">
+      <div className="bg-sideBarBackground rounded-full shadow-xl border border-gray-100 dark:border-gray-800 px-6 py-3 flex items-center justify-between">
         <Link
           href="#"
           className="flex items-center justify-center"
@@ -34,7 +35,7 @@ export function Header() {
               key={link.name}
               asChild
               variant="ghost"
-              className="p-0 h-auto text-sm font-medium text-gray-600 hover:bg-transparent relative group"
+              className="p-0 h-auto text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-transparent relative group"
             >
               <Link href={link.href} prefetch={false} className="relative">
                 <span className="relative z-10">{link.name}</span>
@@ -44,13 +45,14 @@ export function Header() {
           ))}
         </nav>
         <div className="flex items-center gap-3">
+          {/* <ThemeToggle /> */}
           <Button
             onClick={() => {
               setAuthMode("login");
               router.push("/auth");
             }}
             variant="ghost"
-            className="text-sm bg-white text-gray-700 hover:bg-gray-50 rounded-full px-4 py-2 font-medium border border-gray-200 transition-all duration-300 hover:shadow-sm hover:border-gray-300 hover:scale-105"
+            className="text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-full px-4 py-2 font-medium border border-gray-200 dark:border-gray-700 transition-all duration-300 hover:shadow-sm hover:border-gray-300 dark:hover:border-gray-600 hover:scale-105"
           >
             Login
           </Button>
@@ -62,7 +64,7 @@ export function Header() {
                 setAuthMode("register");
                 router.push("/auth");
               }}
-              className="relative bg-gray-900 px-8 py-3 rounded-xl text-white transition-all duration-200 hover:bg-gray-800 hover:shadow-lg hover:-translate-y-0.5 hover:shadow-gray-600/30"
+              className="relative bg-gray-900 dark:bg-gray-800 px-8 py-3 rounded-xl text-white dark:text-gray-100 transition-all duration-200 hover:bg-gray-800 dark:hover:bg-gray-700 hover:shadow-lg hover:-translate-y-0.5 hover:shadow-gray-600/30"
             >
               Signup
               <svg
@@ -85,6 +87,7 @@ export function Header() {
             </Button>
           </div>
         </div>
+        {/* will implement later */}
         <Button variant="ghost" className="lg:hidden">
           <Menu className="h-6 w-6" />
           <span className="sr-only">Toggle menu</span>

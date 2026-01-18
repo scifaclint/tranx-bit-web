@@ -4,10 +4,10 @@ import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader, Eye, EyeOff, Check, X } from "lucide-react";
-// import { toast } from "sonner";
+import { toast } from "sonner";
 import { motion } from "framer-motion";
 
-// import { authApi } from "@/lib/api/auth";
+import { authApi } from "@/lib/api/auth";
 import { useRouter } from "next/navigation";
 
 interface ResetPasswordFormProps {
@@ -57,35 +57,39 @@ export function ResetPasswordForm({ email, token }: ResetPasswordFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // if (!validation.passwordsMatch) {
-    //   toast.error("Passwords don't match");
-    //   return;
-    // }
+    if (!validation.passwordsMatch) {
+      toast.error("Passwords don't match");
+      return;
+    }
 
-    // if (!Object.values(validation).every(Boolean)) {
-    //   toast.error("Please ensure your password meets all requirements");
-    //   return;
-    // }
+    if (!Object.values(validation).every(Boolean)) {
+      toast.error("Please ensure your password meets all requirements");
+      return;
+    }
 
-    // setIsLoading(true);
+    setIsLoading(true);
 
-    // try {
-    //   const response = await authApi.resetPassword({
-    //     token,
-    //     email,
-    //     password,
-    //     password_confirmation: passwordConfirmation,
-    //   });
+    try {
+      const response = await authApi.resetPassword({
+        token,
+        email,
+        password,
+        password_confirmation: passwordConfirmation,
+      });
 
-    //   toast.success("Password Reset Successful");
-    //   router.push("/auth");
-    // } catch (error: any) {
-    //   toast.error(
-    //     error.response?.data?.message ||
-    //       "Something went wrong. Please try again."
-    //   );
-    //   setIsLoading(false);
-    // }
+      toast.success("Password Reset Successful");
+      router.push("/auth");
+    } catch (error: any) {
+      console.error("Reset password error:", error);
+      console.error("Error response:", error.response?.data);
+      console.error("Error status:", error.response?.status);
+
+      toast.error(
+        error.response?.data?.message ||
+          "Something went wrong. Please try again."
+      );
+      setIsLoading(false);
+    }
   };
 
   const ValidationItem = ({
@@ -201,9 +205,8 @@ export function ResetPasswordForm({ email, token }: ResetPasswordFormProps) {
       </div>
 
       <Button
-        variant="secondary"
         type="submit"
-        className="w-full bg-black text-white"
+        className="w-full"
         disabled={isLoading || !Object.values(validation).every(Boolean)}
       >
         {isLoading ? (

@@ -34,17 +34,12 @@ export default function TawkToWidget({
   const enforcementTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleScriptLoad = () => {
-    console.log("Script loaded, user data:", user);
-
     // Wait for Tawk to be fully ready
     const checkTawk = setInterval(() => {
       if (window.Tawk_API && window.Tawk_API.onLoad) {
         clearInterval(checkTawk);
 
         window.Tawk_API.onLoad = function () {
-          console.log("Tawk.to loaded successfully");
-          console.log("Setting user attributes:", user);
-
           // Show widget and force online status
           window.Tawk_API.showWidget();
           window.Tawk_API.setAttributes({
@@ -58,13 +53,9 @@ export default function TawkToWidget({
               if (user.email) attributes.email = user.email;
               if (user.hash) attributes.hash = user.hash;
 
-              console.log("Calling setAttributes with:", attributes);
-
               window.Tawk_API.setAttributes(attributes, function (error: any) {
                 if (error) {
                   console.error("Tawk.to setAttributes error:", error);
-                } else {
-                  console.log("User attributes set successfully!");
                 }
               });
 
@@ -74,8 +65,6 @@ export default function TawkToWidget({
                   function (error: any) {
                     if (error) {
                       console.error("Tawk.to addTags error:", error);
-                    } else {
-                      console.log("User tags added successfully!");
                     }
                   }
                 );
@@ -83,8 +72,6 @@ export default function TawkToWidget({
             } catch (error) {
               console.error("Error setting Tawk user attributes:", error);
             }
-          } else {
-            console.warn("No user data provided or user has no name/email");
           }
         };
       }
@@ -111,8 +98,6 @@ export default function TawkToWidget({
       return pathname === route;
     });
 
-    console.log(`Route: ${pathname}, Should hide: ${shouldHide}`);
-
     // Clear any existing intervals/timeouts
     if (enforcementIntervalRef.current) {
       clearInterval(enforcementIntervalRef.current);
@@ -125,10 +110,8 @@ export default function TawkToWidget({
     if (window.Tawk_API) {
       if (shouldHide) {
         window.Tawk_API.hideWidget?.();
-        console.log("Immediately hiding Tawk widget");
       } else {
         window.Tawk_API.showWidget?.();
-        console.log("Immediately showing Tawk widget");
       }
     }
 
@@ -165,7 +148,6 @@ export default function TawkToWidget({
     enforcementTimeoutRef.current = setTimeout(() => {
       if (enforcementIntervalRef.current) {
         clearInterval(enforcementIntervalRef.current);
-        console.log("Stopped enforcing widget visibility");
       }
     }, 8000);
 

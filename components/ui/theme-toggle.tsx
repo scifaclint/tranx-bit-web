@@ -54,7 +54,7 @@ export function ThemeToggle() {
             variant="ghost"
             size="icon"
             onClick={handleThemeToggle}
-            className="hidden md:flex w-8 h-8 p-1 text-muted-foreground rounded-full border border-borderColorPrimary"
+            className="hidden md:flex w-8 h-8 p-1 text-muted-foreground dark:text-muted-foreground rounded-full border border-borderColorPrimary dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
           >
             <Sun 
               className={`h-[1.2rem] w-[1.2rem] transition-all ${

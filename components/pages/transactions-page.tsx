@@ -1,13 +1,45 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FileText, ShoppingBag } from "lucide-react";
-import Link from "next/link";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from "@/components/ui/dropdown-menu";
+import {
+  Filter,
+  ChevronRight,
+  TrendingUp,
+  TrendingDown,
+  Clock,
+  CheckCircle2,
+  XCircle,
+  Loader,
+  CreditCard,
+  History,
+  DollarSign,
+  Wallet,
+} from "lucide-react";
 import Image from "next/image";
+import { useUserOrders } from "@/hooks/useOrders";
+import { motion } from "framer-motion";
 
-type FilterStatus = "all" | "pending" | "completed" | "failed";
+type FilterStatus =
+  | "all"
+  | "pending_payment"
+  | "under_review"
+  | "completed"
+  | "cancelled"
+  | "refunded"
+  | "payment_claimed";
+type FilterType = "all" | "buy" | "sell";
 
 interface Transaction {
   id: string;
@@ -20,180 +52,310 @@ interface Transaction {
 }
 
 export default function TransactionPage() {
-  const [activeFilter, setActiveFilter] = useState<FilterStatus>("all");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [statusFilter, setStatusFilter] = useState<FilterStatus>("all");
+  const [typeFilter, setTypeFilter] = useState<FilterType>("all");
+  const [page, setPage] = useState(1);
 
-  // Mock transactions
-  const transactions: Transaction[] = [
-    {
-      id: "1",
-      brand: "Amazon",
-      brandLogo: "/brands/logo-amazon.svg",
-      type: "sell",
-      date: "Oct 28, 2025",
-      amount: 25.0,
-      status: "completed",
-    },
-    {
-      id: "2",
-      brand: "iTunes",
-      brandLogo: "/brands/itunes-1.svg",
-      type: "buy",
-      date: "Oct 27, 2025",
-      amount: 50.0,
-      status: "pending",
-    },
-  ];
+  // API Call
+  const { data: ordersData, isLoading, isFetching } = useUserOrders(page);
+  const transactions = ordersData?.data?.orders || [];
+  const pagination = ordersData?.data?.pagination;
 
-  const filters: { label: string; value: FilterStatus }[] = [
-    { label: "All", value: "all" },
-    { label: "Pending", value: "pending" },
-    { label: "Completed", value: "completed" },
-    { label: "Failed", value: "failed" },
-  ];
+  // Read filters from URL query parameters on mount
+  useEffect(() => {
+    const statusParam = searchParams.get("status");
+    const typeParam = searchParams.get("type");
+
+    const validStatuses = [
+      "all",
+      "pending_payment",
+      "under_review",
+      "completed",
+      "cancelled",
+      "refunded",
+      "payment_claimed",
+    ];
+
+    if (statusParam && validStatuses.includes(statusParam)) {
+      setStatusFilter(statusParam as FilterStatus);
+    }
+
+    if (typeParam && ["all", "buy", "sell"].includes(typeParam)) {
+      setTypeFilter(typeParam as FilterType);
+    }
+  }, [searchParams]);
+
+  const statusFilters: {
+    label: string;
+    value: FilterStatus;
+    icon: React.ElementType;
+  }[] = [
+      { label: "All Status", value: "all", icon: Filter },
+      { label: "Pending Payment", value: "pending_payment", icon: Clock },
+      { label: "Under Review", value: "under_review", icon: TrendingUp },
+      { label: "Completed", value: "completed", icon: CheckCircle2 },
+      { label: "Cancelled", value: "cancelled", icon: XCircle },
+      { label: "Refunded", value: "refunded", icon: DollarSign },
+      { label: "Payment Claimed", value: "payment_claimed", icon: Wallet },
+    ];
+
+  const typeFilters: {
+    label: string;
+    value: FilterType;
+    icon: React.ElementType;
+  }[] = [
+      { label: "All Types", value: "all", icon: Filter },
+      { label: "Buy", value: "buy", icon: TrendingUp },
+      { label: "Sell", value: "sell", icon: TrendingDown },
+    ];
+
+  const getStatusLabel = () => {
+    return (
+      statusFilters.find((f) => f.value === statusFilter)?.label || "All Status"
+    );
+  };
+
+  const getTypeLabel = () => {
+    return (
+      typeFilters.find((f) => f.value === typeFilter)?.label || "All Types"
+    );
+  };
+
+  // Filter transactions based on active filters (client-side for now, could be server-side later)
+  const filteredTransactions = transactions.filter((t) => {
+    const statusMatch = statusFilter === "all" || t.status.toLowerCase().includes(statusFilter.toLowerCase());
+    const typeMatch = typeFilter === "all" || t.type.toLowerCase() === typeFilter.toLowerCase();
+    return statusMatch && typeMatch;
+  });
+
+  // Handle row click
+  const handleRowClick = (transactionId: string) => {
+    router.push(`/transactions/${transactionId}`);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px]">
+        <Loader className="h-8 w-8 text-black animate-spin" />
+        <p className="mt-2 text-sm text-muted-foreground font-medium">Loading transactions...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold">Transactions</h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          View and manage your gift card transactions
-        </p>
-      </div>
-
-      {/* Filter Pills */}
-      <div className="flex flex-wrap gap-2">
-        {filters.map((filter) => (
-          <button
-            key={filter.value}
-            onClick={() => setActiveFilter(filter.value)}
-            className={`
-              px-4 py-2 rounded-full text-sm font-medium transition-all duration-200
-              ${
-                activeFilter === filter.value
-                  ? "bg-blue-600 text-white shadow-md shadow-blue-600/30"
-                  : "bg-muted text-muted-foreground hover:bg-blue-50 dark:hover:bg-blue-950 hover:text-foreground"
-              }
-            `}
-          >
-            {filter.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Empty State or Transactions Table */}
-      {transactions.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 px-4">
-          <div className="relative mb-6">
-            {/* Animated background circle */}
-            <div className="absolute inset-0 bg-blue-100 dark:bg-blue-950 rounded-full opacity-20 animate-pulse"></div>
-            {/* Icon */}
-            <div className="relative bg-blue-50 dark:bg-blue-950/50 rounded-full p-6">
-              <FileText className="h-12 w-12 text-blue-600" strokeWidth={1.5} />
-            </div>
-          </div>
-
-          <h3 className="text-xl font-semibold mb-2">No Transactions Yet</h3>
-          <p className="text-muted-foreground text-center mb-6 max-w-md">
-            Your transaction history will appear here once you start buying or
-            selling gift cards.
-          </p>
-
-          <div className="flex flex-wrap gap-3 justify-center">
-            <Link href="/buy-giftcards">
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-600/30">
-                <ShoppingBag className="h-4 w-4 mr-2" />
-                Buy Gift Card
-              </Button>
-            </Link>
-            <Link href="/sell-giftcards">
-              <Button
-                variant="outline"
-                className="hover:bg-blue-50 dark:hover:bg-blue-950 hover:border-blue-500"
-              >
-                Sell Gift Card
-              </Button>
-            </Link>
-          </div>
+      {/* Header with Filter Dropdowns */}
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold">Transactions</h1>
+          {isFetching && <Loader className="h-4 w-4 text-muted-foreground animate-spin" />}
         </div>
+
+        {/* Filter Controls */}
+        <div className="flex items-center gap-3">
+          {/* Status Filter */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="gap-2 min-w-[140px] bg-backgroundSecondary border-borderColorPrimary dark:border-white/10">
+                <Filter className="h-4 w-4" />
+                {getStatusLabel()}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuLabel className="text-xs text-muted-foreground">
+                Filter by Status
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {statusFilters.map((filter) => {
+                const Icon = filter.icon;
+                return (
+                  <DropdownMenuItem
+                    key={filter.value}
+                    onClick={() => setStatusFilter(filter.value)}
+                    className={`cursor-pointer flex items-center gap-2 ${statusFilter === filter.value
+                      ? "bg-black text-white dark:bg-white dark:text-black"
+                      : ""
+                      }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {filter.label}
+                  </DropdownMenuItem>
+                );
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Type Filter */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="gap-2 min-w-[130px] bg-backgroundSecondary border-borderColorPrimary dark:border-white/10">
+                <Filter className="h-4 w-4" />
+                {getTypeLabel()}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44">
+              <DropdownMenuLabel className="text-xs text-muted-foreground">
+                Filter by Type
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {typeFilters.map((filter) => {
+                const Icon = filter.icon;
+                return (
+                  <DropdownMenuItem
+                    key={filter.value}
+                    onClick={() => setTypeFilter(filter.value)}
+                    className={`cursor-pointer flex items-center gap-2 ${typeFilter === filter.value
+                      ? "bg-black text-white dark:bg-white dark:text-black"
+                      : ""
+                      }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {filter.label}
+                  </DropdownMenuItem>
+                );
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+
+      {/* Transaction Table */}
+      {filteredTransactions.length === 0 ? (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="flex flex-col items-center justify-center py-20 border rounded-2xl bg-backgroundSecondary/20 border-borderColorPrimary border-dashed"
+        >
+          <div className="bg-muted/20 p-4 rounded-full mb-4">
+            <History className="h-10 w-10 text-muted-foreground/60" strokeWidth={1.5} />
+          </div>
+          <h3 className="text-lg font-semibold text-foreground/80">No Transactions Found</h3>
+          <p className="text-muted-foreground text-sm max-w-[250px] text-center mt-2">
+            Your gift card transactions will appear here once they are processed.
+          </p>
+        </motion.div>
       ) : (
-        <div className="border rounded-lg overflow-hidden bg-card max-h-[600px] flex flex-col">
-          {/* Table Header - Sticky */}
-          <div className="grid grid-cols-5 gap-4 p-4 bg-muted/50 border-b font-medium text-sm sticky top-0 z-10">
-            <div className="col-span-2">Transaction</div>
+        <div className="border rounded-lg overflow-hidden dark:bg-background border-borderColorPrimary shadow-sm">
+          {/* Table Header */}
+          <div className="grid grid-cols-[2fr_1fr_1fr_1.2fr_1fr_auto] gap-4 px-6 py-4 bg-backgroundSecondary/50 border-b border-borderColorPrimary font-semibold text-sm">
+            <div>Product name</div>
             <div>Type</div>
+            <div>Amount</div>
             <div>Date</div>
-            <div className="text-right">Amount</div>
+            <div>Status</div>
+            <div className="w-8"></div>
           </div>
 
-          {/* Table Body - Scrollable */}
-          <div className="divide-y overflow-y-auto flex-1">
-            {transactions.map((transaction) => (
-              <div
-                key={transaction.id}
-                className="grid grid-cols-5 gap-4 p-4 hover:bg-muted/30 transition-colors cursor-pointer items-center"
-              >
-                {/* Transaction (Brand + Status) */}
-                <div className="col-span-2 flex items-center gap-3">
-                  <div className="relative w-10 h-10 flex-shrink-0 bg-muted rounded-lg p-2">
-                    <Image
-                      src={transaction.brandLogo}
-                      alt={transaction.brand}
-                      fill
-                      className="object-contain"
-                    />
+          {/* Table Body with ScrollArea */}
+          <ScrollArea className="h-[calc(100vh-350px)] min-h-[400px]">
+            <div className="divide-y divide-border/50">
+              {filteredTransactions.map((transaction) => (
+                <div
+                  key={transaction.orderId}
+                  onClick={() => handleRowClick(transaction.orderId)}
+                  className="grid grid-cols-[2fr_1fr_1fr_1.2fr_1fr_auto] gap-4 px-6 py-4 hover:bg-backgroundSecondary transition-all duration-200 cursor-pointer items-center group"
+                >
+                  {/* Product name (Brand) */}
+                  <div className="flex items-center gap-3">
+                    <div className="relative w-10 h-10 flex-shrink-0 bg-muted/60 rounded-lg flex items-center justify-center ring-1 ring-border/50 group-hover:ring-border transition-all overflow-hidden p-1">
+                      <CreditCard className="w-6 h-6 text-muted-foreground" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="font-medium text-sm group-hover:text-foreground/80 transition-colors truncate max-w-[150px]">
+                        {transaction.productName || transaction.brand}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {transaction.orderId}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex flex-col">
-                    <span className="font-medium">{transaction.brand}</span>
+
+                  {/* Type */}
+                  <div>
                     <Badge
-                      variant={
-                        transaction.status === "completed"
-                          ? "default"
-                          : transaction.status === "pending"
-                          ? "secondary"
-                          : "destructive"
-                      }
-                      className={`w-fit mt-1 ${
-                        transaction.status === "completed"
-                          ? "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400"
-                          : transaction.status === "pending"
-                          ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-400"
-                          : ""
-                      }`}
+                      variant="outline"
+                      className="text-xs font-medium w-fit"
                     >
-                      {transaction.status.charAt(0).toUpperCase() +
-                        transaction.status.slice(1)}
+                      {transaction.type.charAt(0).toUpperCase() +
+                        transaction.type.slice(1)}
                     </Badge>
                   </div>
-                </div>
 
-                {/* Type */}
-                <div>
-                  <Badge
-                    variant="outline"
-                    className={`${
-                      transaction.type === "buy"
-                        ? "border-green-500 text-green-700 dark:text-green-400"
-                        : "border-blue-500 text-blue-700 dark:text-blue-400"
-                    }`}
-                  >
-                    {transaction.type.charAt(0).toUpperCase() +
-                      transaction.type.slice(1)}
-                  </Badge>
-                </div>
+                  {/* Amount */}
+                  <div className="font-semibold text-sm tabular-nums">
+                    ${transaction.amount.toFixed(2)}
+                  </div>
 
-                {/* Date */}
-                <div className="text-sm text-muted-foreground">
-                  {transaction.date}
-                </div>
+                  {/* Date */}
+                  <div className="text-sm text-muted-foreground">
+                    {transaction.date}
+                  </div>
 
-                {/* Amount */}
-                <div className="text-right font-semibold">
-                  ${transaction.amount.toFixed(2)}
+                  {/* Status */}
+                  <div>
+                    <Badge
+                      variant="outline"
+                      className={`w-fit text-xs font-medium flex items-center gap-1.5 ${transaction.status.toLowerCase().includes("completed")
+                        ? "border-green-300 bg-green-50 text-green-700 dark:border-green-700 dark:bg-green-950/30 dark:text-green-400"
+                        : transaction.status.toLowerCase().includes("pending")
+                          ? "border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-400"
+                          : "border-red-300 bg-red-50 text-red-700 dark:border-red-700 dark:bg-red-950/30 dark:text-red-400"
+                        }`}
+                    >
+                      {transaction.status.toLowerCase().includes("completed") && (
+                        <CheckCircle2 className="h-3 w-3" />
+                      )}
+                      {transaction.status.toLowerCase().includes("pending") && (
+                        <Clock className="h-3 w-3" />
+                      )}
+                      {!transaction.status.toLowerCase().includes("completed") && !transaction.status.toLowerCase().includes("pending") && (
+                        <XCircle className="h-3 w-3" />
+                      )}
+                      {transaction.status.charAt(0).toUpperCase() +
+                        transaction.status.slice(1).toLowerCase()}
+                    </Badge>
+                  </div>
+
+                  {/* Arrow Icon */}
+                  <div className="flex items-center justify-end">
+                    <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground group-hover:translate-x-1 transition-all" />
+                  </div>
                 </div>
+              ))}
+            </div>
+          </ScrollArea>
+
+          {/* Pagination Controls */}
+          {pagination && pagination.totalPages > 1 && (
+            <div className="flex items-center justify-between px-6 py-4 bg-backgroundSecondary/30 border-t border-borderColorPrimary font-medium text-sm mt-auto">
+              <div className="text-muted-foreground hidden sm:block">
+                Page {pagination.currentPage} of {pagination.totalPages}
               </div>
-            ))}
-          </div>
+              <div className="flex items-center gap-2 ml-auto">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!pagination.hasPrevPage || isFetching}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  className="h-8 border-black/10 text-xs"
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!pagination.hasNextPage || isFetching}
+                  onClick={() => setPage((p) => p + 1)}
+                  className="h-8 border-black/10 text-xs"
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

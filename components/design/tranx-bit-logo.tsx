@@ -59,24 +59,19 @@ const TranxBitLogo: React.FC<TranxBitLogoProps> = ({
           />
 
           <path
-            d={`M ${-config.logoRadius * 0.23} ${config.logoRadius * 0.23} L ${
-              -config.logoRadius * 0.34
-            } ${config.logoRadius * 0.34} L ${-config.logoRadius * 0.23} ${
-              config.logoRadius * 0.46
-            } M ${-config.logoRadius * 0.34} ${config.logoRadius * 0.34} L ${
-              config.logoRadius * 0.34
-            } ${config.logoRadius * 0.34}`}
+            d={`M ${-config.logoRadius * 0.23} ${config.logoRadius * 0.23} L ${-config.logoRadius * 0.34
+              } ${config.logoRadius * 0.34} L ${-config.logoRadius * 0.23} ${config.logoRadius * 0.46
+              } M ${-config.logoRadius * 0.34} ${config.logoRadius * 0.34} L ${config.logoRadius * 0.34
+              } ${config.logoRadius * 0.34}`}
             stroke={isDark ? "#fff" : "#000"}
             strokeWidth="1.5"
             fill="none"
           />
 
           <path
-            d={`M ${config.logoRadius * 0.23} ${config.logoRadius * 0.23} L ${
-              config.logoRadius * 0.34
-            } ${config.logoRadius * 0.34} L ${config.logoRadius * 0.23} ${
-              config.logoRadius * 0.46
-            }`}
+            d={`M ${config.logoRadius * 0.23} ${config.logoRadius * 0.23} L ${config.logoRadius * 0.34
+              } ${config.logoRadius * 0.34} L ${config.logoRadius * 0.23} ${config.logoRadius * 0.46
+              }`}
             stroke={isDark ? "#fff" : "#000"}
             strokeWidth="1.5"
             fill="none"

@@ -1,10 +1,12 @@
 "use client";
 import TranxBitLogo from "../design/tranx-bit-logo";
 import { useState, useEffect } from "react";
+import { useTheme } from "next-themes";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import ConfirmationModal from "@/components/modals/confirmation-modal";
+// import { ThemeToggle } from "@/components/ui/theme-toggle";
 import {
   Tooltip,
   TooltipContent,
@@ -37,7 +39,13 @@ const Sidebar = ({ onCollapse, userType = "user" }: SidebarProps) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Ensure parent component knows initial state
   useEffect(() => {
@@ -52,12 +60,13 @@ const Sidebar = ({ onCollapse, userType = "user" }: SidebarProps) => {
       icon: LayoutDashboard,
       href: "/dashboard",
     },
-    {
+    // Hiding "Buy Gift Card" for now - prioritizing core features for MVP
+    /* {
       id: "buy",
       label: "Buy Gift Card",
       icon: ShoppingCart,
       href: "/buy-giftcards",
-    },
+    }, */
     {
       id: "sell",
       label: "Sell Gift Card",
@@ -75,18 +84,12 @@ const Sidebar = ({ onCollapse, userType = "user" }: SidebarProps) => {
 
   // Admin navigation items
   const adminNavItems = [
-    {
-      id: "dashboard",
-      label: "Dashboard",
-      icon: LayoutDashboard,
-      href: `${AdminBaseRoute}/dashboard`,
-    },
-    {
-      id: "users",
-      label: "Users",
-      icon: Users,
-      href: `${AdminBaseRoute}/users`,
-    },
+    // {
+    //   id: "dashboard",
+    //   label: "Dashboard",
+    //   icon: LayoutDashboard,
+    //   href: `${AdminBaseRoute}/dashboard`,
+    // },
     {
       id: "cards",
       label: "Cards",
@@ -94,17 +97,23 @@ const Sidebar = ({ onCollapse, userType = "user" }: SidebarProps) => {
       href: `${AdminBaseRoute}/cards`,
     },
     {
-      id: "accounting",
-      label: "Accounting",
-      icon: Wallet,
-      href: `${AdminBaseRoute}/accounting`,
+      id: "orders",
+      label: "Orders",
+      icon: Receipt,
+      href: `${AdminBaseRoute}/orders`,
     },
-    {
-      id: "settings",
-      label: "Settings",
-      icon: Settings,
-      href: `${AdminBaseRoute}/settings`,
-    },
+    // {
+    //   id: "users",
+    //   label: "Users",
+    //   icon: Users,
+    //   href: `${AdminBaseRoute}/users`,
+    // },
+    // {
+    //   id: "settings",
+    //   label: "Settings",
+    //   icon: Settings,
+    //   href: `${AdminBaseRoute}/settings`,
+    // },
   ];
 
   const navItems = userType === "admin" ? adminNavItems : userNavItems;
@@ -117,7 +126,10 @@ const Sidebar = ({ onCollapse, userType = "user" }: SidebarProps) => {
   const NavItem = ({ item }: { item: (typeof navItems)[number] }) => {
     // Use startsWith for buy and sell routes to keep them active on sub-routes
     const isActive =
-      item.href === "/buy-giftcards" || item.href === "/sell-giftcards"
+      item.href === "/buy-giftcards" ||
+        item.href === "/sell-giftcards" ||
+        item.href === "/transactions" ||
+        item.href.includes(`${AdminBaseRoute}/`)
         ? pathname.startsWith(item.href)
         : pathname === item.href;
 
@@ -130,19 +142,18 @@ const Sidebar = ({ onCollapse, userType = "user" }: SidebarProps) => {
         onClick={
           isLogout
             ? (e) => {
-                e.preventDefault();
-                setShowLogoutModal(true);
-              }
+              e.preventDefault();
+              setShowLogoutModal(true);
+            }
             : undefined
         }
         className={`
           w-full flex items-center gap-3 justify-start h-12 rounded-lg transition-all duration-300
-          ${
-            isActive
-              ? // Active state with fafafa background and gray text
-                "bg-[#fafafa] text-gray-600 hover:bg-gray-100"
-              : // Inactive state with hover
-                "text-gray-600 hover:bg-gray-50"
+          ${isActive
+            ? // Active state with fafafa background and gray text
+            "bg-primary/10 text-primary"
+            : // Inactive state with hover
+            "hover:bg-muted"
           }
           ${isCollapsed ? "justify-center px-0" : "px-4"}
         `}
@@ -178,37 +189,43 @@ const Sidebar = ({ onCollapse, userType = "user" }: SidebarProps) => {
     );
   };
 
-  const SidebarContent = () => (
-    <>
-      {/* Logo Area */}
-      <div
-        className={`p-6 bg-white border-b border-gray-200 ${
-          isCollapsed ? "px-4" : ""
-        }`}
-      >
-        {/* <TranxBitLogo size="medium" variant="dark" /> */}
-        {isCollapsed ? (
-          <TranxBitLogo size="small" variant="dark" isMobile={true} />
-        ) : (
-          <TranxBitLogo size="medium" variant="dark" />
-        )}
-      </div>
+  const SidebarContent = () => {
+    const logoVariant = mounted && theme === "dark" ? "light" : "dark";
 
-      {/* Main Navigation */}
-      <nav className="flex-1 bg-white px-4 py-6 space-y-2 overflow-y-auto">
-        {navItems.map((item) => (
-          <NavItem key={item.id} item={item} />
-        ))}
-      </nav>
+    return (
+      <>
+        {/* Logo Area */}
+        <div
+          className={`p-6 bg-transparent border-b border-borderColorPrimary ${isCollapsed ? "px-4" : ""
+            }`}
+        >
+          {/* <TranxBitLogo size="medium" variant={logoVariant} /> */}
+          {isCollapsed ? (
+            <TranxBitLogo size="small" variant={logoVariant} isMobile={true} />
+          ) : (
+            <TranxBitLogo size="medium" variant={logoVariant} />
+          )}
+        </div>
 
-      {/* Bottom Items */}
-      <div className="px-4 bg-white py-6 border-t border-gray-200 space-y-2">
-        {bottomItems.map((item) => (
-          <NavItem key={item.id} item={item} />
-        ))}
-      </div>
-    </>
-  );
+        {/* Main Navigation */}
+        <nav className="flex-1 bg-transparent px-4 py-6 space-y-2 overflow-y-auto">
+          {navItems.map((item) => (
+            <NavItem key={item.id} item={item} />
+          ))}
+        </nav>
+
+        {/* Bottom Items */}
+        <div className="px-4 bg-transparent py-6 border-t border-borderColorPrimary space-y-2">
+          <div className="mb-2">
+            {/* <ThemeToggle /> */}
+          </div>
+          {bottomItems.map((item) => (
+            <NavItem key={item.id} item={item} />
+          ))}
+        </div>
+      </>
+    );
+  };
 
   return (
     <>
@@ -233,7 +250,7 @@ const Sidebar = ({ onCollapse, userType = "user" }: SidebarProps) => {
       {/* Mobile Drawer */}
       <aside
         className={`
-          lg:hidden fixed top-0 left-0 h-full w-72  border-r border-gray-200 z-50 
+          lg:hidden fixed top-0 left-0 h-full w-72 bg-sideBarBackground border-r border-borderColorPrimary z-50 
           transform transition-transform duration-300 ease-in-out flex flex-col
           ${isMobileOpen ? "translate-x-0" : "-translate-x-full"}
         `}
@@ -252,7 +269,7 @@ const Sidebar = ({ onCollapse, userType = "user" }: SidebarProps) => {
       {/* Desktop Sidebar */}
       <aside
         className={`
-          hidden lg:flex fixed top-0 left-0 h-full  border-r border-gray-200 z-30
+          hidden lg:flex fixed top-0 left-0 h-full bg-sideBarBackground border-r border-borderColorPrimary z-30
           flex-col transition-all duration-300 ease-in-out
           ${isCollapsed ? "w-20" : "w-72"}
         `}
@@ -283,8 +300,9 @@ const Sidebar = ({ onCollapse, userType = "user" }: SidebarProps) => {
         isOpen={showLogoutModal}
         onClose={() => setShowLogoutModal(false)}
         onConfirm={() => {
-          console.log("User confirmed logout");
-          // Add logout logic here
+          // Logout logic will be implemented when backend is ready
+          // For now, redirect to auth page
+          window.location.href = "/auth";
         }}
         title="Logout"
         description="Are you sure you want to logout? You will need to sign in again to access your account."

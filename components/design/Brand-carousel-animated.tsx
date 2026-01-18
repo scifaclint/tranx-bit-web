@@ -65,15 +65,15 @@ export default function BrandCarousel() {
   const doubledBrands = [...brands, ...brands];
 
   return (
-    <div className="w-full py-24 bg-white relative overflow-hidden">
+    <div className="w-full py-24 bg-white dark:bg-gray-950 relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-8">
         {/* Header with title and vertical lines */}
         <div className="text-center mb-16 relative">
           {/* Left vertical line */}
-          <div className="absolute left-0 top-1/2 transform -translate-y-1/2 h-20 w-px bg-gradient-to-b from-transparent via-blue-400 to-transparent hidden md:block"></div>
+          <div className="absolute left-0 top-1/2 transform -translate-y-1/2 h-20 w-px bg-gradient-to-b from-transparent via-blue-400 dark:via-blue-500 to-transparent hidden md:block"></div>
 
           <motion.h2
-            className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 max-w-4xl mx-auto"
+            className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-gray-100 mb-6 max-w-4xl mx-auto"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -83,7 +83,7 @@ export default function BrandCarousel() {
           </motion.h2>
 
           {/* Right vertical line */}
-          <div className="absolute right-0 top-1/2 transform -translate-y-1/2 h-20 w-px bg-gradient-to-b from-transparent via-blue-400 to-transparent hidden md:block"></div>
+          <div className="absolute right-0 top-1/2 transform -translate-y-1/2 h-20 w-px bg-gradient-to-b from-transparent via-blue-400 dark:via-blue-500 to-transparent hidden md:block"></div>
         </div>
 
         {/* Brand carousel with infinite animation */}
@@ -126,10 +126,10 @@ export default function BrandCarousel() {
           </div>
 
           {/* Fade gradient on the left */}
-          <div className="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-white to-transparent z-10"></div>
+          <div className="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-white dark:from-gray-950 to-transparent z-10"></div>
 
           {/* Fade gradient on the right */}
-          <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-white to-transparent z-10"></div>
+          <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-white dark:from-gray-950 to-transparent z-10"></div>
         </div>
       </div>
     </div>

@@ -1,19 +1,25 @@
 "use client";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-// import { GoogleButton } from "./GoogleButton";
 import { motion } from "framer-motion";
-import { formVariants } from "@/lib/utils";
 import { Loader } from "lucide-react";
-// import { useRouter } from "next/navigation";
-// import { toast } from "sonner";
-
-// import { sendGAEvent } from "@next/third-parties/google";
-
+import { toast } from "sonner";
+import { authApi } from "@/lib/api/auth";
+import { useAuthStore } from "@/stores";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+
+const formVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.3 },
+  },
+  exit: { opacity: 0, y: -20 },
+};
 
 interface LoginFormProps {
   onSwitchMode: () => void;
@@ -26,33 +32,69 @@ export function LoginForm({
   onForgotPassword,
   onVerify,
 }: LoginFormProps) {
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState(""); // Can be username or email
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  //   const { login } = useAuth();
+
+  const { setAuth } = useAuthStore();
   const router = useRouter();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const identifierType = useMemo(() => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(identifier.trim()) ? "email" : "username";
+  }, [identifier]);
+
+  const handleSubmit = async () => {
+    if (!identifier.trim()) {
+      toast.error("Please enter your username or email");
+      return;
+    }
+
+    if (!password || password.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+
     setIsLoading(true);
 
-    try {
-      if(!email || !password) {
-        throw new Error("Email and password are required");
-      }
+    // Add a 2 second delay to simulate connecting to backend
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
-      // mock login 
-      router.push("/dashboard");
-      
+    try {
+      const results = await authApi.login({
+        identifier: identifier.trim(),
+        identifierType: identifierType,
+        password: password,
+      });
+
+      if (results.status && results.data) {
+        if (results.data.to === "verify-email") {
+          onVerify(results.data.user.email);
+          setIsLoading(false);
+          return;
+        }
+        setAuth(results.data.user, results.data.token);
+        toast.success("Login successful");
+        router.replace("/dashboard");
+        return;
+      } else {
+        throw new Error(results.error || "Login failed");
+      }
     } catch (error: any) {
       setPassword("");
-      //   toast.error("Login failed, please try again");
-      //   sendGAEvent("formSubmission", "submit", {
-      //     authType: "loginForm",
-      //     status: "failed",
-      //   });
+
+      toast.error("Login failed", {
+        description: "Please check your credentials and try again.",
+      });
+    } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleSubmit();
     }
   };
 
@@ -64,29 +106,17 @@ export function LoginForm({
       exit="exit"
       className="space-y-8 flex flex-col justify-center max-w-md mx-auto w-full py-8"
     >
-      {/* Google Sign In */}
-      {/* <GoogleButton /> */}
-
-      {/* Divider */}
-      {/* <div className="relative ">
-        <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t border-gray-300" />
-        </div>
-        <div className="relative flex justify-center text-sm">
-          <span className="bg-background px-2 text-muted-foreground">OR</span>
-        </div>
-      </div> */}
-
-      {/* Email/Password Form */}
-      <form onSubmit={handleSubmit} className="space-y-5">
-        <div>
+      <div className="space-y-5">
+        <div className="space-y-1">
           <Input
-            type="email"
-            placeholder="Email Address"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            type="text"
+            placeholder="Username or Email"
+            value={identifier}
+            onChange={(e) => setIdentifier(e.target.value)}
+            onKeyPress={handleKeyPress}
             required
-            className="border-borderColorPrimary focus-visible:outline-none h-12"
+            autoComplete="username"
+            className="bg-backgroundSecondary border-borderColorPrimary hover:border-neutral-400 focus:border-bodyColor transition-all duration-300 focus-visible:outline-none h-12"
           />
         </div>
 
@@ -96,8 +126,10 @@ export function LoginForm({
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            onKeyPress={handleKeyPress}
             required
-            className="border-borderColorPrimary focus-visible:outline-none h-12"
+            autoComplete="current-password"
+            className="bg-backgroundSecondary border-borderColorPrimary hover:border-neutral-400 focus:border-bodyColor transition-all duration-300 focus-visible:outline-none h-12"
           />
         </div>
 
@@ -107,7 +139,7 @@ export function LoginForm({
               id="show-password"
               checked={showPassword}
               onCheckedChange={(checked) => setShowPassword(checked as boolean)}
-              className="border focus-visible:outline-none"
+              className="bg-backgroundSecondary border-borderColorPrimary focus-visible:outline-none"
             />
             <label
               htmlFor="show-password"
@@ -128,8 +160,9 @@ export function LoginForm({
 
         <Button
           variant="secondary"
-          type="submit"
-          className="w-full bg-black hover:bg-gray-900 text-white h-12 mt-6"
+          type="button"
+          onClick={handleSubmit}
+          className="w-full bg-black hover:bg-neutral-900 hover:scale-[1.01] active:scale-[0.99] text-white h-12 mt-6 transition-all duration-300"
           disabled={isLoading}
         >
           {isLoading ? (
@@ -140,7 +173,7 @@ export function LoginForm({
             "Sign in"
           )}
         </Button>
-      </form>
+      </div>
 
       {/* Register Link */}
       <div className="text-center text-sm">

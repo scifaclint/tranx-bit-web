@@ -2,14 +2,23 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle2 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { formVariants } from "@/lib/utils";
+import { authApi } from "@/lib/api/auth";
+// import { formVariants } from "@/lib/utils";
 // import { toast } from "sonner";
 
 interface ResetPasswordSuccessProps {
   onBackToLogin: () => void;
   email?: string;
 }
-
+const formVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.3 },
+  },
+  exit: { opacity: 0, y: -20 },
+};
 export function ResetPasswordSuccess({
   onBackToLogin,
   email,
@@ -89,7 +98,7 @@ export function ResetPasswordSuccess({
             We have sent a password reset link to
           </p>
           <p className="font-medium text-foreground">
-            {email || "pascal@alle-ai.com"}
+            {email || "example@example.com"}
           </p>
         </div>
       </div>
@@ -98,7 +107,7 @@ export function ResetPasswordSuccess({
         <Button
           variant="secondary"
           onClick={onBackToLogin}
-          className="w-full bg-black text-white transition-colors"
+          className="w-full bg-black hover:bg-gray-900 text-white transition-colors"
         >
           Back to Login
         </Button>
@@ -111,10 +120,10 @@ export function ResetPasswordSuccess({
       <div className="text-center text-sm text-muted-foreground">
         <p>Need help? Contact our support team at</p>
         <a
-          href="mailto:support@alle-ai.com"
+          href="mailto:support@tranxbit.com"
           className="text-muted-foreground hover:underline font-medium italic"
         >
-          support@alle-ai.com
+          support@tranxbit.com
         </a>
       </div>
     </motion.div>

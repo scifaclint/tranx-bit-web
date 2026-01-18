@@ -51,9 +51,9 @@ export default function GiftCardFeatures() {
   ];
 
   return (
-    <div className="py-24 px-8 relative">
+    <div className="py-24 px-8 relative bg-white dark:bg-gray-950">
       <div
-        className="absolute inset-0 bg-contain bg-no-repeat"
+        className="absolute inset-0 bg-contain bg-no-repeat opacity-50 dark:opacity-20"
         style={{
           backgroundImage: "url(/images/background-image-2.webp)",
           backgroundSize: "100% 100%",
@@ -70,19 +70,19 @@ export default function GiftCardFeatures() {
           transition={{ duration: 0.7, ease: "easeOut" }}
         >
           <motion.h2
-            className="text-5xl font-bold bg-gradient-to-r text-black bg-clip-text mb-6"
+            className="text-5xl font-bold bg-gradient-to-r text-black dark:text-gray-100 bg-clip-text mb-6"
             initial={{ opacity: 0.5 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 1.5, ease: "easeOut", repeat: 0 }}
           >
             Turn Unused Gift Cards into Cash
           </motion.h2>
-          <p className="text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed mb-4 font-medium">
+          <p className="text-xl text-gray-700 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed mb-4 font-medium">
             The smartest way to sell gift cards and get paid instantly.
             Competitive rates, secure transactions, and trusted by thousands of
             users daily.
           </p>
-          <p className="text-gray-600 text-sm font-medium">
+          <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">
             Trusted by over 10,000 traders worldwide
           </p>
         </motion.div>
@@ -101,11 +101,11 @@ export default function GiftCardFeatures() {
                 ease: "easeOut",
               }}
             >
-              <Card className="h-full p-6 hover:shadow-md transition-all duration-300 bg-white/80 backdrop-blur-sm border-blue-50 text-center flex flex-col items-center">
+              <Card className="h-full p-6 hover:shadow-md transition-all duration-300 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-blue-50 dark:border-gray-700 text-center flex flex-col items-center">
                 <CardContent className="p-0 flex flex-col items-center w-full space-y-6">
                   {/* Icon with animation */}
                   <motion.div
-                    className="mb-2 inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-50 text-blue-600"
+                    className="mb-2 inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
                     whileHover={{
                       scale: 1.1,
                       backgroundColor: "#dbeafe",
@@ -116,12 +116,12 @@ export default function GiftCardFeatures() {
                   </motion.div>
 
                   {/* Title */}
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
                     {feature.title}
                   </h3>
 
                   {/* Description */}
-                  <p className="text-gray-600 leading-relaxed text-[15px]">
+                  <p className="text-gray-600 dark:text-gray-300 leading-relaxed text-[15px]">
                     {feature.description}
                   </p>
                 </CardContent>

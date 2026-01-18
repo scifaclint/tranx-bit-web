@@ -4,40 +4,25 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader, LogOut } from "lucide-react";
 import { motion } from "framer-motion";
-import { formVariants } from "@/lib/utils";
-// import { toast } from "sonner";
-// import { useAuth } from "@/components/providers/AuthProvider";
-// import { authApi } from "@/lib/api/auth";
-// import { useRouter } from "next/navigation";
-
+import { toast } from "sonner";
+import { authApi } from "@/lib/api/auth";
+import { useAuthStore } from "@/stores";
+import { useRouter } from "next/navigation";
 interface VerificationCodeFormProps {
   email: string;
   onSuccess: () => void;
   onBackToLogin: () => void;
 }
 
-interface User {
-  id: number;
-  first_name: string;
-  last_name: string;
-  email: string;
-  is_verified: boolean;
-  created_at: string;
-  updated_at: string;
-  ip_address: string;
-  user_agent: string;
-  registration_type: string;
-}
-
-interface VerificationResponse {
-  data: {
-    user: User;
-    to: string;
-  };
-  is_valid: boolean;
-  message: string;
-  status: boolean;
-}
+const formVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.3 },
+  },
+  exit: { opacity: 0, y: -20 },
+};
 
 export function VerificationCodeForm({
   email,
@@ -50,33 +35,8 @@ export function VerificationCodeForm({
   const [countdown, setCountdown] = useState(30);
   const [isResending, setIsResending] = useState(false);
   const inputs = useRef<(HTMLInputElement | null)[]>([]);
-
-  // Add useAuth to handle verification state
-  //   const { user, verifyEmail, logout } = useAuth();
-  //   const router = useRouter();
-
-  // Add beforeunload event handler
-  // useEffect(() => {
-  //   // Function to handle beforeunload event
-  //   const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-  //     // Cancel the event
-  //     e.preventDefault();
-  //     // Chrome requires returnValue to be set
-  //     e.returnValue = '';
-  //     // Custom message (note: most modern browsers show their own generic message instead)
-  //     return 'You have a pending verification. Are you sure you want to leave?';
-  //   };
-
-  //   // Add event listener
-  //   window.addEventListener('beforeunload', handleBeforeUnload);
-
-  //   // Clean up event listener on component unmount
-  //   return () => {
-  //     window.removeEventListener('beforeunload', handleBeforeUnload);
-  //   };
-  // }, []);
-
-  // Handle countdown timer
+  const { setAuth, clearAuth } = useAuthStore();
+  const router = useRouter();
   useEffect(() => {
     if (countdown > 0) {
       const timer = setInterval(() => {
@@ -101,9 +61,9 @@ export function VerificationCodeForm({
       inputs.current[index + 1]?.focus();
     }
 
-    // Submit automatically if all digits are filled
-    if (value && index === 5) {
-      handleVerify(newCode.join(""));
+    // Auto-submit when all digits are filled
+    if (value && index === 5 && newCode.every((digit) => digit !== "")) {
+      handleVerify(newCode, email);
     }
   };
 
@@ -116,55 +76,112 @@ export function VerificationCodeForm({
     }
   };
 
-  const handleVerify = async (verificationCode: string) => {
-    // setIsVerifying(true);
-    // setError("");
-    // try {
-    //   if (verificationCode.length !== 6) {
-    //     throw new Error("Please enter all 6 digits");
-    //   }
-    //   const formattedCode = `A-${verificationCode}`;
-    //   await verifyEmail(formattedCode);
-    //   toast.success("Email verified");
-    //   onSuccess();
-    // } catch (error: any) {
-    //   // console.error('Verification error:', error);
-    //   setError(error.message || "Verification failed. Please try again.");
-    //   toast.error(`${error.message || "Please check your code and try again"}`);
-    //   setCode(["", "", "", "", "", ""]);
-    //   inputs.current[0]?.focus();
-    //   setIsVerifying(false);
-    // }
+  const handleVerify = async (codeArray: string[], email: string) => {
+    setIsVerifying(true);
+    setError("");
+
+    try {
+      // Validate that all elements exist and are strings
+      if (!codeArray || codeArray.length !== 6) {
+        throw new Error("Invalid code format");
+      }
+
+      // Filter out any undefined/null values and check length
+      const validDigits = codeArray.filter(
+        (digit) => digit !== undefined && digit !== null && digit !== ""
+      );
+
+      if (validDigits.length !== 6) {
+        throw new Error("Please enter all 6 digits");
+      }
+
+      const verificationCode = validDigits.join("");
+
+      // Additional safety check for numeric values
+      if (!/^\d{6}$/.test(verificationCode)) {
+        throw new Error("Code must contain only numbers");
+      }
+
+      const formattedCode = `TR-${verificationCode}`;
+      const results = await authApi.verifyEmail({
+        email: email,
+        code: formattedCode,
+      });
+      if (results.status) {
+        setAuth(results.data.user, results.data.token);
+        router.replace("/dashboard");
+      }
+      // onSuccess();
+    } catch (error: any) {
+      setError(error.message || "Verification failed. Please try again.");
+      toast.error(`${error.message || "Please check your code and try again"}`);
+      setCode(["", "", "", "", "", ""]);
+      inputs.current[0]?.focus();
+    } finally {
+      setIsVerifying(false);
+    }
   };
 
   const handleResendCode = async () => {
-    // if (countdown > 0 || isResending) return;
-    // setIsResending(true);
-    // try {
-    //   const response = await authApi.resendVerification();
-    //   setCountdown(30);
-    //   toast.success("Verification code sent");
-    //   setCode(["", "", "", "", "", ""]);
-    //   inputs.current[0]?.focus();
-    //   setIsResending(false);
-    // } catch (error: any) {
-    //   toast.error(
-    //     `${
-    //       error.response?.data?.message ||
-    //       "Failed to send code. Please try again."
-    //     }`
-    //   );
-    //   setIsResending(false);
-    // }
+    if (countdown > 0 || isResending) return;
+    setIsResending(true);
+
+    try {
+      await authApi.resendVerification({ email });
+      setCountdown(30);
+      toast.success("Verification code sent");
+      setCode(["", "", "", "", "", ""]);
+      inputs.current[0]?.focus();
+    } catch (error: any) {
+      toast.error(
+        `${
+          error.response?.data?.message ||
+          "Failed to send code. Please try again."
+        }`
+      );
+    } finally {
+      setIsResending(false);
+    }
   };
 
   const handleLogout = async () => {
-    // try {
-    //   await logout();
-    //   onBackToLogin();
-    // } catch (error) {
-    //   toast.error("Failed to log out. Please try again.");
-    // }
+    try {
+      // await authApi.logout();
+      clearAuth();
+      onBackToLogin();
+    } catch (error) {
+      toast.error("Failed to log out. Please try again.");
+    }
+  };
+
+  const handlePaste = (
+    index: number,
+    e: React.ClipboardEvent<HTMLInputElement>
+  ) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData("text").replace(/\D/g, "");
+
+    if (pastedData) {
+      const digits = pastedData.slice(0, 6).split("");
+      const newCode = [...code];
+
+      digits.forEach((digit, i) => {
+        if (index + i < 6) {
+          newCode[index + i] = digit;
+        }
+      });
+
+      setCode(newCode);
+
+      // Focus last filled input or 6th input
+      const nextIndex = Math.min(index + digits.length, 5);
+      inputs.current[nextIndex]?.focus();
+
+      // Auto-submit if complete
+      if (newCode.every((d) => d !== "")) {
+        handleVerify(newCode, email);
+      }
+    }
   };
 
   return (
@@ -191,7 +208,7 @@ export function VerificationCodeForm({
           {/* Prefix */}
           <div className="flex items-center">
             <span className="text-lg xs:text-xl font-semibold text-foreground">
-              A -
+              TR -
             </span>
           </div>
 
@@ -201,36 +218,31 @@ export function VerificationCodeForm({
               key={index}
               ref={(el) => (inputs.current[index] = el)}
               type="text"
+              inputMode="numeric"
               maxLength={1}
-              value={digit}
+              value={digit || ""}
               onChange={(e) => handleInput(index, e.target.value)}
               onKeyDown={(e) => handleKeyDown(index, e)}
+              onPaste={(e) => handlePaste(index, e)}
+              disabled={isVerifying}
               className="w-8 h-10 xs:w-12 xs:h-14 text-center text-lg font-semibold border border-borderColorPrimary rounded-lg 
                 focus:outline-none transition-colors
-                bg-background text-foreground"
+                bg-background text-foreground
+                disabled:opacity-50 disabled:cursor-not-allowed"
             />
           ))}
         </div>
 
         {error && <p className="text-sm text-red-500 text-center">{error}</p>}
-      </div>
 
-      {/* Verify Button */}
-      <Button
-        variant="secondary"
-        onClick={() => handleVerify(code.join(""))}
-        disabled={code.some((digit) => !digit) || isVerifying}
-        className="w-full bg-black text-white"
-      >
-        {isVerifying ? (
-          <>
-            <Loader className="w-4 h-4 mr-2 animate-spin" />
-            Verifying...
-          </>
-        ) : (
-          "Verify Email"
+        {/* Verifying Status */}
+        {isVerifying && (
+          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+            <Loader className="w-4 h-4 animate-spin" />
+            <span>Verifying your code...</span>
+          </div>
         )}
-      </Button>
+      </div>
 
       {/* Resend Code Section */}
       <div className="text-center space-y-4">
