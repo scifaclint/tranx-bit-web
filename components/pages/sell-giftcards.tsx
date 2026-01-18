@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -43,8 +43,21 @@ import { useCards } from "@/hooks/useCards";
 import { usePaymentMethods } from "@/hooks/usePayments";
 import { motion, AnimatePresence } from "framer-motion";
 import { ordersApi } from "@/lib/api/orders";
+import { PAYMENT_LOGOS, NETWORK_LABELS } from "@/lib/payment-constants";
 
 export default function SellGiftCards() {
+  return (
+    <Suspense fallback={
+      <div className="w-full h-screen flex items-center justify-center">
+        <Loader className="h-8 w-8 animate-spin text-blue-600" />
+      </div>
+    }>
+      <SellGiftCardsContent />
+    </Suspense>
+  );
+}
+
+function SellGiftCardsContent() {
   const router = useRouter();
   const [cardType, setCardType] = useState("ecodes");
   const [open, setOpen] = useState(false);
@@ -59,6 +72,7 @@ export default function SellGiftCards() {
   const [backImage, setBackImage] = useState<File | null>(null);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("");
   const [paymentMethodOpen, setPaymentMethodOpen] = useState(false);
+  const searchParams = useSearchParams();
 
   // Hooks
   const { data: cardsData, isLoading: isLoadingCards } = useCards();
@@ -67,6 +81,33 @@ export default function SellGiftCards() {
   // Derived Data
   const brands = cardsData?.data?.cards?.filter(c => c.type === "sell" && c.status === "active") || [];
   const paymentMethods = paymentsData?.data || [];
+
+  // Handle pre-population from dashboard
+  useEffect(() => {
+    const brandParam = searchParams.get("brandName");
+    const amountParam = searchParams.get("amount");
+
+    if (brandParam && brands.length > 0) {
+      // Find the real DB brand that matches the name passed from dashboard
+      const matchedBrand = brands.find(b =>
+        b.name.toLowerCase().includes(brandParam.toLowerCase())
+      );
+
+      if (matchedBrand) {
+        setSelectedBrand(matchedBrand._id);
+        // If the brand has a default type (most are ecodes), we select it
+        if (matchedBrand.category?.toLowerCase() === "physical") {
+          setCardType("physical");
+        } else {
+          setCardType("ecodes");
+        }
+      }
+    }
+
+    if (amountParam) {
+      setAmount(amountParam);
+    }
+  }, [brands, searchParams]);
 
   const selectedBrandData = brands.find(
     (brand) => brand._id === selectedBrand
@@ -269,14 +310,31 @@ export default function SellGiftCards() {
               </div>
             ) : selectedPaymentMethod ? (
               <div className="flex items-center gap-2">
-                <Wallet className="h-4 w-4 text-zinc-500" />
+                {(() => {
+                  const method = paymentMethods.find((m) => m._id === selectedPaymentMethod);
+                  if (!method) return <Wallet className="h-4 w-4 text-zinc-500" />;
+                  const logoKey = method.type === "mobile_money" ? method.mobileNetwork : "btc";
+                  return PAYMENT_LOGOS[logoKey] ? (
+                    <div className="w-5 h-5 flex-shrink-0">
+                      <Image
+                        src={PAYMENT_LOGOS[logoKey]}
+                        alt={method.type}
+                        width={20}
+                        height={20}
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                  ) : (
+                    <Wallet className="h-4 w-4 text-zinc-500" />
+                  );
+                })()}
                 <span className="font-medium">
                   {(() => {
                     const method = paymentMethods.find((m) => m._id === selectedPaymentMethod);
                     if (!method) return "Select account";
                     return method.type === "mobile_money"
-                      ? `${method.mobileNetwork} - ${method.accountName}`
-                      : `BTC - ${method.btcAddress}`;
+                      ? `${NETWORK_LABELS[method.mobileNetwork] || method.mobileNetwork} - ${method.accountName}`
+                      : `${NETWORK_LABELS.btc} - ${method.btcAddress}`;
                   })()}
                 </span>
               </div>
@@ -305,13 +363,33 @@ export default function SellGiftCards() {
                     <Check
                       className={`mr-2 h-4 w-4 ${selectedPaymentMethod === method._id ? "opacity-100" : "opacity-0"}`}
                     />
-                    <div className="flex flex-col">
-                      <span className="font-semibold text-sm">
-                        {method.type === "mobile_money" ? method.mobileNetwork : "Bitcoin"}
-                      </span>
-                      <span className="text-xs text-muted-foreground truncate max-w-[200px]">
-                        {method.type === "mobile_money" ? method.accountName : method.btcAddress}
-                      </span>
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 flex-shrink-0 flex items-center justify-center p-1 bg-zinc-50 dark:bg-zinc-900 rounded-md border border-zinc-200 dark:border-zinc-800">
+                        {(() => {
+                          const logoKey = method.type === "mobile_money" ? method.mobileNetwork : "btc";
+                          return PAYMENT_LOGOS[logoKey] ? (
+                            <Image
+                              src={PAYMENT_LOGOS[logoKey]}
+                              alt={method.type}
+                              width={24}
+                              height={24}
+                              className="w-full h-full object-contain"
+                            />
+                          ) : (
+                            <Wallet className="w-4 h-4 text-zinc-400" />
+                          );
+                        })()}
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="font-semibold text-sm">
+                          {method.type === "mobile_money"
+                            ? (NETWORK_LABELS[method.mobileNetwork] || method.mobileNetwork)
+                            : NETWORK_LABELS.btc}
+                        </span>
+                        <span className="text-xs text-muted-foreground truncate max-w-[200px]">
+                          {method.type === "mobile_money" ? method.accountName : method.btcAddress}
+                        </span>
+                      </div>
                     </div>
                   </CommandItem>
                 ))}

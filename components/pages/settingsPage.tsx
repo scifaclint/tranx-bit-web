@@ -63,12 +63,13 @@ import {
 } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { MoreVertical, Star, CheckCircle2 } from "lucide-react";
+import { PAYMENT_LOGOS, NETWORK_LABELS } from "@/lib/payment-constants";
 
 type TabType = "general" | "personal" | "kyc" | "payment" | "security";
 
 type PaymentMethod = {
   id: string;
-  type: "crypto" | "mobile_money" | "bank";
+  type: "btc" | "mobile_money" | "bank";
   label: string;
   details: string;
   icon?: string;
@@ -300,20 +301,20 @@ export default function SettingsPage() {
       const payload =
         addMethodType === "mobile_money"
           ? {
-              type: "mobile_money" as const,
-              name:
-                paymentForm.name ||
-                `${paymentForm.mobileNetwork.toUpperCase()} - ${paymentForm.accountName}`,
-              mobileNetwork: paymentForm.mobileNetwork,
-              mobileNumber: paymentForm.mobileNumber,
-              accountName: paymentForm.accountName,
-            }
+            type: "mobile_money" as const,
+            name:
+              paymentForm.name ||
+              `${paymentForm.mobileNetwork.toUpperCase()} - ${paymentForm.accountName}`,
+            mobileNetwork: paymentForm.mobileNetwork,
+            mobileNumber: paymentForm.mobileNumber,
+            accountName: paymentForm.accountName,
+          }
           : {
-              type: "btc" as const,
-              name: paymentForm.name || "My BTC Wallet",
-              btcAddress: paymentForm.btcAddress,
-              btcNetwork: paymentForm.btcNetwork,
-            };
+            type: "btc" as const,
+            name: paymentForm.name || "My BTC Wallet",
+            btcAddress: paymentForm.btcAddress,
+            btcNetwork: paymentForm.btcNetwork,
+          };
 
       if (editingMethodId) {
         await updatePaymentMutation.mutateAsync({
@@ -407,11 +408,10 @@ export default function SettingsPage() {
                   <button
                     key={item.id}
                     onClick={() => setActiveTab(item.id)}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all ${
-                      isActive
-                        ? "bg-primary/10 text-primary font-medium"
-                        : "hover:bg-muted"
-                    }`}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all ${isActive
+                      ? "bg-primary/10 text-primary font-medium"
+                      : "hover:bg-muted"
+                      }`}
                   >
                     <Icon
                       className={`h-5 w-5 ${isActive ? "text-blue-700" : ""}`}
@@ -818,11 +818,15 @@ export default function SettingsPage() {
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
                               <div
-                                className={`w-12 h-12 rounded-full flex items-center justify-center ${method.type === "btc" ? "bg-orange-100 dark:bg-orange-950/30" : "bg-blue-100 dark:bg-blue-950/30"}`}
+                                className={`w-12 h-12 rounded-full flex items-center justify-center p-2.5 ${method.type === "btc" ? "bg-orange-100 dark:bg-orange-950/30" : "bg-blue-100 dark:bg-blue-950/30"}`}
                               >
-                                {method.type === "btc" ? (
-                                  <Wallet
-                                    className={`w-6 h-6 ${method.type === "btc" ? "text-orange-600 dark:text-orange-400" : "text-blue-600 dark:text-blue-400"}`}
+                                {method.type === "btc" || (method.type === "mobile_money" && PAYMENT_LOGOS[method.mobileNetwork]) ? (
+                                  <Image
+                                    src={PAYMENT_LOGOS[method.type === "btc" ? "btc" : method.mobileNetwork]}
+                                    alt={method.type}
+                                    width={24}
+                                    height={24}
+                                    className="w-full h-full object-contain"
                                   />
                                 ) : (
                                   <Smartphone className="w-6 h-6 text-blue-600 dark:text-blue-400" />
@@ -832,8 +836,8 @@ export default function SettingsPage() {
                                 <div className="flex items-center gap-2">
                                   <h3 className="font-semibold text-gray-900 dark:text-gray-100 capitalize">
                                     {method.type === "mobile_money"
-                                      ? method.mobileNetwork
-                                      : "Bitcoin"}
+                                      ? NETWORK_LABELS[method.mobileNetwork] || method.mobileNetwork
+                                      : NETWORK_LABELS.btc}
                                   </h3>
                                   {method.isDefault && (
                                     <Badge
@@ -1132,7 +1136,22 @@ export default function SettingsPage() {
                         {supportedData?.data.supportedMethods.mobile_money.networks.map(
                           (net) => (
                             <SelectItem key={net.id} value={net.id}>
-                              {net.name}
+                              <div className="flex items-center gap-3">
+                                {PAYMENT_LOGOS[net.id] ? (
+                                  <div className="w-5 h-5 flex-shrink-0">
+                                    <Image
+                                      src={PAYMENT_LOGOS[net.id]}
+                                      alt={net.name}
+                                      width={20}
+                                      height={20}
+                                      className="w-full h-full object-contain"
+                                    />
+                                  </div>
+                                ) : (
+                                  <Smartphone className="w-4 h-4 text-muted-foreground" />
+                                )}
+                                <span>{NETWORK_LABELS[net.id] || net.name}</span>
+                              </div>
                             </SelectItem>
                           ),
                         )}
@@ -1154,13 +1173,13 @@ export default function SettingsPage() {
                     />
                     {supportedData?.data.supportedMethods.mobile_money.fields
                       .validation.accountName && (
-                      <p className="text-[10px] text-muted-foreground ml-1">
-                        {
-                          supportedData.data.supportedMethods.mobile_money
-                            .fields.validation.accountName
-                        }
-                      </p>
-                    )}
+                        <p className="text-[10px] text-muted-foreground ml-1">
+                          {
+                            supportedData.data.supportedMethods.mobile_money
+                              .fields.validation.accountName
+                          }
+                        </p>
+                      )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="mobile-number">Mobile Number</Label>
@@ -1177,13 +1196,13 @@ export default function SettingsPage() {
                     />
                     {supportedData?.data.supportedMethods.mobile_money.fields
                       .validation.mobileNumber && (
-                      <p className="text-[10px] text-muted-foreground ml-1">
-                        {
-                          supportedData.data.supportedMethods.mobile_money
-                            .fields.validation.mobileNumber
-                        }
-                      </p>
-                    )}
+                        <p className="text-[10px] text-muted-foreground ml-1">
+                          {
+                            supportedData.data.supportedMethods.mobile_money
+                              .fields.validation.mobileNumber
+                          }
+                        </p>
+                      )}
                   </div>
                 </>
               ) : (
@@ -1203,13 +1222,13 @@ export default function SettingsPage() {
                     />
                     {supportedData?.data.supportedMethods.btc.fields.validation
                       .btcAddress && (
-                      <p className="text-[10px] text-muted-foreground ml-1">
-                        {
-                          supportedData.data.supportedMethods.btc.fields
-                            .validation.btcAddress
-                        }
-                      </p>
-                    )}
+                        <p className="text-[10px] text-muted-foreground ml-1">
+                          {
+                            supportedData.data.supportedMethods.btc.fields
+                              .validation.btcAddress
+                          }
+                        </p>
+                      )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="btc-network">Network</Label>
@@ -1254,7 +1273,7 @@ export default function SettingsPage() {
               }
             >
               {addPaymentMutation.isPending ||
-              updatePaymentMutation.isPending ? (
+                updatePaymentMutation.isPending ? (
                 <>
                   <Loader className="mr-2 h-4 w-4 animate-spin" />
                   Saving...

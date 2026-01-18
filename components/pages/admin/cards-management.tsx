@@ -67,7 +67,10 @@ export default function CardsManageMentPage() {
             ...card,
             id: card._id,
             image: card.imageUrl,
-            price: card.prices?.[0]?.price?.toString() || "",
+            prices: card.prices?.map(p => ({
+                denomination: p.denomination,
+                price: p.price
+            })) || [],
             status: card.status === "active" ? "active" : "disabled",
         })
         setIsAddModalOpen(true)

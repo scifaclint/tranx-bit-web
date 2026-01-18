@@ -41,7 +41,15 @@ import { useAdminOrders, useApproveOrder, useRejectOrder } from "@/hooks/useAdmi
 import { AdminOrder, AdminOrderStatus } from "@/lib/api/admin"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 
-type OrderStatus = "all" | "pending" | "completed" | "rejected"
+type OrderStatus = "all" | "pending" | "completed" | "rejected" | "payment_claimed"
+
+const STATUS_MAP: Record<string, string | undefined> = {
+    all: undefined,
+    pending: "under_review",
+    completed: "completed",
+    rejected: "cancelled",
+    payment_claimed: "payment_claimed",
+}
 
 interface Order {
     id: string
@@ -70,10 +78,17 @@ export default function CardOrderPage() {
     const [searchQuery, setSearchQuery] = useState("")
 
     // Map OrderStatus to AdminOrderStatus or undefined for 'all'
-    const statusFilter = activeTab === "all" ? undefined : activeTab
+    const statusFilter = STATUS_MAP[activeTab]
 
+    // Query for the filtered orders (active tab)
     const { data: ordersResponse, isLoading } = useAdminOrders({
         status: statusFilter,
+    })
+
+    // Separate query for the global total count (always 'all')
+    const { data: allOrdersResponse } = useAdminOrders({
+        status: undefined,
+        limit: 1 // We only need the pagination total
     })
 
     const approveOrderMutation = useApproveOrder()
@@ -116,11 +131,15 @@ export default function CardOrderPage() {
 
     const selectedOrder = orders.find(o => o._id === selectedOrderId)
 
+    const currentTotal = ordersResponse?.data?.pagination?.totalOrders || 0
+    const globalTotal = allOrdersResponse?.data?.pagination?.totalOrders || 0
+
     const tabs = [
-        { id: "all", label: "Total", count: ordersResponse?.data?.pagination?.totalOrders || 0, color: "text-foreground" },
-        { id: "pending", label: "Pending", count: 0, color: "text-yellow-600" },
-        { id: "completed", label: "Completed", count: 0, color: "text-green-600" },
-        { id: "rejected", label: "Rejected", count: 0, color: "text-red-600" },
+        { id: "all", label: "Total", count: globalTotal, color: "text-foreground" },
+        { id: "pending", label: "Pending", count: activeTab === "pending" ? currentTotal : 0, color: "text-yellow-600" },
+        { id: "payment_claimed", label: "Claims", count: activeTab === "payment_claimed" ? currentTotal : 0, color: "text-blue-600" },
+        { id: "completed", label: "Completed", count: activeTab === "completed" ? currentTotal : 0, color: "text-green-600" },
+        { id: "rejected", label: "Rejected", count: activeTab === "rejected" ? currentTotal : 0, color: "text-red-600" },
     ]
 
     return (

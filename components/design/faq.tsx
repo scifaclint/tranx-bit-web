@@ -156,9 +156,8 @@ export default function TranxbitFAQ() {
             <motion.div
               key={index}
               variants={faqItemVariants}
-              className={`overflow-hidden transition-all duration-300 ${
-                openIndex !== index ? "" : ""
-              } ${index !== 0 ? "border-t border-gray-200 dark:border-gray-700 pt-4" : ""}`}
+              className={`overflow-hidden transition-all duration-300 ${openIndex !== index ? "" : ""
+                } ${index !== 0 ? "border-t border-gray-200 dark:border-gray-700 pt-4" : ""}`}
             >
               <button
                 onClick={() => toggleFAQ(index)}
@@ -216,13 +215,13 @@ export default function TranxbitFAQ() {
                       animate={
                         cardInView
                           ? {
-                              opacity: 1,
-                              scale: 1,
-                            }
+                            opacity: 1,
+                            scale: 1,
+                          }
                           : {
-                              opacity: 0,
-                              scale: 0.5,
-                            }
+                            opacity: 0,
+                            scale: 0.5,
+                          }
                       }
                       transition={{
                         delay: 0.2 + i * 0.1,
@@ -233,7 +232,7 @@ export default function TranxbitFAQ() {
                       <img
                         src={img.src}
                         alt={img.alt}
-                        
+
                         className="w-full h-full object-cover"
                       />
                     </motion.div>

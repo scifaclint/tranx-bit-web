@@ -28,6 +28,7 @@ import {
 import Image from "next/image";
 import { toast } from "sonner";
 import { ordersApi, OrderDetailsResponse } from "@/lib/api/orders";
+import { PAYMENT_LOGOS, NETWORK_LABELS } from "@/lib/payment-constants";
 
 type PaymentMethod = "mobile_money" | "bitcoin" | "";
 type PaymentMode = "manual" | "automated";
@@ -76,7 +77,7 @@ export default function OrderDetailsPage() {
   // Mock payment details
   const paymentDetails = {
     mobile_money: {
-      network: "MTN Mobile Money",
+      network: NETWORK_LABELS.telecel,
       phoneNumber: "+233 24 123 4567",
       amount: "GHS 450.00",
       reference: "4fGH8K",
@@ -321,8 +322,16 @@ export default function OrderDetailsPage() {
                 {/* Mobile Money Payment Details */}
                 {paymentMethod === "mobile_money" && (
                   <Card className="p-4 border-2 border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20">
-                    <div className="flex items-center gap-2 mb-4">
-                      <Smartphone className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-8 h-8 flex items-center justify-center p-1 bg-white dark:bg-gray-900 rounded-md border border-gray-200 dark:border-gray-800">
+                        <Image
+                          src={PAYMENT_LOGOS.mtn} // Defaulting to MTN logo for generic momo manual view if no network known, but usually we know it from paymentDetails
+                          alt="Mobile Money"
+                          width={24}
+                          height={24}
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
                       <h3 className="font-semibold text-gray-900 dark:text-gray-100">
                         Mobile Money Payment
                       </h3>
@@ -422,8 +431,16 @@ export default function OrderDetailsPage() {
                 {/* Bitcoin Payment Details */}
                 {paymentMethod === "bitcoin" && (
                   <Card className="p-4 border-2 border-orange-200 dark:border-orange-800 bg-orange-50/50 dark:bg-orange-950/20">
-                    <div className="flex items-center gap-2 mb-4">
-                      <Bitcoin className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-8 h-8 flex items-center justify-center p-1 bg-white dark:bg-gray-900 rounded-md border border-gray-200 dark:border-gray-800">
+                        <Image
+                          src={PAYMENT_LOGOS.btc}
+                          alt="Bitcoin"
+                          width={24}
+                          height={24}
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
                       <h3 className="font-semibold text-gray-900 dark:text-gray-100">
                         Bitcoin (BTC) Payment
                       </h3>
@@ -536,20 +553,26 @@ export default function OrderDetailsPage() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="mtn">
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+                            <div className="flex items-center gap-3">
+                              <div className="w-5 h-5 flex-shrink-0">
+                                <Image src={PAYMENT_LOGOS.mtn} alt="MTN" width={20} height={20} className="w-full h-full object-contain" />
+                              </div>
                               <span>MTN Mobile Money</span>
                             </div>
                           </SelectItem>
-                          <SelectItem value="vodafone">
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                              <span>Vodafone Cash</span>
+                          <SelectItem value="telecel">
+                            <div className="flex items-center gap-3">
+                              <div className="w-5 h-5 flex-shrink-0">
+                                <Image src={PAYMENT_LOGOS.telecel} alt="Telecel" width={20} height={20} className="w-full h-full object-contain" />
+                              </div>
+                              <span>Telecel Cash</span>
                             </div>
                           </SelectItem>
                           <SelectItem value="airteltigo">
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                            <div className="flex items-center gap-3">
+                              <div className="w-5 h-5 flex-shrink-0">
+                                <Image src={PAYMENT_LOGOS.airteltigo} alt="AirtelTigo" width={20} height={20} className="w-full h-full object-contain" />
+                              </div>
                               <span>AirtelTigo Money</span>
                             </div>
                           </SelectItem>
@@ -649,7 +672,7 @@ export default function OrderDetailsPage() {
                           Please check your phone for a prompt from{" "}
                           <span className="font-medium">
                             {selectedNetwork === "mtn" && "MTN Mobile Money"}
-                            {selectedNetwork === "vodafone" && "Vodafone Cash"}
+                            {selectedNetwork === "telecel" && "Telecel Cash"}
                             {selectedNetwork === "airteltigo" &&
                               "AirtelTigo Money"}
                           </span>{" "}

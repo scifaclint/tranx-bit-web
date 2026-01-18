@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, DollarSign, Sparkles } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -97,6 +98,7 @@ function getRateColor(rate: number) {
 }
 
 export function SellGiftCardGrid() {
+    const router = useRouter();
     const [isLoading, setIsLoading] = useState(true);
     const [selectedValues, setSelectedValues] = useState<Record<string, number>>(() =>
         BRANDS.reduce((acc, brand) => ({ ...acc, [brand.id]: 100 }), {})
@@ -204,6 +206,7 @@ export function SellGiftCardGrid() {
                                                 </div>
 
                                                 <Button
+                                                    onClick={() => router.push(`/sell-giftcards?brandName=${brand.name}&amount=${amount}`)}
                                                     className="w-full h-10 bg-black/5 dark:bg-white/5 group-hover:bg-black dark:group-hover:bg-white text-black/40 dark:text-white/40 group-hover:text-white dark:group-hover:text-black font-bold text-xs rounded-xl transition-all duration-300 active:scale-95 flex items-center justify-center gap-2 border border-borderColorPrimary group-hover:border-transparent shadow-none group-hover:shadow-md"
                                                 >
                                                     Sell Now

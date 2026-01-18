@@ -2,12 +2,8 @@ import api from "./axios";
 
 export type MobileNetwork =
   | "mtn"
-  | "vodafone"
-  | "airteltigo"
-  | "glo"
-  | "orange"
-  | "safaricom"
-  | "other";
+  | "telecel"
+  | "airteltigo";
 
 export interface MobileMoneyPaymentMethod {
   type: "mobile_money";
