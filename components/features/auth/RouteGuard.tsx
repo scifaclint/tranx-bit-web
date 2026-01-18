@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, ReactNode, useState, Suspense } from "react";
+import { useEffect, ReactNode, useState, Suspense, useRef } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/stores";
-import { authApi, User } from "@/lib/api/auth";
+import { authApi } from "@/lib/api/auth";
 // import { toast } from "sonner";
 import LoadingAnimation from "../LoadingAnimation";
 
@@ -13,18 +13,19 @@ interface RouteGuardProps {
 
 const authRoutes = ["/auth"];
 
-const publicRoutes = ["/blog", "/"];
+const publicRoutes = ["/blog", "/", "/reset-password"];
 
 // Create a separate component for the route guard logic
 function RouteGuardInner({ children }: RouteGuardProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { token,   } = useAuthStore();
+  const { token } = useAuthStore();
   const [authState, setAuthState] = useState<
     "checking" | "authorized" | "unauthorized"
   >("checking");
   const [isLoading, setIsLoading] = useState(false);
+  const isCheckingRef = useRef(false);
 
   const isPublicRoute = (path: string): boolean => {
     // Check exact matches first
@@ -40,44 +41,44 @@ function RouteGuardInner({ children }: RouteGuardProps) {
     );
   };
 
+  // 1. Enforce Redirects (Sync-ish)
+  // If we have a token and are on /auth, get out immediately.
+  useEffect(() => {
+    if (token && pathname === "/auth") {
+      const mode = searchParams.get("mode");
+      if (mode !== "verify-email") {
+        router.replace("/dashboard");
+      }
+    }
+  }, [token, pathname, router]);
+
+  // 2. Auth Validation (Async)
+  // ONLY run this if we are NOT on the auth page.
+  // This prevents race conditions where we validate while trying to log in or redirect.
   useEffect(() => {
     const checkAuth = async () => {
-      // const callback = searchParams.get("callback");
-      // const tokenFromUrl = searchParams.get("token");
-
-      // if (callback === "google" && tokenFromUrl) {
-      //   setAuth({} as User, tokenFromUrl);
-      //   setIsLoading(true);
-
-      //   try {
-      //     const response = await authApi.getUser();
-      //     // console.log(response, 'google auth response')
-      //     setAuth(response.data.user, tokenFromUrl, response.plan);
-
-      //     router.replace("/dashboard");
-      //   } catch (error: any) {
-      //     // toast.error(error.response.data.error || error.response.data.message || 'Failed to load your data');
-
-      //     clearAuth();
-      //     router.replace("/auth");
-      //   } finally {
-      //     setIsLoading(false);
-      //   }
-
-      //   return;
-      // }
-
-      // Special case: If we're on the auth page with verify-email mode
-      if (pathname === "/auth" && searchParams.get("mode") === "verify-email") {
-        setAuthState("authorized");
+      // Prevent concurrent checks
+      if (isCheckingRef.current) {
         return;
       }
 
-      // CASE 1: No token - only allow access to auth routes and public routes
+      // If on auth page without token, immediately authorize (no loading needed)
+      if (pathname === "/auth") {
+        if (searchParams.get("mode") === "verify-email") {
+          setAuthState("authorized"); // Allow rendering verify page
+        } else if (!token) {
+          // No token on /auth = show login form immediately
+          setAuthState("authorized");
+        } else {
+          // Has token on /auth = checking (will redirect via effect above)
+          setAuthState("checking");
+        }
+        return;
+      }
+
+      // CASE: No token
       if (!token) {
         if (!authRoutes.includes(pathname) && !isPublicRoute(pathname)) {
-          // Save current path before redirecting to auth
-          // console.log('redirecting to auth');
           router.replace("/auth");
           return;
         }
@@ -85,38 +86,72 @@ function RouteGuardInner({ children }: RouteGuardProps) {
         return;
       }
 
-      setAuthState("authorized");
+      // CASE: Has token + valid page (e.g. Dashboard)
+
+      // Optimistic Check
+      const hasCachedUser = !!useAuthStore.getState().user;
+      if (hasCachedUser) {
+        setAuthState("authorized");
+        // Don't make API call if we have cached user
+        return;
+      } else {
+        setAuthState("checking");
+      }
+
+      // Background Refresh
+      isCheckingRef.current = true;
+      try {
+        const response = await authApi.getUser();
+        if (response.status && response.data.user) {
+          useAuthStore.getState().setAuth(response.data.user, token);
+
+          // Handle server-side redirects (e.g. verify-email enforcement)
+          const destination = response.data.to;
+          if (destination === "verify-email") {
+            router.replace(
+              `/auth?mode=verify-email&email=${encodeURIComponent(
+                response.data.user.email
+              )}`
+            );
+            return;
+          }
+
+          // If we were blocking, release now
+          if (!hasCachedUser) {
+            setAuthState("authorized");
+          }
+        }
+      } catch (error) {
+        // console.error("Validation failed");
+        // If 401, axios interceptor handles it.
+      } finally {
+        isCheckingRef.current = false;
+      }
     };
 
-    setAuthState("checking");
+    // Only set to "checking" if we're not on /auth without a token
+    if (pathname !== "/auth" || token) {
+      setAuthState("checking");
+    }
     checkAuth();
-    // }, [pathname, token, searchParams]);
-  }, [token, searchParams]);
+  }, [token, pathname]); // Removed searchParams - URL params shouldn't trigger auth checks
 
   useEffect(() => {
     const storeCurrentPath = () => {
       if (pathname !== "/auth") {
         sessionStorage.setItem("returnUrl", pathname + window.location.search);
-        // console.log(pathname + window.location.search,'this is the resolved return url');
       }
     };
 
-    // CASE 2: Has token and trying to access other routes aside auth
     if (token && !authRoutes.includes(pathname)) {
-      // console.log('Token exits fast refresh');
       storeCurrentPath();
       const returnUrl = sessionStorage.getItem("returnUrl");
       if (returnUrl) {
         sessionStorage.removeItem("returnUrl");
-
         router.replace(returnUrl);
-
-        return;
       }
-      setAuthState("authorized");
-      return;
     }
-  }, [token]);
+  }, [token, pathname]); // Keep pathname here for returnUrl logic
 
   // Show loading screen while checking auth or during explicit loading states
   if (isLoading || authState === "checking") {

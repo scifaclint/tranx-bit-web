@@ -58,6 +58,9 @@ export function LoginForm({
 
     setIsLoading(true);
 
+    // Add a 2 second delay to simulate connecting to backend
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
     try {
       const results = await authApi.login({
         identifier: identifier.trim(),
@@ -86,11 +89,6 @@ export function LoginForm({
       });
     } finally {
       setIsLoading(false);
-      // remove later
-      setAuth({ id: 1, first_name: "clinton", last_name: "james", email: "clintonjames@gmail.com", is_verified: true, created_at: "2025-12-30T17:01:46.000Z", updated_at: "2025-12-30T17:01:46.000Z", ip_address: "2323ljladfjaf", user_agent: "chrome", }, "232lljlajfdljioo2jo2jo3i2f"
-      );
-
-      router.replace("/dashboard");
     }
   };
 
@@ -118,7 +116,7 @@ export function LoginForm({
             onKeyPress={handleKeyPress}
             required
             autoComplete="username"
-            className="border-borderColorPrimary focus-visible:outline-none h-12"
+            className="bg-backgroundSecondary border-borderColorPrimary hover:border-neutral-400 focus:border-bodyColor transition-all duration-300 focus-visible:outline-none h-12"
           />
         </div>
 
@@ -131,7 +129,7 @@ export function LoginForm({
             onKeyPress={handleKeyPress}
             required
             autoComplete="current-password"
-            className="border-borderColorPrimary focus-visible:outline-none h-12"
+            className="bg-backgroundSecondary border-borderColorPrimary hover:border-neutral-400 focus:border-bodyColor transition-all duration-300 focus-visible:outline-none h-12"
           />
         </div>
 
@@ -141,7 +139,7 @@ export function LoginForm({
               id="show-password"
               checked={showPassword}
               onCheckedChange={(checked) => setShowPassword(checked as boolean)}
-              className="border focus-visible:outline-none"
+              className="bg-backgroundSecondary border-borderColorPrimary focus-visible:outline-none"
             />
             <label
               htmlFor="show-password"
@@ -164,7 +162,7 @@ export function LoginForm({
           variant="secondary"
           type="button"
           onClick={handleSubmit}
-          className="w-full bg-black hover:bg-gray-900 text-white h-12 mt-6"
+          className="w-full bg-black hover:bg-neutral-900 hover:scale-[1.01] active:scale-[0.99] text-white h-12 mt-6 transition-all duration-300"
           disabled={isLoading}
         >
           {isLoading ? (

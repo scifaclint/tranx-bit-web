@@ -1,6 +1,7 @@
 "use client";
 import TranxBitLogo from "../design/tranx-bit-logo";
 import { useState, useEffect } from "react";
+import { useTheme } from "next-themes";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -38,7 +39,13 @@ const Sidebar = ({ onCollapse, userType = "user" }: SidebarProps) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Ensure parent component knows initial state
   useEffect(() => {
@@ -53,12 +60,13 @@ const Sidebar = ({ onCollapse, userType = "user" }: SidebarProps) => {
       icon: LayoutDashboard,
       href: "/dashboard",
     },
-    {
+    // Hiding "Buy Gift Card" for now - prioritizing core features for MVP
+    /* {
       id: "buy",
       label: "Buy Gift Card",
       icon: ShoppingCart,
       href: "/buy-giftcards",
-    },
+    }, */
     {
       id: "sell",
       label: "Sell Gift Card",
@@ -181,39 +189,43 @@ const Sidebar = ({ onCollapse, userType = "user" }: SidebarProps) => {
     );
   };
 
-  const SidebarContent = () => (
-    <>
-      {/* Logo Area */}
-      <div
-        className={`p-6 bg-background border-b border-gray-200 dark:border-gray-800 ${isCollapsed ? "px-4" : ""
-          }`}
-      >
-        {/* <TranxBitLogo size="medium" variant="dark" /> */}
-        {isCollapsed ? (
-          <TranxBitLogo size="small" variant="dark" isMobile={true} />
-        ) : (
-          <TranxBitLogo size="medium" variant="dark" />
-        )}
-      </div>
+  const SidebarContent = () => {
+    const logoVariant = mounted && theme === "dark" ? "light" : "dark";
 
-      {/* Main Navigation */}
-      <nav className="flex-1 bg-background px-4 py-6 space-y-2 overflow-y-auto">
-        {navItems.map((item) => (
-          <NavItem key={item.id} item={item} />
-        ))}
-      </nav>
-
-      {/* Bottom Items */}
-      <div className="px-4 bg-background py-6 border-t border-gray-200 dark:border-gray-800 space-y-2">
-        <div className="mb-2">
-          {/* <ThemeToggle /> */}
+    return (
+      <>
+        {/* Logo Area */}
+        <div
+          className={`p-6 bg-transparent border-b border-borderColorPrimary ${isCollapsed ? "px-4" : ""
+            }`}
+        >
+          {/* <TranxBitLogo size="medium" variant={logoVariant} /> */}
+          {isCollapsed ? (
+            <TranxBitLogo size="small" variant={logoVariant} isMobile={true} />
+          ) : (
+            <TranxBitLogo size="medium" variant={logoVariant} />
+          )}
         </div>
-        {bottomItems.map((item) => (
-          <NavItem key={item.id} item={item} />
-        ))}
-      </div>
-    </>
-  );
+
+        {/* Main Navigation */}
+        <nav className="flex-1 bg-transparent px-4 py-6 space-y-2 overflow-y-auto">
+          {navItems.map((item) => (
+            <NavItem key={item.id} item={item} />
+          ))}
+        </nav>
+
+        {/* Bottom Items */}
+        <div className="px-4 bg-transparent py-6 border-t border-borderColorPrimary space-y-2">
+          <div className="mb-2">
+            {/* <ThemeToggle /> */}
+          </div>
+          {bottomItems.map((item) => (
+            <NavItem key={item.id} item={item} />
+          ))}
+        </div>
+      </>
+    );
+  };
 
   return (
     <>
@@ -238,7 +250,7 @@ const Sidebar = ({ onCollapse, userType = "user" }: SidebarProps) => {
       {/* Mobile Drawer */}
       <aside
         className={`
-          lg:hidden fixed top-0 left-0 h-full w-72 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 z-50 
+          lg:hidden fixed top-0 left-0 h-full w-72 bg-sideBarBackground border-r border-borderColorPrimary z-50 
           transform transition-transform duration-300 ease-in-out flex flex-col
           ${isMobileOpen ? "translate-x-0" : "-translate-x-full"}
         `}
@@ -257,7 +269,7 @@ const Sidebar = ({ onCollapse, userType = "user" }: SidebarProps) => {
       {/* Desktop Sidebar */}
       <aside
         className={`
-          hidden lg:flex fixed top-0 left-0 h-full bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 z-30
+          hidden lg:flex fixed top-0 left-0 h-full bg-sideBarBackground border-r border-borderColorPrimary z-30
           flex-col transition-all duration-300 ease-in-out
           ${isCollapsed ? "w-20" : "w-72"}
         `}

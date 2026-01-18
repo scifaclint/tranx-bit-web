@@ -3,6 +3,7 @@
 import { Suspense } from "react";
 import { AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
+import { useTheme } from "next-themes";
 import TranxBitLogo from "@/components/design/tranx-bit-logo";
 import { LoginForm } from "@/components/features/auth/LoginForm";
 import { RegisterForm } from "@/components/features/auth/RegisterForms";
@@ -20,9 +21,15 @@ import TranxBitLoader from "@/components/design/Loading-screen";
 //   | "verify-email";
 
 function AuthPageInner() {
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
   const { authMode, setAuthMode, initializeFromUrl } = useAuthMode();
   const [resetEmail, setResetEmail] = useState<string>("");
   const [email, setEmail] = useState("");
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   useEffect(() => {
     initializeFromUrl();
     const params = new URLSearchParams(window.location.search);
@@ -134,7 +141,10 @@ function AuthPageInner() {
   return (
     <div className="max-w-md mx-auto">
       <div className="flex items-center justify-center gap-2 mb-8">
-        <TranxBitLogo variant="dark" size="medium" />
+        <TranxBitLogo
+          variant={mounted && theme === "dark" ? "light" : "dark"}
+          size="medium"
+        />
       </div>
 
       <div>
@@ -153,8 +163,22 @@ function AuthPageInner() {
 }
 
 export default function AuthPage() {
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   return (
-    <Suspense fallback={<TranxBitLoader variant="light" isForm={true} />}>
+    <Suspense
+      fallback={
+        <TranxBitLoader
+          variant={mounted && theme === "dark" ? "dark" : "light"}
+          isForm={true}
+        />
+      }
+    >
       <div className="">
         <AuthPageInner />
       </div>

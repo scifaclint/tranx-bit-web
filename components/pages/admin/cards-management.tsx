@@ -1,6 +1,7 @@
 "use client"
 import { Button } from "@/components/ui/button"
-import { Plus, Search, MoreHorizontal, Pencil, Trash, Power } from "lucide-react"
+import { Plus, Search, MoreHorizontal, Pencil, Trash, Power, Loader } from "lucide-react"
+import { toast } from "sonner"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import {
@@ -29,53 +30,45 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
-// Backend Integration Notes:
-// 1. Fetching: Implement useQuery to fetch cards with pagination params (page, limit) and filters (type, search).
-// 2. Pagination: The backend should return totalPages and totalItems. Update local state for currentPage.
-// 3. Filtering: Debounce search input and update filter state. Triggers refetch.
-// 4. Mutations: standard optimistic updates for delete/status toggle.
-
-interface GiftCard {
-    id: string
-    name: string
-    type: "buy" | "sell"
-    price: string | null
-    status: "active" | "disabled"
-    image: string
-}
-
-const mockCards: GiftCard[] = [
-    {
-        id: "1",
-        name: "Amazon Gift Card",
-        type: "buy",
-        price: "$50.00",
-        status: "active",
-        image: "/placeholder.png"
-    },
-    {
-        id: "2",
-        name: "iTunes Gift Card",
-        type: "sell",
-        price: null,
-        status: "disabled",
-        image: "/placeholder.png"
-    }
-]
 import AddCardsModal, { CardData } from "@/components/modals/addCardsModal"
 import { useState } from "react"
+import { useCards } from "@/hooks/useCards"
+import { useDeleteCard, useUpdateCard } from "@/hooks/useAdmin"
+import { Card as BackendCard } from "@/lib/api/cards"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 
 export default function CardsManageMentPage() {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false)
     const [editingCard, setEditingCard] = useState<CardData | null>(null)
     const [filterType, setFilterType] = useState("all")
     const [searchQuery, setSearchQuery] = useState("")
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+    const [cardIdToDelete, setCardIdToDelete] = useState<string | null>(null)
 
-    const handleEdit = (card: GiftCard) => {
+    const { data: cardsResponse, isLoading } = useCards()
+    const deleteCardMutation = useDeleteCard()
+    const updateCardMutation = useUpdateCard()
+
+    const cards = cardsResponse?.data?.cards || []
+
+    const handleEdit = (card: BackendCard) => {
         setEditingCard({
             ...card,
-            description: "", // mock data doesn't have description yet, should be added to GiftCard type if needed strictly
+            id: card._id,
+            image: card.imageUrl,
+            price: card.prices?.[0]?.price?.toString() || "",
+            status: card.status === "active" ? "active" : "disabled",
         })
         setIsAddModalOpen(true)
     }
@@ -85,7 +78,41 @@ export default function CardsManageMentPage() {
         setIsAddModalOpen(true)
     }
 
-    const filteredCards = mockCards.filter(card => {
+    const handleDelete = (id: string) => {
+        setCardIdToDelete(id)
+        setIsDeleteDialogOpen(true)
+    }
+
+    const confirmDelete = async () => {
+        if (!cardIdToDelete) return
+        try {
+            await deleteCardMutation.mutateAsync(cardIdToDelete)
+            toast.success("Card deleted successfully")
+        } catch (error) {
+            toast.error("Failed to delete card")
+        } finally {
+            setIsDeleteDialogOpen(false)
+            setCardIdToDelete(null)
+        }
+    }
+
+    const handleToggleStatus = async (card: BackendCard) => {
+        const newStatus = card.status === "active" ? "inactive" : "active"
+        const data = new FormData()
+        data.append("status", newStatus)
+
+        try {
+            await updateCardMutation.mutateAsync({
+                cardId: card._id,
+                payload: data
+            })
+            toast.success(`Card ${newStatus === 'active' ? 'activated' : 'disabled'} successfully`)
+        } catch (error) {
+            toast.error("Failed to update card status")
+        }
+    }
+
+    const filteredCards = cards.filter(card => {
         const matchesType = filterType === "all" || card.type === filterType
         const matchesSearch = card.name.toLowerCase().includes(searchQuery.toLowerCase())
         return matchesType && matchesSearch
@@ -109,9 +136,14 @@ export default function CardsManageMentPage() {
                 <div className="flex items-center space-x-2 text-sm text-muted-foreground mb-6">
                     <span className="font-medium">{filteredCards.length} Total</span>
                     <span>|</span>
-                    <span className="text-green-600 font-medium">{filteredCards.filter(c => c.status === 'active').length} Active</span>
+                    <span className="text-green-600 font-medium">
+                        {filteredCards.filter(c => c.status === 'active').length} Active
+                    </span>
                     <span>|</span>
-                    <span className="text-red-500 font-medium">{filteredCards.filter(c => c.status === 'disabled').length} Disabled</span>
+                    <span className="text-red-500 font-medium">
+                        {filteredCards.filter(c => c.status !== 'active').length} Disabled
+                    </span>
+                    {isLoading && <Loader className="ml-2 h-4 w-4 animate-spin" />}
                 </div>
 
                 <div className="flex items-center gap-4">
@@ -152,11 +184,11 @@ export default function CardsManageMentPage() {
                             </TableHeader>
                             <TableBody>
                                 {filteredCards.map((card) => (
-                                    <TableRow key={card.id} className="h-12">
+                                    <TableRow key={card._id} className="h-12">
                                         <TableCell className="py-2">
                                             <div className="flex items-center gap-3">
                                                 <Avatar className="h-8 w-8">
-                                                    <AvatarImage src={card.image} alt={card.name} />
+                                                    <AvatarImage src={card.imageUrl} alt={card.name} />
                                                     <AvatarFallback>{card.name.substring(0, 2).toUpperCase()}</AvatarFallback>
                                                 </Avatar>
                                                 <span className="font-medium">{card.name}</span>
@@ -168,7 +200,7 @@ export default function CardsManageMentPage() {
                                             </Badge>
                                         </TableCell>
                                         <TableCell className="py-2 font-medium">
-                                            {card.type === 'sell' ? '-' : card.price}
+                                            {card.type === 'sell' ? '-' : `$${card.prices?.[0]?.price || '0.00'}`}
                                         </TableCell>
                                         <TableCell className="py-2">
                                             <Badge variant="outline" className={`text-[10px] px-2 py-0.5 ${card.status === 'active' ? "text-green-600 border-green-600" : "text-gray-500 border-gray-500"}`}>
@@ -188,12 +220,18 @@ export default function CardsManageMentPage() {
                                                     <DropdownMenuItem onClick={() => handleEdit(card)}>
                                                         <Pencil className="mr-2 h-4 w-4" /> Edit Card
                                                     </DropdownMenuItem>
-                                                    <DropdownMenuItem className={card.status === 'active' ? "text-red-600" : "text-green-600"}>
+                                                    <DropdownMenuItem
+                                                        onClick={() => handleToggleStatus(card)}
+                                                        className={card.status === 'active' ? "text-red-600" : "text-green-600"}
+                                                    >
                                                         <Power className="mr-2 h-4 w-4" />
                                                         {card.status === 'active' ? 'Disable' : 'Activate'}
                                                     </DropdownMenuItem>
                                                     <DropdownMenuSeparator />
-                                                    <DropdownMenuItem className="text-red-600">
+                                                    <DropdownMenuItem
+                                                        onClick={() => handleDelete(card._id)}
+                                                        className="text-red-600"
+                                                    >
                                                         <Trash className="mr-2 h-4 w-4" /> Delete
                                                     </DropdownMenuItem>
                                                 </DropdownMenuContent>
@@ -201,13 +239,67 @@ export default function CardsManageMentPage() {
                                         </TableCell>
                                     </TableRow>
                                 ))}
+                                {filteredCards.length === 0 && !isLoading && (
+                                    <TableRow>
+                                        <TableCell colSpan={5} className="h-24 text-center">
+                                            No cards found.
+                                        </TableCell>
+                                    </TableRow>
+                                )}
                             </TableBody>
                         </Table>
                     </ScrollArea>
                 </div>
 
+                {/* Pagination (Client-side for now based on response) */}
+                {cardsResponse?.data?.pagination && cardsResponse.data.pagination.totalPages > 1 && (
+                    <div className="flex items-center justify-between px-2 py-4 border-t">
+                        <div className="text-sm text-muted-foreground">
+                            Page {cardsResponse.data.pagination.currentPage} of {cardsResponse.data.pagination.totalPages}
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                disabled={!cardsResponse.data.pagination.hasPrevPage}
+                            >
+                                <ChevronLeft className="h-4 w-4" />
+                                Previous
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                disabled={!cardsResponse.data.pagination.hasNextPage}
+                            >
+                                Next
+                                <ChevronRight className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    </div>
+                )}
+
 
             </CardContent>
+
+            <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete the gift card from the system.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={confirmDelete}
+                            className="bg-red-600 hover:bg-red-700"
+                        >
+                            Delete Card
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </Card>
     )
 }

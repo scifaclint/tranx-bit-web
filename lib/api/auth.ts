@@ -71,7 +71,11 @@ export interface LoginResponse {
       registration_type: string;
       email_verified_at?: string | null;
       survey_remind?: boolean;
-      country?:string
+      country?: string;
+      kyc_status?: string;
+      kyc_submitted_at?: string | null;
+      kyc_verified_at?: string | null;
+      wallet_balance?: string;
     };
   };
 }
@@ -94,11 +98,30 @@ interface DeleteAccountResponse {
   message: string;
 }
 
+export interface VerifyAdminResponse {
+  status: boolean;
+  message?: string;
+  error?: string;
+  data?: {
+    userId: number;
+    email: string;
+    role: string;
+  };
+}
+
+export interface CheckUsernameResponse {
+  status: boolean;
+  available: boolean;
+  message: string;
+  suggestions?: string[];
+}
+
 export interface User {
   id: number;
   first_name: string;
   last_name: string;
   email: string;
+  phone?: string;
   is_verified: boolean;
   created_at: string;
   updated_at: string;
@@ -111,6 +134,29 @@ export interface User {
   pm_last_four?: string | null;
   referral_balance?: string;
   referral_amount_used?: string;
+  kyc_status?: string;
+  kyc_submitted_at?: string | null;
+  kyc_verified_at?: string | null;
+  wallet_balance?: string;
+  pending_orders_count?: number;
+  role?: string;
+}
+
+export interface UpdateUserPayload {
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  phone?: string;
+  country?: string;
+  photo_url?: string;
+}
+
+export interface UpdateUserResponse {
+  status: boolean;
+  message?: string;
+  data: {
+    user: User;
+  };
 }
 
 export const authApi = {
@@ -131,13 +177,13 @@ export const authApi = {
   },
 
   logout: async () => {
-    const response = await api.post("/logout");
-    // console.log(response,'logged out')
+    const response = await api.post("/auth/logout");
+    console.log(response, 'logged out')
     return response.data;
   },
 
   getUser: async (): Promise<AuthResponse> => {
-    const response = await api.post("/auth/user");
+    const response = await api.get("/auth/user");
     // console.log('checked', response.data);
     return response.data;
   },
@@ -185,17 +231,32 @@ export const authApi = {
     password: string;
     password_confirmation: string;
   }) => {
-    const response = await api.post("/reset-password", data);
+    const response = await api.post("/auth/reset-password", data);
     return response.data;
   },
 
   verifyResetToken: async (data: { email: string; token: string }) => {
-    const response = await api.post("/verify/token", data);
+    const response = await api.post("/auth/verify-reset-token", data);
     return response.data;
   },
 
   deleteAccount: async (password: string): Promise<DeleteAccountResponse> => {
     const response = await api.post("/delete-account", { password });
+    return response.data;
+  },
+
+  updateUser: async (data: FormData): Promise<UpdateUserResponse> => {
+    const response = await api.put("/auth/updateUser", data);
+    return response.data;
+  },
+
+  verifyAdmin: async (): Promise<VerifyAdminResponse> => {
+    const response = await api.get("/admin/verify");
+    return response.data;
+  },
+
+  checkUsername: async (username: string): Promise<CheckUsernameResponse> => {
+    const response = await api.post("/auth/check-username", { username });
     return response.data;
   },
 };

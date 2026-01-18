@@ -2,7 +2,6 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
-// import TranxBitLogo from "../design/tranx-bit-logo";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -43,7 +42,7 @@ const orbitPositions = [
   { x: -220, y: -80 },
 ];
 
-export default function LoadingAnimation({}: LoadingAnimationProps) {
+export default function LoadingAnimation({ }: LoadingAnimationProps) {
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
 
@@ -79,7 +78,7 @@ export default function LoadingAnimation({}: LoadingAnimationProps) {
   }
 
   return (
-    <div className="fixed inset-0 bg-linear-to-br from-gray-50 via-blue-50 to-slate-100 dark:from-gray-950 dark:via-blue-950 dark:to-slate-950 flex items-center justify-center z-50 overflow-hidden">
+    <div className="fixed inset-0 bg-background flex items-center justify-center z-50 overflow-hidden">
       {/* Subtle background grid pattern */}
       <div className="absolute inset-0 opacity-5">
         <div
@@ -117,7 +116,7 @@ export default function LoadingAnimation({}: LoadingAnimationProps) {
               ease: "easeInOut",
             }}
           >
-            <div className="w-10 h-10 md:w-12 md:h-12 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-2 flex items-center justify-center">
+            <div className="w-10 h-10 md:w-12 md:h-12 bg-backgroundSecondary border border-borderColorPrimary rounded-xl shadow-lg p-2 flex items-center justify-center">
               <Image
                 src={brand.src}
                 alt={brand.alt}
@@ -130,7 +129,7 @@ export default function LoadingAnimation({}: LoadingAnimationProps) {
         ))}
       </AnimatePresence>
 
-      {/* Center focal point - subtle glow only */}
+      {/* Center focal point - subtle glow */}
       <motion.div
         className="relative z-10 w-4 h-4"
         animate={{
@@ -143,7 +142,7 @@ export default function LoadingAnimation({}: LoadingAnimationProps) {
         }}
       >
         <motion.div
-          className="absolute inset-0 rounded-full bg-linear-to-br from-cyan-500 to-blue-500 blur-xl"
+          className="absolute inset-0 rounded-full bg-blue-600/30 blur-2xl"
           animate={{
             scale: [1, 3, 1],
             opacity: [0.3, 0.6, 0.3],
@@ -168,7 +167,7 @@ export default function LoadingAnimation({}: LoadingAnimationProps) {
           {[0, 1, 2].map((i) => (
             <motion.div
               key={i}
-              className="w-2 h-2 rounded-full bg-linear-to-r from-cyan-500 to-blue-600"
+              className="w-2 h-2 rounded-full bg-blue-600"
               animate={{
                 scale: [1, 1.5, 1],
                 opacity: [0.4, 1, 0.4],
@@ -185,7 +184,7 @@ export default function LoadingAnimation({}: LoadingAnimationProps) {
 
         {/* Loading text */}
         <motion.p
-          className="text-sm md:text-base text-gray-600 dark:text-gray-400 font-medium"
+          className="text-sm md:text-base text-bodyColor/60 font-medium"
           animate={{
             opacity: [0.6, 1, 0.6],
           }}

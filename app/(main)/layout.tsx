@@ -2,16 +2,10 @@
 import { useState } from "react";
 import Sidebar from "@/components/layout/side-bar";
 import HeaderWithBalance from "@/components/layout/header-with-balance";
-import TawkToWidget from "@/components/services/twak-to-widget";
 import { usePathname } from "next/navigation";
 import PageWrapper from "@/components/layout/pageWrapper";
 import { RouteGuard } from "@/components/features/auth/RouteGuard";
 // import DashBoardHeader from "@/components/layout/dashboardHeader";
-const userData = {
-  name: "John Doe",
-  email: "john@gmail.com",
-  userId: "123",
-};
 
 export default function AuthLayout({
   children,
@@ -39,12 +33,6 @@ export default function AuthLayout({
               </div>
             </div>
           </main>
-          {pathname === "/" ? null : (
-            <TawkToWidget
-              hideOnRoutes={["/login", "/signup", "/auth/*"]}
-              user={userData}
-            />
-          )}
         </PageWrapper>
       </RouteGuard>
     </>

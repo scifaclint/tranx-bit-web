@@ -24,6 +24,22 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { Loader } from "lucide-react"
+import { toast } from "sonner"
+
+import { useAdminOrders, useApproveOrder, useRejectOrder } from "@/hooks/useAdmin"
+import { AdminOrder, AdminOrderStatus } from "@/lib/api/admin"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 
 type OrderStatus = "all" | "pending" | "completed" | "rejected"
 
@@ -41,61 +57,6 @@ interface Order {
     date: string
 }
 
-const mockOrders: Order[] = [
-    {
-        id: "ORD-73829103-XJ9",
-        customer: {
-            name: "Alex Johnson",
-            email: "alex.johnson@example.com",
-            image: "/avatars/01.png"
-        },
-        card: "Amazon Gift Card",
-        type: "buy",
-        amount: "$50.00",
-        status: "completed",
-        date: "2024-12-30"
-    },
-    {
-        id: "ORD-19283746-AB2",
-        customer: {
-            name: "Sarah Williams",
-            email: "sarah.williams@example.com",
-            image: "/avatars/02.png"
-        },
-        card: "iTunes Gift Card",
-        type: "sell",
-        amount: "$25.00",
-        status: "pending",
-        date: "2024-12-31"
-    },
-    {
-        id: "ORD-56473829-KL5",
-        customer: {
-            name: "Michael Brown",
-            email: "michael.brown@example.com",
-            image: "/avatars/03.png"
-        },
-        card: "Steam Wallet",
-        type: "buy",
-        amount: "$100.00",
-        status: "rejected",
-        date: "2024-12-29"
-    },
-    {
-        id: "ORD-91029384-MN7",
-        customer: {
-            name: "Emily Davis",
-            email: "emily.davis@example.com",
-            image: "/avatars/04.png"
-        },
-        card: "Google Play",
-        type: "sell",
-        amount: "$10.00",
-        status: "completed",
-        date: "2024-12-28"
-    }
-]
-
 import OrderDetailsModal from "@/components/modals/view-detailsModal"
 import RejectionModal from "@/components/modals/rejections-modal"
 
@@ -104,10 +65,25 @@ export default function CardOrderPage() {
     const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null)
     const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
     const [isRejectionModalOpen, setIsRejectionModalOpen] = useState(false)
+    const [isApproveDialogOpen, setIsApproveDialogOpen] = useState(false)
+    const [orderToApprove, setOrderToApprove] = useState<string | null>(null)
+    const [searchQuery, setSearchQuery] = useState("")
+
+    // Map OrderStatus to AdminOrderStatus or undefined for 'all'
+    const statusFilter = activeTab === "all" ? undefined : activeTab
+
+    const { data: ordersResponse, isLoading } = useAdminOrders({
+        status: statusFilter,
+    })
+
+    const approveOrderMutation = useApproveOrder()
+    const rejectOrderMutation = useRejectOrder()
+
+    const orders = ordersResponse?.data?.orders || []
 
     const handleViewDetails = (id: string) => {
         setSelectedOrderId(id)
-        const order = mockOrders.find(o => o.id === id)
+        const order = orders.find(o => o._id === id)
         if (order?.status === 'rejected') {
             setIsRejectionModalOpen(true)
         } else {
@@ -115,19 +91,45 @@ export default function CardOrderPage() {
         }
     }
 
-    const selectedOrder = mockOrders.find(o => o.id === selectedOrderId)
+    const handleApprove = (id: string) => {
+        setOrderToApprove(id)
+        setIsApproveDialogOpen(true)
+    }
+
+    const confirmApprove = async () => {
+        if (!orderToApprove) return
+        try {
+            // For now, approving from list sends empty codes array
+            // Real usage should probably happen in the details modal
+            await approveOrderMutation.mutateAsync({
+                orderId: orderToApprove,
+                giftCardCodes: []
+            })
+            toast.success("Order approved successfully")
+        } catch (error) {
+            toast.error("Failed to approve order")
+        } finally {
+            setIsApproveDialogOpen(false)
+            setOrderToApprove(null)
+        }
+    }
+
+    const selectedOrder = orders.find(o => o._id === selectedOrderId)
 
     const tabs = [
-        { id: "all", label: "Total", count: 156, color: "text-foreground" },
-        { id: "pending", label: "Pending", count: 12, color: "text-yellow-600" },
-        { id: "completed", label: "Completed", count: 98, color: "text-green-600" },
-        { id: "rejected", label: "Rejected", count: 8, color: "text-red-600" },
+        { id: "all", label: "Total", count: ordersResponse?.data?.pagination?.totalOrders || 0, color: "text-foreground" },
+        { id: "pending", label: "Pending", count: 0, color: "text-yellow-600" },
+        { id: "completed", label: "Completed", count: 0, color: "text-green-600" },
+        { id: "rejected", label: "Rejected", count: 0, color: "text-red-600" },
     ]
 
     return (
         <Card className="border-none shadow-none bg-transparent">
             <CardHeader className="flex flex-row items-center justify-between px-0 pt-0">
-                <CardTitle className="text-2xl font-bold">Orders Management</CardTitle>
+                <div className="flex items-center gap-4">
+                    <CardTitle className="text-2xl font-bold">Orders Management</CardTitle>
+                    {isLoading && <Loader className="h-5 w-5 animate-spin text-muted-foreground" />}
+                </div>
                 <Button variant="outline">
                     <Download className="mr-2 h-4 w-4" />
                     Export
@@ -137,14 +139,15 @@ export default function CardOrderPage() {
                 isOpen={isDetailsModalOpen}
                 onClose={() => setIsDetailsModalOpen(false)}
                 orderId={selectedOrderId || ""}
-                type={selectedOrder?.type}
+                type={selectedOrder?.orderType}
             />
             <RejectionModal
                 isOpen={isRejectionModalOpen}
                 onClose={() => setIsRejectionModalOpen(false)}
                 orderId={selectedOrderId || ""}
-                type={selectedOrder?.type}
+                type={selectedOrder?.orderType}
             />
+
             <CardContent className="px-0">
                 <div className="flex items-center space-x-1 border-b mb-6">
                     {tabs.map((tab) => (
@@ -173,6 +176,8 @@ export default function CardOrderPage() {
                             type="search"
                             placeholder={`Search ${activeTab === 'all' ? 'total' : activeTab} orders...`}
                             className="pl-9"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
                         />
                     </div>
                 </div>
@@ -193,43 +198,48 @@ export default function CardOrderPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {mockOrders.map((order) => (
-                                    <TableRow key={order.id} className="h-12">
+                                {orders.map((order) => (
+                                    <TableRow key={order._id} className="h-12">
                                         <TableCell className="font-medium py-2">
-                                            <span title={order.id} className="truncate block w-[120px]">
-                                                {order.id}
+                                            <span title={order?._id} className="truncate block w-[120px]">
+                                                {order?.orderNumber || order?._id}
                                             </span>
                                         </TableCell>
                                         <TableCell className="py-2">
                                             <div className="flex items-center gap-3">
                                                 <Avatar className="h-8 w-8">
-                                                    <AvatarImage src={order.customer.image} alt={order.customer.name} />
-                                                    <AvatarFallback>{order.customer.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                                                    <AvatarFallback>{order.userId?.firstName?.substring(0, 1)}{order.userId?.lastName?.substring(0, 1)}</AvatarFallback>
                                                 </Avatar>
                                                 <div className="flex flex-col">
-                                                    <span className="text-sm font-medium">{order.customer.name}</span>
-                                                    <span title={order.customer.email} className="text-xs text-muted-foreground truncate w-[140px]">
-                                                        {order.customer.email}
+                                                    <span className="text-sm font-medium">{order.userId?.firstName} {order.userId?.lastName}</span>
+                                                    <span title={order.userId?.email} className="text-xs text-muted-foreground truncate w-[140px]">
+                                                        {order.userId?.email}
                                                     </span>
                                                 </div>
                                             </div>
                                         </TableCell>
-                                        <TableCell className="py-2 font-medium">{order.card}</TableCell>
+                                        <TableCell className="py-2 font-medium">
+                                            {order.items?.[0]?.cardName || "N/A"}
+                                        </TableCell>
                                         <TableCell className="py-2">
-                                            <Badge variant={order.type === 'buy' ? 'default' : 'secondary'} className="uppercase text-[10px] px-2 py-0.5">
-                                                {order.type}
+                                            <Badge variant={order.orderType === 'buy' ? 'default' : 'secondary'} className="uppercase text-[10px] px-2 py-0.5">
+                                                {order.orderType}
                                             </Badge>
                                         </TableCell>
-                                        <TableCell className="py-2">{order.amount}</TableCell>
+                                        <TableCell className="py-2">
+                                            {order.totalAmount ? `$${order.totalAmount.toLocaleString()}` : "$0.00"}
+                                        </TableCell>
                                         <TableCell className="py-2">
                                             <Badge variant="outline" className={`text-[10px] px-2 py-0.5 capitalize
                                                 ${order.status === 'completed' ? "text-green-600 border-green-600" :
-                                                    order.status === 'pending' ? "text-yellow-600 border-yellow-600" :
+                                                    order.status === 'pending' || order.status === 'under_review' ? "text-yellow-600 border-yellow-600" :
                                                         "text-red-500 border-red-500"}`}>
                                                 {order.status}
                                             </Badge>
                                         </TableCell>
-                                        <TableCell className="py-2 text-muted-foreground text-sm">{order.date}</TableCell>
+                                        <TableCell className="py-2 text-muted-foreground text-sm">
+                                            {new Date(order.createdAt).toLocaleDateString()}
+                                        </TableCell>
                                         <TableCell className="text-right py-2">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
@@ -240,23 +250,57 @@ export default function CardOrderPage() {
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end">
                                                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                    <DropdownMenuItem onClick={() => handleViewDetails(order.id)}>
+                                                    <DropdownMenuItem onClick={() => handleViewDetails(order._id)}>
                                                         <Eye className="mr-2 h-4 w-4" /> View Details
                                                     </DropdownMenuItem>
-                                                    <DropdownMenuSeparator />
-                                                    <DropdownMenuItem disabled className="text-red-600">
-                                                        <Trash className="mr-2 h-4 w-4" /> Delete
-                                                    </DropdownMenuItem>
+                                                    {order.status === 'under_review' && (
+                                                        <>
+                                                            <DropdownMenuSeparator />
+                                                            <DropdownMenuItem
+                                                                onClick={() => handleApprove(order._id)}
+                                                                className="text-green-600"
+                                                            >
+                                                                Approve Order
+                                                            </DropdownMenuItem>
+                                                        </>
+                                                    )}
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </TableCell>
                                     </TableRow>
                                 ))}
+                                {orders.length === 0 && !isLoading && (
+                                    <TableRow>
+                                        <TableCell colSpan={8} className="h-24 text-center">
+                                            No orders found.
+                                        </TableCell>
+                                    </TableRow>
+                                )}
                             </TableBody>
                         </Table>
                     </ScrollArea>
                 </div>
             </CardContent>
+
+            <AlertDialog open={isApproveDialogOpen} onOpenChange={setIsApproveDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Approve Order</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to approve this order? This action will mark the order as completed.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={confirmApprove}
+                            className="bg-green-600 hover:bg-green-700"
+                        >
+                            Approve
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </Card>
     )
 }

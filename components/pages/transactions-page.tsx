@@ -21,10 +21,24 @@ import {
   Clock,
   CheckCircle2,
   XCircle,
+  Loader,
+  CreditCard,
+  History,
+  DollarSign,
+  Wallet,
 } from "lucide-react";
 import Image from "next/image";
+import { useUserOrders } from "@/hooks/useOrders";
+import { motion } from "framer-motion";
 
-type FilterStatus = "all" | "pending" | "completed" | "failed";
+type FilterStatus =
+  | "all"
+  | "pending_payment"
+  | "under_review"
+  | "completed"
+  | "cancelled"
+  | "refunded"
+  | "payment_claimed";
 type FilterType = "all" | "buy" | "sell";
 
 interface Transaction {
@@ -42,16 +56,29 @@ export default function TransactionPage() {
   const searchParams = useSearchParams();
   const [statusFilter, setStatusFilter] = useState<FilterStatus>("all");
   const [typeFilter, setTypeFilter] = useState<FilterType>("all");
+  const [page, setPage] = useState(1);
+
+  // API Call
+  const { data: ordersData, isLoading, isFetching } = useUserOrders(page);
+  const transactions = ordersData?.data?.orders || [];
+  const pagination = ordersData?.data?.pagination;
 
   // Read filters from URL query parameters on mount
   useEffect(() => {
     const statusParam = searchParams.get("status");
     const typeParam = searchParams.get("type");
 
-    if (
-      statusParam &&
-      ["all", "pending", "completed", "failed"].includes(statusParam)
-    ) {
+    const validStatuses = [
+      "all",
+      "pending_payment",
+      "under_review",
+      "completed",
+      "cancelled",
+      "refunded",
+      "payment_claimed",
+    ];
+
+    if (statusParam && validStatuses.includes(statusParam)) {
       setStatusFilter(statusParam as FilterStatus);
     }
 
@@ -60,75 +87,29 @@ export default function TransactionPage() {
     }
   }, [searchParams]);
 
-  // Mock transactions - expanded for better demo
-  const transactions: Transaction[] = [
-    {
-      id: "TXN-2025-001",
-      brand: "Amazon",
-      brandLogo: "/brands/logo-amazon.svg",
-      type: "sell",
-      date: "Dec 15, 2025",
-      amount: 25.0,
-      status: "completed",
-    },
-    {
-      id: "TXN-2025-002",
-      brand: "iTunes",
-      brandLogo: "/brands/itunes-1.svg",
-      type: "buy",
-      date: "Dec 14, 2025",
-      amount: 50.0,
-      status: "pending",
-    },
-    {
-      id: "TXN-2025-003",
-      brand: "Steam",
-      brandLogo: "/brands/steam-1.svg",
-      type: "buy",
-      date: "Dec 13, 2025",
-      amount: 100.0,
-      status: "completed",
-    },
-    {
-      id: "TXN-2025-004",
-      brand: "PlayStation",
-      brandLogo: "/brands/playstation-6.svg",
-      type: "sell",
-      date: "Dec 12, 2025",
-      amount: 75.0,
-      status: "failed",
-    },
-    {
-      id: "TXN-2025-005",
-      brand: "Apple",
-      brandLogo: "/brands/apple-11.svg",
-      type: "buy",
-      date: "Dec 11, 2025",
-      amount: 200.0,
-      status: "pending",
-    },
-  ];
-
   const statusFilters: {
     label: string;
     value: FilterStatus;
     icon: React.ElementType;
   }[] = [
-    { label: "All Status", value: "all", icon: Filter },
-    { label: "Pending", value: "pending", icon: Clock },
-    { label: "Completed", value: "completed", icon: CheckCircle2 },
-    { label: "Failed", value: "failed", icon: XCircle },
-  ];
+      { label: "All Status", value: "all", icon: Filter },
+      { label: "Pending Payment", value: "pending_payment", icon: Clock },
+      { label: "Under Review", value: "under_review", icon: TrendingUp },
+      { label: "Completed", value: "completed", icon: CheckCircle2 },
+      { label: "Cancelled", value: "cancelled", icon: XCircle },
+      { label: "Refunded", value: "refunded", icon: DollarSign },
+      { label: "Payment Claimed", value: "payment_claimed", icon: Wallet },
+    ];
 
   const typeFilters: {
     label: string;
     value: FilterType;
     icon: React.ElementType;
   }[] = [
-    { label: "All Types", value: "all", icon: Filter },
-    { label: "Buy", value: "buy", icon: TrendingUp },
-    { label: "Sell", value: "sell", icon: TrendingDown },
-  ];
+      { label: "All Types", value: "all", icon: Filter },
+      { label: "Buy", value: "buy", icon: TrendingUp },
+      { label: "Sell", value: "sell", icon: TrendingDown },
+    ];
 
   const getStatusLabel = () => {
     return (
@@ -142,10 +123,10 @@ export default function TransactionPage() {
     );
   };
 
-  // Filter transactions based on active filters
+  // Filter transactions based on active filters (client-side for now, could be server-side later)
   const filteredTransactions = transactions.filter((t) => {
-    const statusMatch = statusFilter === "all" || t.status === statusFilter;
-    const typeMatch = typeFilter === "all" || t.type === typeFilter;
+    const statusMatch = statusFilter === "all" || t.status.toLowerCase().includes(statusFilter.toLowerCase());
+    const typeMatch = typeFilter === "all" || t.type.toLowerCase() === typeFilter.toLowerCase();
     return statusMatch && typeMatch;
   });
 
@@ -154,15 +135,22 @@ export default function TransactionPage() {
     router.push(`/transactions/${transactionId}`);
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px]">
+        <Loader className="h-8 w-8 text-black animate-spin" />
+        <p className="mt-2 text-sm text-muted-foreground font-medium">Loading transactions...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full space-y-6">
       {/* Header with Filter Dropdowns */}
       <div className="flex items-center justify-between flex-wrap gap-4">
-        <div>
+        <div className="flex items-center gap-2">
           <h1 className="text-2xl font-bold">Transactions</h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            View and manage your gift card transactions
-          </p>
+          {isFetching && <Loader className="h-4 w-4 text-muted-foreground animate-spin" />}
         </div>
 
         {/* Filter Controls */}
@@ -170,7 +158,7 @@ export default function TransactionPage() {
           {/* Status Filter */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="gap-2 min-w-[140px]">
+              <Button variant="outline" className="gap-2 min-w-[140px] bg-backgroundSecondary border-borderColorPrimary dark:border-white/10">
                 <Filter className="h-4 w-4" />
                 {getStatusLabel()}
               </Button>
@@ -186,11 +174,10 @@ export default function TransactionPage() {
                   <DropdownMenuItem
                     key={filter.value}
                     onClick={() => setStatusFilter(filter.value)}
-                    className={`cursor-pointer flex items-center gap-2 ${
-                      statusFilter === filter.value
-                        ? "bg-black text-white dark:bg-white dark:text-black"
-                        : ""
-                    }`}
+                    className={`cursor-pointer flex items-center gap-2 ${statusFilter === filter.value
+                      ? "bg-black text-white dark:bg-white dark:text-black"
+                      : ""
+                      }`}
                   >
                     <Icon className="h-4 w-4" />
                     {filter.label}
@@ -203,7 +190,7 @@ export default function TransactionPage() {
           {/* Type Filter */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="gap-2 min-w-[130px]">
+              <Button variant="outline" className="gap-2 min-w-[130px] bg-backgroundSecondary border-borderColorPrimary dark:border-white/10">
                 <Filter className="h-4 w-4" />
                 {getTypeLabel()}
               </Button>
@@ -219,11 +206,10 @@ export default function TransactionPage() {
                   <DropdownMenuItem
                     key={filter.value}
                     onClick={() => setTypeFilter(filter.value)}
-                    className={`cursor-pointer flex items-center gap-2 ${
-                      typeFilter === filter.value
-                        ? "bg-black text-white dark:bg-white dark:text-black"
-                        : ""
-                    }`}
+                    className={`cursor-pointer flex items-center gap-2 ${typeFilter === filter.value
+                      ? "bg-black text-white dark:bg-white dark:text-black"
+                      : ""
+                      }`}
                   >
                     <Icon className="h-4 w-4" />
                     {filter.label}
@@ -237,13 +223,24 @@ export default function TransactionPage() {
 
       {/* Transaction Table */}
       {filteredTransactions.length === 0 ? (
-        <div className="text-center py-12 border rounded-lg bg-muted/20">
-          <p className="text-muted-foreground">No transactions found</p>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="flex flex-col items-center justify-center py-20 border rounded-2xl bg-backgroundSecondary/20 border-borderColorPrimary border-dashed"
+        >
+          <div className="bg-muted/20 p-4 rounded-full mb-4">
+            <History className="h-10 w-10 text-muted-foreground/60" strokeWidth={1.5} />
+          </div>
+          <h3 className="text-lg font-semibold text-foreground/80">No Transactions Found</h3>
+          <p className="text-muted-foreground text-sm max-w-[250px] text-center mt-2">
+            Your gift card transactions will appear here once they are processed.
+          </p>
+        </motion.div>
       ) : (
-        <div className="border rounded-lg overflow-hidden bg-card shadow-sm">
+        <div className="border rounded-lg overflow-hidden dark:bg-background border-borderColorPrimary shadow-sm">
           {/* Table Header */}
-          <div className="grid grid-cols-[2fr_1fr_1fr_1.2fr_1fr_auto] gap-4 px-6 py-4 bg-muted/50 border-b font-semibold text-sm">
+          <div className="grid grid-cols-[2fr_1fr_1fr_1.2fr_1fr_auto] gap-4 px-6 py-4 bg-backgroundSecondary/50 border-b border-borderColorPrimary font-semibold text-sm">
             <div>Product name</div>
             <div>Type</div>
             <div>Amount</div>
@@ -253,30 +250,25 @@ export default function TransactionPage() {
           </div>
 
           {/* Table Body with ScrollArea */}
-          <ScrollArea className="h-[500px]">
+          <ScrollArea className="h-[calc(100vh-350px)] min-h-[400px]">
             <div className="divide-y divide-border/50">
               {filteredTransactions.map((transaction) => (
                 <div
-                  key={transaction.id}
-                  onClick={() => handleRowClick(transaction.id)}
-                  className="grid grid-cols-[2fr_1fr_1fr_1.2fr_1fr_auto] gap-4 px-6 py-4 hover:bg-muted/40 transition-all duration-200 cursor-pointer items-center group"
+                  key={transaction.orderId}
+                  onClick={() => handleRowClick(transaction.orderId)}
+                  className="grid grid-cols-[2fr_1fr_1fr_1.2fr_1fr_auto] gap-4 px-6 py-4 hover:bg-backgroundSecondary transition-all duration-200 cursor-pointer items-center group"
                 >
                   {/* Product name (Brand) */}
                   <div className="flex items-center gap-3">
-                    <div className="relative w-10 h-10 flex-shrink-0 bg-muted/60 rounded-lg p-2 ring-1 ring-border/50 group-hover:ring-border transition-all">
-                      <Image
-                        src={transaction.brandLogo}
-                        alt={transaction.brand}
-                        fill
-                        className="object-contain p-1"
-                      />
+                    <div className="relative w-10 h-10 flex-shrink-0 bg-muted/60 rounded-lg flex items-center justify-center ring-1 ring-border/50 group-hover:ring-border transition-all overflow-hidden p-1">
+                      <CreditCard className="w-6 h-6 text-muted-foreground" />
                     </div>
                     <div className="flex flex-col">
-                      <span className="font-medium text-sm group-hover:text-foreground/80 transition-colors">
-                        {transaction.brand}
+                      <span className="font-medium text-sm group-hover:text-foreground/80 transition-colors truncate max-w-[150px]">
+                        {transaction.productName || transaction.brand}
                       </span>
                       <span className="text-xs text-muted-foreground">
-                        {transaction.id}
+                        {transaction.orderId}
                       </span>
                     </div>
                   </div>
@@ -306,25 +298,24 @@ export default function TransactionPage() {
                   <div>
                     <Badge
                       variant="outline"
-                      className={`w-fit text-xs font-medium flex items-center gap-1.5 ${
-                        transaction.status === "completed"
-                          ? "border-green-300 bg-green-50 text-green-700 dark:border-green-700 dark:bg-green-950/30 dark:text-green-400"
-                          : transaction.status === "pending"
+                      className={`w-fit text-xs font-medium flex items-center gap-1.5 ${transaction.status.toLowerCase().includes("completed")
+                        ? "border-green-300 bg-green-50 text-green-700 dark:border-green-700 dark:bg-green-950/30 dark:text-green-400"
+                        : transaction.status.toLowerCase().includes("pending")
                           ? "border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-400"
                           : "border-red-300 bg-red-50 text-red-700 dark:border-red-700 dark:bg-red-950/30 dark:text-red-400"
-                      }`}
+                        }`}
                     >
-                      {transaction.status === "completed" && (
+                      {transaction.status.toLowerCase().includes("completed") && (
                         <CheckCircle2 className="h-3 w-3" />
                       )}
-                      {transaction.status === "pending" && (
+                      {transaction.status.toLowerCase().includes("pending") && (
                         <Clock className="h-3 w-3" />
                       )}
-                      {transaction.status === "failed" && (
+                      {!transaction.status.toLowerCase().includes("completed") && !transaction.status.toLowerCase().includes("pending") && (
                         <XCircle className="h-3 w-3" />
                       )}
                       {transaction.status.charAt(0).toUpperCase() +
-                        transaction.status.slice(1)}
+                        transaction.status.slice(1).toLowerCase()}
                     </Badge>
                   </div>
 
@@ -336,6 +327,35 @@ export default function TransactionPage() {
               ))}
             </div>
           </ScrollArea>
+
+          {/* Pagination Controls */}
+          {pagination && pagination.totalPages > 1 && (
+            <div className="flex items-center justify-between px-6 py-4 bg-backgroundSecondary/30 border-t border-borderColorPrimary font-medium text-sm mt-auto">
+              <div className="text-muted-foreground hidden sm:block">
+                Page {pagination.currentPage} of {pagination.totalPages}
+              </div>
+              <div className="flex items-center gap-2 ml-auto">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!pagination.hasPrevPage || isFetching}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  className="h-8 border-black/10 text-xs"
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!pagination.hasNextPage || isFetching}
+                  onClick={() => setPage((p) => p + 1)}
+                  className="h-8 border-black/10 text-xs"
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

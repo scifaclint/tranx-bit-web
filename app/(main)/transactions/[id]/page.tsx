@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,38 +17,44 @@ import {
   Calendar,
   Hash,
   MessageSquare,
+  Loader,
 } from "lucide-react";
 import Image from "next/image";
+import { ordersApi, OrderDetailsResponse } from "@/lib/api/orders";
+import { toast } from "sonner";
 
 export default function TransactionIDPage() {
   const params = useParams();
   const router = useRouter();
   const transactionId = params.id as string;
 
-  // Mock transaction data - will be replaced with API call
-  const transaction = {
-    id: transactionId,
-    brand: "Amazon",
-    brandLogo: "/brands/logo-amazon.svg",
-    type: "sell" as "buy" | "sell",
-    amount: 25.0,
-    fee: 1.25,
-    total: 23.75,
-    status: "completed" as "pending" | "completed" | "failed",
-    paymentMethod: "Bank Transfer",
-    createdAt: "Dec 15, 2025 at 10:30 AM",
-    completedAt: "Dec 15, 2025 at 11:45 AM",
-    cardCode: "XXXX-XXXX-XXXX-1234",
-    confirmationCode: "CONF-2025-001",
-    timeline: [
-      { label: "Order Created", date: "Dec 15, 10:30 AM", completed: true },
-      { label: "Processing", date: "Dec 15, 10:45 AM", completed: true },
-      { label: "Completed", date: "Dec 15, 11:45 AM", completed: true },
-    ],
-  };
+  const [orderData, setOrderData] = useState<OrderDetailsResponse["data"] | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const getStatusBadge = () => {
-    const statusConfig = {
+  useEffect(() => {
+    const fetchTransaction = async () => {
+      try {
+        const response = await ordersApi.getOrderDetails(transactionId);
+        if (response.status && response.data) {
+          setOrderData(response.data);
+        } else {
+          toast.error("Transaction not found");
+          router.push("/transactions");
+        }
+      } catch (error: any) {
+        const errorMessage = error?.response?.data?.message || "Failed to load transaction";
+        toast.error(errorMessage);
+        router.push("/transactions");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTransaction();
+  }, [transactionId, router]);
+
+  const getStatusBadge = (status: string) => {
+    const statusConfig: Record<string, any> = {
       completed: {
         label: "Completed",
         icon: CheckCircle2,
@@ -69,7 +75,7 @@ export default function TransactionIDPage() {
       },
     };
 
-    const config = statusConfig[transaction.status];
+    const config = statusConfig[status] || statusConfig.pending;
     const Icon = config.icon;
 
     return (
@@ -79,6 +85,32 @@ export default function TransactionIDPage() {
       </Badge>
     );
   };
+
+  if (isLoading) {
+    return (
+      <div className="w-full flex items-center justify-center min-h-[400px]">
+        <div className="flex flex-col items-center gap-3">
+          <Loader className="h-8 w-8 animate-spin text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">Loading transaction details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!orderData) {
+    return null;
+  }
+
+  const firstItem = orderData.items?.[0];
+  const cardBrand = firstItem?.cardBrand || "Gift Card";
+  const cardValue = orderData.cardValue || orderData.totalAmount || 0;
+  const amountToReceive = orderData.amountToReceive || orderData.totalAmount || 0;
+  const paymentMethod = orderData.paymentMethodId;
+  const paymentMethodDisplay = paymentMethod?.type === "mobile_money"
+    ? `${paymentMethod.mobileNetwork} - ${paymentMethod.accountName}`
+    : paymentMethod?.type === "btc"
+      ? `BTC - ${paymentMethod.btcAddress}`
+      : "N/A";
 
   return (
     <div className="w-full ">
@@ -95,13 +127,13 @@ export default function TransactionIDPage() {
           </Button>
           <div>
             <h1 className="text-2xl font-bold">Transaction Details</h1>
-            <p className="text-sm text-muted-foreground mt-1">{transaction.id}</p>
+            <p className="text-sm text-muted-foreground mt-1">#{orderData.orderNumber}</p>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
-          {getStatusBadge()}
-          <Button variant="outline" className="gap-2">
+          {getStatusBadge(orderData.status)}
+          <Button variant="outline" className="gap-2 bg-backgroundSecondary border-borderColorPrimary dark:border-white/10">
             <Download className="h-4 w-4" />
             Receipt
           </Button>
@@ -112,7 +144,7 @@ export default function TransactionIDPage() {
         {/* Left Column - Main Details */}
         <div className="lg:col-span-2 space-y-6">
           {/* Product Information */}
-          <Card>
+          <Card className="dark:bg-background border-borderColorPrimary">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Package className="h-5 w-5" />
@@ -121,32 +153,33 @@ export default function TransactionIDPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center gap-4">
-                <div className="relative w-16 h-16 bg-muted rounded-lg p-3 ring-1 ring-border/50">
-                  <Image
-                    src={transaction.brandLogo}
-                    alt={transaction.brand}
-                    fill
-                    className="object-contain p-1"
-                  />
+                <div className="relative w-16 h-16 bg-backgroundSecondary rounded-lg p-3 ring-1 ring-borderColorPrimary">
+                  {firstItem?.cardBrand ? (
+                    <div className="w-full h-full flex items-center justify-center text-xs font-bold">
+                      {firstItem.cardBrand.substring(0, 2).toUpperCase()}
+                    </div>
+                  ) : (
+                    <Package className="w-full h-full text-muted-foreground" />
+                  )}
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-lg">{transaction.brand} Gift Card</h3>
+                  <h3 className="font-semibold text-lg">{cardBrand} Gift Card</h3>
                   <p className="text-sm text-muted-foreground">
-                    {transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1)}{" "}
+                    {orderData.orderType.charAt(0).toUpperCase() + orderData.orderType.slice(1)}{" "}
                     Transaction
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-2xl font-bold">${transaction.amount.toFixed(2)}</p>
+                  <p className="text-2xl font-bold">${cardValue.toFixed(2)}</p>
                 </div>
               </div>
 
-              {transaction.cardCode && (
+              {firstItem?.giftCardCodes && firstItem.giftCardCodes.length > 0 && (
                 <>
                   <Separator />
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Card Code</span>
-                    <span className="font-mono text-sm">{transaction.cardCode}</span>
+                    <span className="font-mono text-sm">{firstItem.giftCardCodes[0]}</span>
                   </div>
                 </>
               )}
@@ -154,7 +187,7 @@ export default function TransactionIDPage() {
           </Card>
 
           {/* Payment Details */}
-          <Card>
+          <Card className="dark:bg-background border-borderColorPrimary">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <CreditCard className="h-5 w-5" />
@@ -164,20 +197,16 @@ export default function TransactionIDPage() {
             <CardContent className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Payment Method</span>
-                <span className="font-medium">{transaction.paymentMethod}</span>
+                <span className="font-medium">{paymentMethodDisplay}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Card Amount</span>
-                <span className="font-medium">${transaction.amount.toFixed(2)}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Processing Fee</span>
-                <span className="font-medium">${transaction.fee.toFixed(2)}</span>
+                <span className="font-medium">${cardValue.toFixed(2)}</span>
               </div>
               <Separator />
               <div className="flex items-center justify-between">
                 <span className="font-semibold">Total Amount</span>
-                <span className="font-bold text-lg">${transaction.total.toFixed(2)}</span>
+                <span className="font-bold text-lg">${amountToReceive.toFixed(2)}</span>
               </div>
             </CardContent>
           </Card>
@@ -187,7 +216,7 @@ export default function TransactionIDPage() {
         {/* Right Column - Additional Info */}
         <div className="space-y-6">
           {/* Transaction Info */}
-          <Card>
+          <Card className="dark:bg-background border-borderColorPrimary">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Hash className="h-5 w-5" />
@@ -197,41 +226,28 @@ export default function TransactionIDPage() {
             <CardContent className="space-y-4">
               <div>
                 <p className="text-xs text-muted-foreground mb-1">Transaction ID</p>
-                <p className="text-sm font-mono break-all">{transaction.id}</p>
+                <p className="text-sm font-mono break-all">{orderData._id}</p>
               </div>
               <Separator />
               <div>
                 <p className="text-xs text-muted-foreground mb-1">Created</p>
-                <p className="text-sm">{transaction.createdAt}</p>
+                <p className="text-sm">{new Date(orderData.createdAt).toLocaleString()}</p>
               </div>
-              {transaction.completedAt && (
-                <>
-                  <Separator />
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Completed</p>
-                    <p className="text-sm">{transaction.completedAt}</p>
-                  </div>
-                </>
-              )}
-              {transaction.confirmationCode && (
-                <>
-                  <Separator />
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Confirmation Code</p>
-                    <p className="text-sm font-mono">{transaction.confirmationCode}</p>
-                  </div>
-                </>
-              )}
+              <Separator />
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Order Number</p>
+                <p className="text-sm font-mono">{orderData.orderNumber}</p>
+              </div>
             </CardContent>
           </Card>
 
           {/* Actions */}
-          <Card>
+          <Card className="dark:bg-background border-borderColorPrimary">
             <CardHeader>
               <CardTitle>Need Help?</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Button variant="outline" className="w-full gap-2">
+              <Button variant="outline" className="w-full gap-2 bg-backgroundSecondary border-borderColorPrimary dark:border-white/10">
                 <MessageSquare className="h-4 w-4" />
                 Contact Support
               </Button>

@@ -5,5 +5,5 @@ interface PageWrapperProps {
 }
 
 export default function PageWrapper({ children }: PageWrapperProps) {
-  return <main className="min-h-screen bg-gray-50 dark:bg-sideBarBackground">{children}</main>;
+  return <div className="min-h-screen flex bg-gray-50 dark:bg-sideBarBackground">{children}</div>;
 }

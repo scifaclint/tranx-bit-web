@@ -19,6 +19,7 @@ interface AuthStore {
   isLoading: boolean;
 
   setAuth: (user: User, token?: string, plan?: string | null) => void;
+  setToken: (token: string) => void;
   clearAuth: () => void;
   setLoading: (status: boolean) => void;
 }
@@ -30,7 +31,7 @@ export const useAuthStore = create<AuthStore>()(
       token: null,
       isAuthenticated: false,
       isLoading: true,
-
+      setToken: (token) => set({ token }),
       setAuth: (user: User, token?: string) => {
         if (!user || !token) return;
         set({
@@ -53,7 +54,7 @@ export const useAuthStore = create<AuthStore>()(
       },
     }),
     {
-      name: "auth-storage",
+      name: "auth-storage-tranxbit",
       partialize: (state) => ({
         token: state.token,
         user: state.user,

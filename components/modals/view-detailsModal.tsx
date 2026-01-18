@@ -12,8 +12,10 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { CheckCircle, XCircle, Copy } from "lucide-react"
 import { useState } from "react"
-import { toast } from "sonner"
 import { cn } from "@/lib/utils"
+import { useApproveOrder, useRejectOrder } from "@/hooks/useAdmin"
+import { toast } from "sonner"
+import { Loader } from "lucide-react"
 
 
 interface OrderDetailsModalProps {
@@ -49,6 +51,38 @@ export default function OrderDetailsModal({ isOpen, onClose, orderId, type = "bu
         code: "XXXX-XXXX-XXXX-1234", // This would be the customer's code if selling, or empty/null if buying
         status: "Pending Verification",
         date: "Dec 31, 2025 10:30 AM",
+    }
+
+    const approveMutation = useApproveOrder()
+    const rejectMutation = useRejectOrder()
+    const isLoading = approveMutation.isPending || rejectMutation.isPending
+
+    const handleApprove = async () => {
+        try {
+            await approveMutation.mutateAsync({
+                orderId,
+                giftCardCodes: inputCode ? [inputCode] : []
+            })
+            toast.success("Order approved successfully")
+            onClose()
+        } catch (error) {
+            toast.error("Failed to approve order")
+        }
+    }
+
+    const handleReject = async () => {
+        const reason = prompt("Please enter a reason for rejection:")
+        if (!reason) return
+        try {
+            await rejectMutation.mutateAsync({
+                orderId,
+                rejectionReason: reason
+            })
+            toast.success("Order rejected successfully")
+            onClose()
+        } catch (error) {
+            toast.error("Failed to reject order")
+        }
     }
 
     const handleCopyCode = () => {
@@ -262,16 +296,23 @@ export default function OrderDetailsModal({ isOpen, onClose, orderId, type = "bu
                 )}
 
                 <DialogFooter className="gap-2 sm:gap-0">
-                    <Button variant="outline" className="w-full sm:w-auto border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700">
-                        <XCircle className="mr-2 h-4 w-4" /> Reject
+                    <Button
+                        variant="outline"
+                        className="w-full sm:w-auto border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                        onClick={handleReject}
+                        disabled={isLoading}
+                    >
+                        {rejectMutation.isPending ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <XCircle className="mr-2 h-4 w-4" />}
+                        Reject
                     </Button>
                     <Button
                         className={cn("w-full sm:w-auto",
                             !isBuying ? "bg-blue-600 hover:bg-blue-700" : "bg-green-600 hover:bg-green-700"
                         )}
-                        disabled={isBuying && !inputCode.trim()}
+                        onClick={handleApprove}
+                        disabled={(isBuying && !inputCode.trim()) || isLoading}
                     >
-                        <CheckCircle className="mr-2 h-4 w-4" />
+                        {approveMutation.isPending ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
                         {isBuying ? "Approve Order" : "Mark as Paid"}
                     </Button>
                 </DialogFooter>
