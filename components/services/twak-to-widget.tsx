@@ -35,51 +35,54 @@ export default function TawkToWidget({
 
   const handleScriptLoad = () => {
     // Wait for Tawk to be fully ready
-    const checkTawk = setInterval(() => {
-      if (window.Tawk_API && window.Tawk_API.onLoad) {
-        clearInterval(checkTawk);
-
-        window.Tawk_API.onLoad = function () {
-          // Show widget and force online status
-          window.Tawk_API.showWidget();
+    if (window.Tawk_API) {
+      window.Tawk_API.onLoad = function () {
+        // Force online status
+        if (typeof window.Tawk_API.setAttributes === "function") {
           window.Tawk_API.setAttributes({
             alwaysOnline: "true",
+          }, function (err: any) {
+            if (err) console.error("Tawk error:", err);
           });
+        }
 
-          if (user && (user.name || user.email)) {
-            try {
-              const attributes: any = {};
-              if (user.name) attributes.name = user.name;
-              if (user.email) attributes.email = user.email;
-              if (user.hash) attributes.hash = user.hash;
-
-              window.Tawk_API.setAttributes(attributes, function (error: any) {
-                if (error) {
-                  console.error("Tawk.to setAttributes error:", error);
-                }
-              });
-
-              if (user.userId) {
-                window.Tawk_API.addTags(
-                  [`user-${user.userId}`],
-                  function (error: any) {
-                    if (error) {
-                      console.error("Tawk.to addTags error:", error);
-                    }
-                  }
-                );
-              }
-            } catch (error) {
-              console.error("Error setting Tawk user attributes:", error);
-            }
-          }
-        };
-      }
-    }, 100);
-
-    // Clear interval after 10 seconds if Tawk doesn't load
-    setTimeout(() => clearInterval(checkTawk), 10000);
+        // Initial user setup
+        updateTawkUser(user);
+      };
+    }
   };
+
+  const updateTawkUser = (userData: TawkUser | undefined | null) => {
+    if (!window.Tawk_API || !userData) return;
+
+    try {
+      const attributes: any = {};
+      if (userData.name) attributes.name = userData.name;
+      if (userData.email) attributes.email = userData.email;
+      if (userData.hash) attributes.hash = userData.hash;
+
+      if (typeof window.Tawk_API.setAttributes === "function") {
+        window.Tawk_API.setAttributes(attributes, function (error: any) {
+          if (error) console.error("Tawk.to setAttributes error:", error);
+        });
+      }
+
+      if (userData.userId && typeof window.Tawk_API.addTags === "function") {
+        window.Tawk_API.addTags([`user-${userData.userId}`], function (error: any) {
+          if (error) console.error("Tawk.to addTags error:", error);
+        });
+      }
+    } catch (error) {
+      console.error("Error setting Tawk user attributes:", error);
+    }
+  };
+
+  // Reactive user updates when login state changes
+  useEffect(() => {
+    if (window.Tawk_API && user) {
+      updateTawkUser(user);
+    }
+  }, [user]);
 
   useEffect(() => {
     // Initialize Tawk_API before script loads

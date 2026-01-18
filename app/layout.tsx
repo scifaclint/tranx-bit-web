@@ -22,6 +22,8 @@ export const metadata: Metadata = {
   description: "A platform for exchanging gift cards securely and efficiently.",
 };
 
+import TawkToWidgetWrapper from "@/components/services/TawkWrapper";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -43,6 +45,7 @@ export default function RootLayout({
               {children}
             </QueryProvider>
           </RouteGuard>
+          <TawkToWidgetWrapper />
           <Toaster
             position="bottom-right"
             visibleToasts={3}

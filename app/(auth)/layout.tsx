@@ -16,13 +16,13 @@ export default function AuthLayout({
   }, []);
   return (
     <div className="flex min-h-screen w-full bg-background">
-      {/* Left - form (exact half) */}
-      <div className="w-1/2 flex items-center justify-start bg-background p-6 xs:p-10">
+      {/* Left - form (Full width on mobile, half on desktop) */}
+      <div className="w-full md:w-1/2 flex items-center justify-start bg-background p-6 xs:p-10">
         <div className="w-full max-w-md mx-auto">{children}</div>
       </div>
 
-      {/* Right - animation (exact half) */}
-      <div className="w-1/2 hidden md:flex items-center justify-center bg-gray-50 dark:bg-sideBarBackground">
+      {/* Right - animation (Hidden on mobile) */}
+      <div className="hidden md:flex md:w-1/2 items-center justify-center bg-gray-50 dark:bg-sideBarBackground">
         {/* wrapper that constrains and clips the loader */}
         <div className="relative w-full h-full overflow-hidden">
           {/* inner container to center / size the visual area */}

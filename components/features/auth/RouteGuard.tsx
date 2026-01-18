@@ -15,6 +15,8 @@ const authRoutes = ["/auth"];
 
 const publicRoutes = ["/blog", "/", "/reset-password"];
 
+const restrictedRoutes = ["/buy-giftcards"];
+
 // Create a separate component for the route guard logic
 function RouteGuardInner({ children }: RouteGuardProps) {
   const router = useRouter();
@@ -50,7 +52,16 @@ function RouteGuardInner({ children }: RouteGuardProps) {
         router.replace("/dashboard");
       }
     }
-  }, [token, pathname, router]);
+
+    // Handle restricted routes
+    const isRestricted = restrictedRoutes.some(route =>
+      pathname === route || pathname.startsWith(route + "/")
+    );
+
+    if (isRestricted) {
+      router.replace("/dashboard");
+    }
+  }, [token, pathname, router, searchParams]);
 
   // 2. Auth Validation (Async)
   // ONLY run this if we are NOT on the auth page.
