@@ -28,7 +28,7 @@ export default function AuthLayout({
           {/* inner container to center / size the visual area */}
           <div className="absolute inset-0 flex items-center justify-center">
             {/* TranxBitLoader cannot accept className, so we wrap it */}
-            <TranxBitLoader variant={mounted && resolvedTheme === "dark" ? "dark" : "dark"} isForm />
+            <TranxBitLoader variant={resolvedTheme === "light" ? "light" : "dark"} isForm />
           </div>
         </div>
       </div>

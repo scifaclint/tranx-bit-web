@@ -142,7 +142,7 @@ function AuthPageInner() {
     <div className="max-w-md mx-auto">
       <div className="flex items-center justify-center gap-2 mb-8">
         <TranxBitLogo
-          variant={mounted && resolvedTheme === "dark" ? "light" : "dark"}
+          variant={resolvedTheme === "light" ? "dark" : "light"}
           size="medium"
         />
       </div>
@@ -174,7 +174,7 @@ export default function AuthPage() {
     <Suspense
       fallback={
         <TranxBitLoader
-          variant={mounted && resolvedTheme === "dark" ? "dark" : "light"}
+          variant={resolvedTheme === "light" ? "light" : "dark"}
           isForm={true}
         />
       }
