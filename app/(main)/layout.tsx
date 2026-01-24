@@ -5,7 +5,7 @@ import HeaderWithBalance from "@/components/layout/header-with-balance";
 import { usePathname } from "next/navigation";
 import PageWrapper from "@/components/layout/pageWrapper";
 import { RouteGuard } from "@/components/features/auth/RouteGuard";
-import { ConnectionStatus } from "@/components/connection-status";
+// import { ConnectionStatus } from "@/components/connection-status";
 // import DashBoardHeader from "@/components/layout/dashboardHeader";
 
 export default function AuthLayout({
@@ -27,7 +27,6 @@ export default function AuthLayout({
           flex flex-col items-start py-10
         `}
           >
-            <ConnectionStatus />
             <div className="w-full px-4 sm:px-6 md:px-8">
               <HeaderWithBalance />
               <div className="w-full max-w-6xl mx-auto mt-10 mb-6 sm:mb-8">

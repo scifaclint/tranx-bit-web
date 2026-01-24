@@ -6,7 +6,7 @@ import QueryProvider from "@/components/providers/queryProvider";
 import { ThemeProvider } from "@/components/providers/themeProvider";
 import { RouteGuard } from "@/components/features/auth/RouteGuard";
 import "./globals.css";
-
+import { ConnectionStatus } from "@/components/connection-status";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -43,6 +43,7 @@ export default function RootLayout({
           <RouteGuard>
             <QueryProvider>
               {children}
+              <ConnectionStatus />
             </QueryProvider>
           </RouteGuard>
           <TawkToWidgetWrapper />
