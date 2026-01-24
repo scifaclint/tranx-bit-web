@@ -4,7 +4,9 @@ import { extractErrorMessage } from "../utils";
 import { toast } from "sonner";
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  baseURL:
+    process.env.NEXT_PUBLIC_API_URL ||
+    "https://tranx-bit-backend.fly.dev/api/v1",
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",
@@ -45,7 +47,7 @@ api.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 // Add a response interceptor for centralized error handling
@@ -53,7 +55,7 @@ api.interceptors.response.use(
   (response) => {
     if (response.data && response.data.status === false) {
       const error = new Error(
-        response.data.error || response.data.message || "Request failed"
+        response.data.error || response.data.message || "Request failed",
       );
       (error as any).response = response;
       return Promise.reject(error);
@@ -66,7 +68,6 @@ api.interceptors.response.use(
 
     // If error is 401 and we haven't tried to refresh yet
     if (error.response?.status === 401 && !originalRequest._retry) {
-
       // If already refreshing, queue this request
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
@@ -91,7 +92,7 @@ api.interceptors.response.use(
           {},
           {
             withCredentials: true, // Send refresh token cookie
-          }
+          },
         );
 
         if (response.data.status && response.data.token) {
@@ -101,7 +102,8 @@ api.interceptors.response.use(
           useAuthStore.getState().setToken(newAccessToken);
 
           // Update Authorization header
-          api.defaults.headers.common["Authorization"] = `Bearer ${newAccessToken}`;
+          api.defaults.headers.common["Authorization"] =
+            `Bearer ${newAccessToken}`;
           originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
 
           // Process queued requests
@@ -135,7 +137,7 @@ api.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 export default api;
