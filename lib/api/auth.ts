@@ -9,7 +9,8 @@ export interface LoginCredentials {
 
 export interface RegisterCredentials {
   username: string;
-  last_name?: string;
+  lastName: string;
+  firstName: string;
   email: string;
   password: string;
   password_confirmation: string;
@@ -27,8 +28,8 @@ export interface RegisterResponse {
     token: string;
     user: {
       id: number;
-      first_name: string;
-      last_name: string;
+      firstName: string;
+      lastName: string;
       email: string;
       is_verified: boolean;
       created_at: string;
@@ -169,7 +170,7 @@ export const authApi = {
   },
 
   register: async (
-    credentials: RegisterCredentials
+    credentials: RegisterCredentials,
   ): Promise<RegisterResponse> => {
     const response = await api.post("/auth/register", credentials);
     console.log("register data", response.data);
@@ -178,7 +179,7 @@ export const authApi = {
 
   logout: async () => {
     const response = await api.post("/auth/logout");
-    console.log(response, 'logged out')
+    console.log(response, "logged out");
     return response.data;
   },
 
@@ -256,6 +257,7 @@ export const authApi = {
   },
 
   checkUsername: async (username: string): Promise<CheckUsernameResponse> => {
+    console.log("check if env is gotten", process.env.NEXT_PUBLIC_API_URL);
     const response = await api.post("/auth/check-username", { username });
     return response.data;
   },
