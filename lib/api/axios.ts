@@ -8,6 +8,8 @@ const api = axios.create({
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",
+    // ⭐ NEW: This matches the "lock" we added to the backend
+    "X-Requested-With": "XMLHttpRequest",
   },
   withCredentials: true, // ⭐ IMPORTANT: Send cookies (refresh token)
 });
@@ -90,6 +92,10 @@ api.interceptors.response.use(
           {},
           {
             withCredentials: true, // Send refresh token cookie
+            // ⭐ NEW: Added header here too for the standalone refresh call
+            headers: {
+              "X-Requested-With": "XMLHttpRequest",
+            },
           },
         );
 
