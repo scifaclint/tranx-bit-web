@@ -2,8 +2,9 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, Wallet, ListChecks, ArrowRight } from "lucide-react";
+import { Bell, Wallet, ListChecks, ArrowRight, Plus } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import "flag-icons/css/flag-icons.min.css";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -41,6 +42,16 @@ export default function HeaderWithBalance() {
     { src: "/ads/steam-ads.svg", alt: "Steam Wallet Codes" },
     { src: "/ads/apple-ads.svg", alt: "Apple Gift Cards" },
   ];
+
+  const getCurrencyDetails = (country?: string) => {
+    const c = country?.toLowerCase() || "";
+    if (c === "ghana") return { symbol: "GH₵" };
+    if (c === "nigeria") return { symbol: "₦" };
+    return { symbol: "$" };
+  };
+
+  const currency = getCurrencyDetails(user?.country);
+  const balanceValue = parseFloat(user?.wallet_balance || "0");
 
   const [emblaApi, setEmblaApi] = useState<CarouselApi | null>(null);
   const [isPaused, setIsPaused] = useState(false);
@@ -173,9 +184,32 @@ export default function HeaderWithBalance() {
           <CardContent className="pt-6 pb-4">
             <div className="flex items-start justify-between">
               <div>
-                <h2 className="text-4xl font-bold text-gray-900 dark:text-gray-100">
-                  ${user?.wallet_balance || "0.00"}
-                </h2>
+                <div className="flex items-center gap-3">
+                  <h2 className="text-4xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                    {currency.symbol}{user?.wallet_balance || "0.00"}
+                  </h2>
+                  {balanceValue > 0 && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8 rounded-full border border-borderColorPrimary hover:bg-white dark:hover:bg-white/10"
+                            onClick={() => {
+                              toast.info("Add credits feature coming soon");
+                            }}
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Add funds</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
+                </div>
                 <p className="text-gray-500 dark:text-gray-400 mt-2">
                   Available Credits
                 </p>
@@ -189,15 +223,19 @@ export default function HeaderWithBalance() {
             <Separator className="bg-borderColorPrimary mb-4" />
             <Button
               onClick={() => {
-                toast.info("This feature will be available soon", {
-                  position: "top-center",
-                });
+                if (balanceValue > 0) {
+                  router.push("/withdraw");
+                } else {
+                  toast.info("This feature will be available soon", {
+                    position: "top-center",
+                  });
+                }
               }}
               className="w-full justify-center border-borderColorPrimary dark:border-white/20 text-bodyColor hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
               variant="outline"
-              aria-label="Add credits"
+              aria-label={balanceValue > 0 ? "Withdraw funds" : "Add funds"}
             >
-              Add credits
+              {balanceValue > 0 ? "Withdraw funds" : "Add funds"}
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </CardFooter>

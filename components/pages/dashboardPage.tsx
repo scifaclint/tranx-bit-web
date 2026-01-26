@@ -5,20 +5,14 @@ import {
   CreditCard,
   Wallet,
   DollarSign,
-  FileText,
-  Loader,
-  Search,
 } from "lucide-react";
-import { useUserOrders } from "@/hooks/useOrders";
+
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Input } from "@/components/ui/input";
+
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import Image from "next/image";
-import Link from "next/link";
 import { toast } from "sonner";
 import {
   Select,
@@ -29,23 +23,9 @@ import {
 } from "@/components/ui/select";
 import { SellGiftCardGrid } from "@/components/dashboard/sell-card-grid";
 
-interface Transaction {
-  id: string;
-  brand: string;
-  brandLogo: string;
-  type: "buy" | "sell";
-  date: string;
-  amount: number;
-  status: "pending" | "completed" | "failed" | "review";
-}
-
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState("sell");
-  const [activeFilter, setActiveFilter] = useState("all");
-  const [page, setPage] = useState(1);
   const router = useRouter();
-
-  const { data: ordersData, isLoading, isFetching } = useUserOrders(page);
 
   const handleTabChange = (value: string) => {
     if (value === "buy") {
@@ -57,27 +37,6 @@ export default function DashboardPage() {
     }
     setActiveTab(value);
   };
-
-  const recentTransactions = ordersData?.data?.orders || [];
-  const pagination = ordersData?.data?.pagination;
-
-  const filteredTransactions =
-    activeFilter === "all"
-      ? recentTransactions
-      : recentTransactions.filter((t) => {
-        const status = t.status.toLowerCase();
-        if (activeFilter === "review") return status.includes("review");
-        return status === activeFilter.toLowerCase();
-      });
-
-  if (isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[400px]">
-        <Loader className="h-8 w-8 text-black animate-spin" />
-        <p className="mt-2 text-sm text-muted-foreground font-medium">Loading transactions...</p>
-      </div>
-    );
-  }
 
   return (
     <div className="w-full max-w-6xl mx-auto">

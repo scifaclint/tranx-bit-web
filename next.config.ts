@@ -14,6 +14,10 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "storage.googleapis.com",
       },
+      {
+        protocol: "https",
+        hostname: "pub-a2e4dd4a05b049fb98bafe7c2f3a1083.r2.dev",
+      },
     ],
   },
   async headers() {

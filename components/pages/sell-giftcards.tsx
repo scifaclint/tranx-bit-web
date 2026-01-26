@@ -44,6 +44,17 @@ import { usePaymentMethods } from "@/hooks/usePayments";
 import { motion, AnimatePresence } from "framer-motion";
 import { ordersApi } from "@/lib/api/orders";
 import { PAYMENT_LOGOS, NETWORK_LABELS } from "@/lib/payment-constants";
+import "flag-icons/css/flag-icons.min.css";
+import PaymentMethodModal from "@/components/modals/payment-method-modal";
+
+const CURRENCIES = [
+  { id: "usd", name: "US Dollar", flag: "us", symbol: "$" },
+  { id: "gbp", name: "UK Pounds", flag: "gb", symbol: "£" },
+  { id: "eur", name: "Euro", flag: "eu", symbol: "€" },
+  { id: "aud", name: "Australia Dollar", flag: "au", symbol: "A$" },
+  { id: "cad", name: "Canadian Dollar", flag: "ca", symbol: "C$" },
+  { id: "nzd", name: "New Zealand Dollar", flag: "nz", symbol: "NZ$" },
+];
 
 export default function SellGiftCards() {
   return (
@@ -72,6 +83,9 @@ function SellGiftCardsContent() {
   const [backImage, setBackImage] = useState<File | null>(null);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("");
   const [paymentMethodOpen, setPaymentMethodOpen] = useState(false);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [cardCurrency, setCardCurrency] = useState("usd");
+  const [currencyOpen, setCurrencyOpen] = useState(false);
   const searchParams = useSearchParams();
 
   // Hooks
@@ -179,6 +193,7 @@ function SellGiftCardsContent() {
         cardId: selectedBrand,
         cardValue: parseFloat(amount),
         paymentMethodId: selectedPaymentMethod,
+        card_currency: cardCurrency,
         additionalComments: comment || undefined,
         cardImages: cardType === "physical" && frontImage && backImage
           ? [frontImage, backImage]
@@ -293,6 +308,58 @@ function SellGiftCardsContent() {
     </div>
   );
 
+  const renderCurrencyPicker = () => {
+    const selected = CURRENCIES.find((c) => c.id === cardCurrency) || CURRENCIES[0];
+    return (
+      <div className="space-y-2">
+        <Label>Card Currency</Label>
+        <Popover open={currencyOpen} onOpenChange={setCurrencyOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className="w-full justify-between h-12 bg-white dark:bg-background border-zinc-200 dark:border-borderColorPrimary focus:ring-2 focus:ring-black/5"
+            >
+              <div className="flex items-center gap-2">
+                <span className={`fi fi-${selected.flag} rounded-sm`}></span>
+                <span className="font-medium">{selected.name} ({selected.id.toUpperCase()})</span>
+              </div>
+              <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 dark:bg-backgroundSecondary" align="start">
+            <Command className="dark:bg-backgroundSecondary">
+              <CommandList>
+                <CommandGroup>
+                  {CURRENCIES.map((currency) => (
+                    <CommandItem
+                      key={currency.id}
+                      onSelect={() => {
+                        setCardCurrency(currency.id);
+                        setCurrencyOpen(false);
+                      }}
+                      className="p-3 cursor-pointer"
+                    >
+                      <div className="flex items-center justify-between w-full">
+                        <div className="flex items-center gap-3">
+                          <span className={`fi fi-${currency.flag} rounded-sm`}></span>
+                          <span className="font-medium text-sm">{currency.name}</span>
+                        </div>
+                        <span className="text-xs text-muted-foreground uppercase">{currency.id}</span>
+                      </div>
+                      <Check
+                        className={`ml-auto h-4 w-4 ${cardCurrency === currency.id ? "opacity-100" : "opacity-0"}`}
+                      />
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+      </div>
+    );
+  };
+
   const renderPaymentPicker = () => (
     <div className="space-y-2">
       <Label>Select Payment Method</Label>
@@ -396,7 +463,7 @@ function SellGiftCardsContent() {
                 <CommandItem
                   onSelect={() => {
                     setPaymentMethodOpen(false);
-                    toast.info("Wallet management coming soon");
+                    setIsPaymentModalOpen(true);
                   }}
                   className="border-t mt-1 py-3"
                 >
@@ -521,11 +588,14 @@ function SellGiftCardsContent() {
             {/* Ecodes Tab */}
             <TabsContent value="ecodes" className="space-y-6 mt-6">
               {renderBrandPicker()}
+              {renderCurrencyPicker()}
 
               <div className="space-y-2">
                 <Label>Card Amount</Label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 font-medium">$</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 font-medium">
+                    {CURRENCIES.find(c => c.id === cardCurrency)?.symbol || "$"}
+                  </span>
                   <Input
                     type="number"
                     placeholder="0.00"
@@ -578,11 +648,14 @@ function SellGiftCardsContent() {
             {/* Physical Tab */}
             <TabsContent value="physical" className="space-y-6 mt-6">
               {renderBrandPicker()}
+              {renderCurrencyPicker()}
 
               <div className="space-y-2">
                 <Label>Card Amount</Label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 font-medium">$</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 font-medium">
+                    {CURRENCIES.find(c => c.id === cardCurrency)?.symbol || "$"}
+                  </span>
                   <Input
                     type="number"
                     placeholder="0.00"
@@ -656,6 +729,10 @@ function SellGiftCardsContent() {
           </Tabs>
         </div>
       </div>
+      <PaymentMethodModal
+        isOpen={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+      />
     </div>
   );
 }

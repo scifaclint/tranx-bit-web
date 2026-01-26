@@ -15,6 +15,7 @@ export interface SellOrderPayload {
   paymentMethodId: string;
   additionalComments?: string;
   cardImages?: File[]; // For FormData submission
+  card_currency?: string;
 }
 
 // ============= RESPONSE TYPES =============
@@ -167,6 +168,9 @@ export const ordersApi = {
       formData.append("paymentMethodId", payload.paymentMethodId);
       if (payload.additionalComments) {
         formData.append("additionalComments", payload.additionalComments);
+      }
+      if (payload.card_currency) {
+        formData.append("card_currency", payload.card_currency);
       }
 
       // Append all images

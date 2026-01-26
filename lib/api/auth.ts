@@ -17,6 +17,7 @@ export interface RegisterCredentials {
   phone?: string;
   country?: string;
   code?: string;
+  referral_username?: string
 }
 
 export interface RegisterResponse {
@@ -140,6 +141,7 @@ export interface User {
   kyc_verified_at?: string | null;
   wallet_balance?: string;
   pending_orders_count?: number;
+  country?: string;
   role?: string;
 }
 
@@ -149,7 +151,7 @@ export interface UpdateUserPayload {
   email?: string;
   phone?: string;
   country?: string;
-  photo_url?: string;
+  imageKey?: string;
 }
 
 export interface UpdateUserResponse {
@@ -157,6 +159,18 @@ export interface UpdateUserResponse {
   message?: string;
   data: {
     user: User;
+  };
+}
+
+export interface AvatarUploadRequest {
+  contentType: string;
+}
+
+export interface AvatarUploadResponse {
+  status: boolean;
+  data: {
+    uploadUrl: string;
+    key: string;
   };
 }
 
@@ -246,7 +260,7 @@ export const authApi = {
     return response.data;
   },
 
-  updateUser: async (data: FormData): Promise<UpdateUserResponse> => {
+  updateUser: async (data: UpdateUserPayload): Promise<UpdateUserResponse> => {
     const response = await api.put("/auth/updateUser", data);
     return response.data;
   },
@@ -257,8 +271,12 @@ export const authApi = {
   },
 
   checkUsername: async (username: string): Promise<CheckUsernameResponse> => {
-    console.log("check if env is gotten", process.env.NEXT_PUBLIC_API_URL);
     const response = await api.post("/auth/check-username", { username });
+    return response.data;
+  },
+
+  requestAvatarUpload: async (data: AvatarUploadRequest): Promise<AvatarUploadResponse> => {
+    const response = await api.post("/auth/request-avatar-upload", data);
     return response.data;
   },
 };

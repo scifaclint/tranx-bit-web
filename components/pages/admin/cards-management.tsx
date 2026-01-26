@@ -19,6 +19,7 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"
+import Image from "next/image"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -46,7 +47,104 @@ import { useState } from "react"
 import { useCards } from "@/hooks/useCards"
 import { useDeleteCard, useUpdateCard } from "@/hooks/useAdmin"
 import { Card as BackendCard } from "@/lib/api/cards"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ChevronLeft, ChevronRight, Eye } from "lucide-react"
+
+interface ViewCardItemProps {
+    card: BackendCard;
+    onEdit: () => void;
+    onToggleStatus: () => void;
+    onDelete: () => void;
+}
+
+const ViewCardItem = ({ card, onEdit, onToggleStatus, onDelete }: ViewCardItemProps) => (
+    <Card className="overflow-hidden border-borderColorPrimary bg-white dark:bg-backgroundSecondary transition-all duration-200 hover:shadow-md group">
+        {/* Card Image Wrapper */}
+        <div className="relative aspect-[16/10] bg-muted/30 overflow-hidden group-hover:scale-[1.02] transition-transform duration-300">
+            {card.imageUrl ? (
+                <Image
+                    src={card.imageUrl}
+                    alt={card.name}
+                    fill
+                    className="object-cover"
+                />
+            ) : (
+                <div className="w-full h-full flex items-center justify-center text-muted-foreground/50">
+                    <span className="text-xs font-bold uppercase tracking-widest">{card.name.substring(0, 3)}</span>
+                </div>
+            )}
+
+            {/* Quick Status Overlay */}
+            <div className="absolute top-2 left-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                <Badge variant="outline" className={`text-[9px] px-1.5 py-0 bg-white/90 dark:bg-black/80 backdrop-blur-sm ${card.status === 'active' ? "text-green-600 border-green-600/50" : "text-gray-500 border-gray-500/50"}`}>
+                    {card.status}
+                </Badge>
+            </div>
+
+            {/* Actions Dropdown Trigger (Overlay) */}
+            <div className="absolute top-2 right-2">
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="secondary" size="icon" className="h-8 w-8 rounded-full bg-white/90 dark:bg-black/80 backdrop-blur-sm shadow-sm hover:bg-white dark:hover:bg-black">
+                            <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuLabel>Card Management</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={onEdit} className="cursor-pointer">
+                            <Eye className="mr-2 h-4 w-4" /> View Details / Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={onToggleStatus} className={`cursor-pointer ${card.status === 'active' ? "text-red-600" : "text-green-600"}`}>
+                            <Power className="mr-2 h-4 w-4" />
+                            {card.status === 'active' ? 'Disable Card' : 'Activate Card'}
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={onDelete} className="text-red-600 cursor-pointer focus:bg-red-50 dark:focus:bg-red-900/10">
+                            <Trash className="mr-2 h-4 w-4" /> Delete Card
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
+        </div>
+
+        <CardContent className="p-4">
+            <div className="flex flex-col gap-2">
+                <div className="flex items-start justify-between gap-2">
+                    <h3 className="font-bold text-sm leading-tight line-clamp-1 flex-1 group-hover:text-blue-600 transition-colors">
+                        {card.name}
+                    </h3>
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                    {/* Handle potential multiple types if backend allows in future, or just single for now */}
+                    <Badge variant={card.type === 'buy' ? 'default' : 'secondary'} className="uppercase text-[9px] px-2 py-0 h-4 font-bold tracking-tight">
+                        {card.type}
+                    </Badge>
+
+                    {card.type === 'buy' && (
+                        <span className="text-xs font-bold text-blue-600 ml-auto">
+                            ${card.prices?.[0]?.price || '0.00'}+
+                        </span>
+                    )}
+                    {card.type === 'sell' && card.sellRate && (
+                        <span className="text-xs font-bold text-green-600 ml-auto font-mono">
+                            {card.sellRate}/$
+                        </span>
+                    )}
+                </div>
+
+                <div className="flex items-center justify-between pt-1 border-t border-dashed border-borderColorPrimary mt-1">
+                    <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">
+                        {card.brand || 'No Brand'}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground font-mono">
+                        {card.prices?.length || 0} Denoms
+                    </span>
+                </div>
+            </div>
+        </CardContent>
+    </Card>
+);
 
 export default function CardsManageMentPage() {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false)
@@ -173,84 +271,27 @@ export default function CardsManageMentPage() {
                     </div>
                 </div>
 
-                <div className="mt-6 rounded-md border">
+                <div className="mt-6">
                     <ScrollArea className="h-[calc(100vh-320px)]">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead className="w-[300px]">Card Details</TableHead>
-                                    <TableHead>Type</TableHead>
-                                    <TableHead>Price</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
+                        {filteredCards.length > 0 ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-10">
                                 {filteredCards.map((card) => (
-                                    <TableRow key={card._id} className="h-12">
-                                        <TableCell className="py-2">
-                                            <div className="flex items-center gap-3">
-                                                <Avatar className="h-8 w-8">
-                                                    <AvatarImage src={card.imageUrl} alt={card.name} />
-                                                    <AvatarFallback>{card.name.substring(0, 2).toUpperCase()}</AvatarFallback>
-                                                </Avatar>
-                                                <span className="font-medium">{card.name}</span>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="py-2">
-                                            <Badge variant={card.type === 'buy' ? 'default' : 'secondary'} className="uppercase text-[10px] px-2 py-0.5">
-                                                {card.type}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell className="py-2 font-medium">
-                                            {card.type === 'sell' ? '-' : `$${card.prices?.[0]?.price || '0.00'}`}
-                                        </TableCell>
-                                        <TableCell className="py-2">
-                                            <Badge variant="outline" className={`text-[10px] px-2 py-0.5 ${card.status === 'active' ? "text-green-600 border-green-600" : "text-gray-500 border-gray-500"}`}>
-                                                {card.status}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell className="text-right py-2">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                                        <span className="sr-only">Open menu</span>
-                                                        <MoreHorizontal className="h-4 w-4" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                    <DropdownMenuItem onClick={() => handleEdit(card)}>
-                                                        <Pencil className="mr-2 h-4 w-4" /> Edit Card
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem
-                                                        onClick={() => handleToggleStatus(card)}
-                                                        className={card.status === 'active' ? "text-red-600" : "text-green-600"}
-                                                    >
-                                                        <Power className="mr-2 h-4 w-4" />
-                                                        {card.status === 'active' ? 'Disable' : 'Activate'}
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuSeparator />
-                                                    <DropdownMenuItem
-                                                        onClick={() => handleDelete(card._id)}
-                                                        className="text-red-600"
-                                                    >
-                                                        <Trash className="mr-2 h-4 w-4" /> Delete
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </TableCell>
-                                    </TableRow>
+                                    <ViewCardItem
+                                        key={card._id}
+                                        card={card}
+                                        onEdit={() => handleEdit(card)}
+                                        onToggleStatus={() => handleToggleStatus(card)}
+                                        onDelete={() => handleDelete(card._id)}
+                                    />
                                 ))}
-                                {filteredCards.length === 0 && !isLoading && (
-                                    <TableRow>
-                                        <TableCell colSpan={5} className="h-24 text-center">
-                                            No cards found.
-                                        </TableCell>
-                                    </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
+                            </div>
+                        ) : (
+                            !isLoading && (
+                                <div className="h-40 flex flex-col items-center justify-center border-2 border-dashed rounded-xl border-borderColorPrimary">
+                                    <p className="text-muted-foreground font-medium">No cards found matching your filters.</p>
+                                </div>
+                            )
+                        )}
                     </ScrollArea>
                 </div>
 

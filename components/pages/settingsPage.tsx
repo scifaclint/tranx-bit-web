@@ -34,6 +34,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import ConfirmationModal from "@/components/modals/confirmation-modal";
+import PaymentMethodModal from "@/components/modals/payment-method-modal";
 import Image from "next/image";
 
 import { authApi } from "@/lib/api/auth";
@@ -42,9 +43,6 @@ import {
   usePaymentMethods,
   useDeletePaymentMethod,
   useSetDefaultPaymentMethod,
-  useAddPaymentMethod,
-  useSupportedPaymentMethods,
-  useUpdatePaymentMethod,
 } from "@/hooks/usePayments";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -130,11 +128,8 @@ export default function SettingsPage() {
   // Payment Methods Hooks
   const { data: paymentsData, isLoading: isLoadingPayments } =
     usePaymentMethods();
-  const { data: supportedData } = useSupportedPaymentMethods();
   const deletePaymentMutation = useDeletePaymentMethod();
   const setDefaultPaymentMutation = useSetDefaultPaymentMethod();
-  const addPaymentMutation = useAddPaymentMethod();
-  const updatePaymentMutation = useUpdatePaymentMethod();
 
   const paymentMethods = paymentsData?.data || [];
 
@@ -143,20 +138,9 @@ export default function SettingsPage() {
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [deleteAccountOpen, setDeleteAccountOpen] = useState(false);
 
-  // Add Payment Modal State
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [addMethodType, setAddMethodType] = useState<"mobile_money" | "btc">(
-    "mobile_money",
-  );
-  const [paymentForm, setPaymentForm] = useState({
-    name: "",
-    mobileNetwork: "mtn" as any,
-    mobileNumber: "",
-    accountName: "",
-    btcAddress: "",
-    btcNetwork: "bitcoin",
-  });
-  const [editingMethodId, setEditingMethodId] = useState<string | null>(null);
+  // Payment Modal State
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [editingMethod, setEditingMethod] = useState<any>(null);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -258,93 +242,16 @@ export default function SettingsPage() {
   };
 
   const handleAddPayment = () => {
-    setEditingMethodId(null);
-    setPaymentForm({
-      name: "",
-      mobileNetwork: "mtn",
-      mobileNumber: "",
-      accountName: "",
-      btcAddress: "",
-      btcNetwork: "bitcoin",
-    });
-    setIsAddModalOpen(true);
+    setEditingMethod(null);
+    setIsPaymentModalOpen(true);
   };
 
   const handleEditPayment = (method: any) => {
-    setEditingMethodId(method._id);
-    setAddMethodType(method.type);
-    setPaymentForm({
-      name: method.name || "",
-      mobileNetwork: method.mobileNetwork || "mtn",
-      mobileNumber: method.mobileNumber || "",
-      accountName: method.accountName || "",
-      btcAddress: method.btcAddress || "",
-      btcNetwork: method.btcNetwork || "bitcoin",
-    });
-    setIsAddModalOpen(true);
+    setEditingMethod(method);
+    setIsPaymentModalOpen(true);
   };
 
-  const handleAddSubmit = async () => {
-    if (addMethodType === "mobile_money") {
-      if (!paymentForm.accountName || !paymentForm.mobileNumber) {
-        toast.error("Please fill in all fields");
-        return;
-      }
-    } else {
-      if (!paymentForm.btcAddress) {
-        toast.error("Please enter BTC address");
-        return;
-      }
-    }
 
-    try {
-      const payload =
-        addMethodType === "mobile_money"
-          ? {
-            type: "mobile_money" as const,
-            name:
-              paymentForm.name ||
-              `${paymentForm.mobileNetwork.toUpperCase()} - ${paymentForm.accountName}`,
-            mobileNetwork: paymentForm.mobileNetwork,
-            mobileNumber: paymentForm.mobileNumber,
-            accountName: paymentForm.accountName,
-          }
-          : {
-            type: "btc" as const,
-            name: paymentForm.name || "My BTC Wallet",
-            btcAddress: paymentForm.btcAddress,
-            btcNetwork: paymentForm.btcNetwork,
-          };
-
-      if (editingMethodId) {
-        await updatePaymentMutation.mutateAsync({
-          id: editingMethodId,
-          payload,
-        });
-        toast.success("Payment method updated successfully");
-      } else {
-        await addPaymentMutation.mutateAsync(payload);
-        toast.success("Payment method added successfully");
-      }
-
-      setIsAddModalOpen(false);
-      setEditingMethodId(null);
-      setPaymentForm({
-        name: "",
-        mobileNetwork: "mtn",
-        mobileNumber: "",
-        accountName: "",
-        btcAddress: "",
-        btcNetwork: "bitcoin",
-      });
-    } catch (error) {
-      toast.error(
-        editingMethodId
-          ? "Failed to update payment method"
-          : "Failed to add payment method",
-      );
-    }
-  };
 
   const menuItems = [
     {
@@ -1058,235 +965,15 @@ export default function SettingsPage() {
         variant="danger"
       />
 
-      {/* Add Payment Method Modal */}
-      <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-        <DialogContent className="sm:max-w-[450px] dark:bg-background border-borderColorPrimary dark:border-white/20">
-          <DialogHeader>
-            <DialogTitle>
-              {editingMethodId ? "Edit Payment Method" : "Add Payment Method"}
-            </DialogTitle>
-            <DialogDescription>
-              {editingMethodId
-                ? "Update your account details below."
-                : "Choose a payment type and enter your details to receive payouts."}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-6 pt-4">
-            <RadioGroup
-              defaultValue="mobile_money"
-              value={addMethodType}
-              onValueChange={(val: any) => setAddMethodType(val)}
-              className="grid grid-cols-2 gap-4"
-            >
-              <div>
-                <RadioGroupItem
-                  value="mobile_money"
-                  id="mm"
-                  className="peer sr-only"
-                />
-                <Label
-                  htmlFor="mm"
-                  className="flex flex-col items-center justify-between rounded-md border-2 border-borderColorPrimary bg-backgroundSecondary/50 p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-blue-600 [&:has([data-state=checked])]:border-blue-600 cursor-pointer"
-                >
-                  <Smartphone className="mb-3 h-6 w-6" />
-                  Mobile Money
-                </Label>
-              </div>
-              <div>
-                <RadioGroupItem value="btc" id="btc" className="peer sr-only" />
-                <Label
-                  htmlFor="btc"
-                  className="flex flex-col items-center justify-between rounded-md border-2 border-borderColorPrimary bg-backgroundSecondary/50 p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-orange-500 [&:has([data-state=checked])]:border-orange-500 cursor-pointer"
-                >
-                  <Wallet className="mb-3 h-6 w-6" />
-                  Bitcoin (BTC)
-                </Label>
-              </div>
-            </RadioGroup>
-
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="method-name">
-                  Account Name (for your reference)
-                </Label>
-                <Input
-                  id="method-name"
-                  placeholder="e.g. My Savings Wallet"
-                  value={paymentForm.name}
-                  onChange={(e) =>
-                    setPaymentForm({ ...paymentForm, name: e.target.value })
-                  }
-                />
-              </div>
-
-              {addMethodType === "mobile_money" ? (
-                <>
-                  <div className="space-y-2">
-                    <Select
-                      value={paymentForm.mobileNetwork}
-                      onValueChange={(val) =>
-                        setPaymentForm({ ...paymentForm, mobileNetwork: val })
-                      }
-                    >
-                      <SelectTrigger id="network">
-                        <SelectValue placeholder="Select network" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {supportedData?.data.supportedMethods.mobile_money.networks.map(
-                          (net) => (
-                            <SelectItem key={net.id} value={net.id}>
-                              <div className="flex items-center gap-3">
-                                {PAYMENT_LOGOS[net.id] ? (
-                                  <div className="w-5 h-5 flex-shrink-0">
-                                    <Image
-                                      src={PAYMENT_LOGOS[net.id]}
-                                      alt={net.name}
-                                      width={20}
-                                      height={20}
-                                      className="w-full h-full object-contain"
-                                    />
-                                  </div>
-                                ) : (
-                                  <Smartphone className="w-4 h-4 text-muted-foreground" />
-                                )}
-                                <span>{NETWORK_LABELS[net.id] || net.name}</span>
-                              </div>
-                            </SelectItem>
-                          ),
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="account-name">Account Holder Name</Label>
-                    <Input
-                      id="account-name"
-                      placeholder="Enter full name"
-                      value={paymentForm.accountName}
-                      onChange={(e) =>
-                        setPaymentForm({
-                          ...paymentForm,
-                          accountName: e.target.value,
-                        })
-                      }
-                    />
-                    {supportedData?.data.supportedMethods.mobile_money.fields
-                      .validation.accountName && (
-                        <p className="text-[10px] text-muted-foreground ml-1">
-                          {
-                            supportedData.data.supportedMethods.mobile_money
-                              .fields.validation.accountName
-                          }
-                        </p>
-                      )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="mobile-number">Mobile Number</Label>
-                    <Input
-                      id="mobile-number"
-                      placeholder="e.g. 024XXXXXXX"
-                      value={paymentForm.mobileNumber}
-                      onChange={(e) =>
-                        setPaymentForm({
-                          ...paymentForm,
-                          mobileNumber: e.target.value,
-                        })
-                      }
-                    />
-                    {supportedData?.data.supportedMethods.mobile_money.fields
-                      .validation.mobileNumber && (
-                        <p className="text-[10px] text-muted-foreground ml-1">
-                          {
-                            supportedData.data.supportedMethods.mobile_money
-                              .fields.validation.mobileNumber
-                          }
-                        </p>
-                      )}
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="space-y-2">
-                    <Label htmlFor="btc-address">BTC Wallet Address</Label>
-                    <Input
-                      id="btc-address"
-                      placeholder="Paste your BTC address here"
-                      value={paymentForm.btcAddress}
-                      onChange={(e) =>
-                        setPaymentForm({
-                          ...paymentForm,
-                          btcAddress: e.target.value,
-                        })
-                      }
-                    />
-                    {supportedData?.data.supportedMethods.btc.fields.validation
-                      .btcAddress && (
-                        <p className="text-[10px] text-muted-foreground ml-1">
-                          {
-                            supportedData.data.supportedMethods.btc.fields
-                              .validation.btcAddress
-                          }
-                        </p>
-                      )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="btc-network">Network</Label>
-                    <Select
-                      value={paymentForm.btcNetwork}
-                      onValueChange={(val) =>
-                        setPaymentForm({ ...paymentForm, btcNetwork: val })
-                      }
-                    >
-                      <SelectTrigger id="btc-network">
-                        <SelectValue placeholder="Select network" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {supportedData?.data.supportedMethods.btc.networks.map(
-                          (net) => (
-                            <SelectItem key={net.id} value={net.id}>
-                              {net.name}
-                            </SelectItem>
-                          ),
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-
-          <DialogFooter className="pt-4">
-            <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleAddSubmit}
-              disabled={
-                addPaymentMutation.isPending || updatePaymentMutation.isPending
-              }
-              className={
-                addMethodType === "btc"
-                  ? "bg-orange-500 hover:bg-orange-600 text-white"
-                  : "bg-blue-600 hover:bg-blue-700 text-white"
-              }
-            >
-              {addPaymentMutation.isPending ||
-                updatePaymentMutation.isPending ? (
-                <>
-                  <Loader className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : editingMethodId ? (
-                "Update Account"
-              ) : (
-                "Save Account"
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Payment Method Modal */}
+      <PaymentMethodModal
+        isOpen={isPaymentModalOpen}
+        onClose={() => {
+          setIsPaymentModalOpen(false);
+          setEditingMethod(null);
+        }}
+        editingMethod={editingMethod}
+      />
     </div>
   );
 }

@@ -72,6 +72,7 @@ const useFormValidation = () => {
     password: "",
     confirmPassword: "",
     code: COUNTRIES["ghana"].code,
+    referral_username: "",
   });
 
   const [validation, setValidation] = useState<FormValidation>({
@@ -185,6 +186,16 @@ export const RegisterForm = ({
   );
   const [usernameSuggestions, setUsernameSuggestions] = useState<string[]>([]);
 
+  // Referral Check States
+  const [isCheckingReferral, setIsCheckingReferral] = useState(false);
+  const [referralValid, setReferralValid] = useState<boolean | null>(null);
+
+  const isSelfReferral = useMemo(() => {
+    const username = formData.username.trim().toLowerCase();
+    const referral = formData.referral_username.trim().toLowerCase();
+    return username !== "" && referral !== "" && username === referral;
+  }, [formData.username, formData.referral_username]);
+
   // Debounced Username Check
   useEffect(() => {
     const checkAvailability = async () => {
@@ -201,7 +212,7 @@ export const RegisterForm = ({
         setUsernameAvailable(response.available);
         setUsernameSuggestions(response.suggestions || []);
       } catch (error) {
-        console.error("Check username error:", error);
+        // console.error("Check username error:", error);
       } finally {
         setIsCheckingUsername(false);
       }
@@ -210,6 +221,32 @@ export const RegisterForm = ({
     const timeoutId = setTimeout(checkAvailability, 400);
     return () => clearTimeout(timeoutId);
   }, [formData.username]);
+
+  // Debounced Referral Check
+  useEffect(() => {
+    const checkReferral = async () => {
+      const trimmedReferral = formData.referral_username.trim();
+      if (!trimmedReferral || isSelfReferral) {
+        setReferralValid(null);
+        return;
+      }
+
+      setIsCheckingReferral(true);
+      try {
+        const response = await authApi.checkUsername(trimmedReferral);
+        // If available is false, it means the username exists (valid referral)
+        setReferralValid(!response.available);
+      } catch (error) {
+
+        setReferralValid(null);
+      } finally {
+        setIsCheckingReferral(false);
+      }
+    };
+
+    const timeoutId = setTimeout(checkReferral, 400);
+    return () => clearTimeout(timeoutId);
+  }, [formData.referral_username]);
 
   const handleUsernameBlur = useCallback(() => {
     const trimmedUsername = formData.username.trim();
@@ -225,7 +262,7 @@ export const RegisterForm = ({
           setUsernameAvailable(response.available);
           setUsernameSuggestions(response.suggestions || []);
         } catch (error) {
-          console.error("Check username error:", error);
+          // console.error("Check username error:", error);
         } finally {
           setIsCheckingUsername(false);
         }
@@ -302,26 +339,7 @@ export const RegisterForm = ({
       passwordNotForbidden &&
       (usernameAvailable === true || usernameAvailable === null);
 
-    // Debug: Log validation state (remove in production)
-    if (process.env.NODE_ENV === "development") {
-      console.log("Form Validation State:", {
-        username: validation.username,
-        email: validation.email,
-        phone: validation.phone,
-        passwordRequirements: {
-          hasMinLength: validation.password.hasMinLength,
-          hasUpperCase: validation.password.hasUpperCase,
-          hasLowerCase: validation.password.hasLowerCase,
-          hasNumber: validation.password.hasNumber,
-          hasSpecialChar: validation.password.hasSpecialChar,
-          passwordsMatch: validation.password.passwordsMatch,
-        },
-        allPasswordRequirementsMet,
-        hasForbiddenPassword,
-        passwordNotForbidden,
-        isValid,
-      });
-    }
+
 
     return isValid;
   }, [validation, hasForbiddenPassword, formData.password]);
@@ -373,6 +391,7 @@ export const RegisterForm = ({
           password: formData.password,
           password_confirmation: formData.confirmPassword,
           country: formData.country,
+          referral_username: formData.referral_username,
         });
 
         if (response && response.data.to === "verify-email") {
@@ -715,6 +734,59 @@ export const RegisterForm = ({
             </div>
           </div>
 
+          <div className="space-y-1">
+            <div className="relative">
+              <Input
+                placeholder="Referral Username (Optional)"
+                value={formData.referral_username}
+                onChange={(e) =>
+                  updateFormData("referral_username", e.target.value)
+                }
+                className="border-borderColorPrimary focus-visible:outline-none h-10 pr-10"
+              />
+              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                {isCheckingReferral ? (
+                  <Loader className="h-4 w-4 animate-spin text-muted-foreground" />
+                ) : (
+                  referralValid && (
+                    <motion.div
+                      initial={{ scale: 0, rotate: -45 }}
+                      animate={{ scale: 1, rotate: 0 }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 260,
+                        damping: 20,
+                      }}
+                    >
+                      <Check className="h-4 w-4 text-green-500" />
+                    </motion.div>
+                  )
+                )}
+              </div>
+            </div>
+            {formData.referral_username && !isCheckingReferral && (
+              <motion.div
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-1"
+              >
+                {isSelfReferral ? (
+                  <p className="text-[10px] text-red-500 font-medium">
+                    You cannot refer yourself
+                  </p>
+                ) : referralValid === true ? (
+                  <p className="text-[10px] text-green-500 font-medium">
+                    Referral username confirmed
+                  </p>
+                ) : referralValid === false ? (
+                  <p className="text-[10px] text-red-500 font-medium">
+                    Referral username not found
+                  </p>
+                ) : null}
+              </motion.div>
+            )}
+          </div>
+
           <Button
             variant="secondary"
             type="submit"
@@ -778,6 +850,8 @@ export const RegisterForm = ({
       usernameAvailable,
       usernameSuggestions,
       handleUsernameBlur,
+      isCheckingReferral,
+      referralValid,
     ],
   );
 
