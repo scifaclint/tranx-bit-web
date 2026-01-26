@@ -234,10 +234,9 @@ export const RegisterForm = ({
       setIsCheckingReferral(true);
       try {
         const response = await authApi.checkUsername(trimmedReferral);
-        // If available is false, it means the username exists (valid referral)
+        // For referral: we want the username to exist (available: false means username exists)
         setReferralValid(!response.available);
       } catch (error) {
-
         setReferralValid(null);
       } finally {
         setIsCheckingReferral(false);
@@ -246,7 +245,7 @@ export const RegisterForm = ({
 
     const timeoutId = setTimeout(checkReferral, 400);
     return () => clearTimeout(timeoutId);
-  }, [formData.referral_username]);
+  }, [formData.referral_username, isSelfReferral]);
 
   const handleUsernameBlur = useCallback(() => {
     const trimmedUsername = formData.username.trim();
