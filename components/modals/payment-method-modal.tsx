@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import { Smartphone, Wallet, Loader, Check } from "lucide-react";
 import {
@@ -79,6 +79,26 @@ export default function PaymentMethodModal({
         }
     }, [editingMethod, isOpen]);
 
+    const isFormValid = useMemo(() => {
+        const { name, mobileNetwork, accountName, mobileNumber, btcAddress, btcNetwork } = paymentForm;
+
+        // Common required field
+        if (!name.trim()) return false;
+
+        if (addMethodType === "mobile_money") {
+            return (
+                mobileNetwork.trim() !== "" &&
+                accountName.trim() !== "" &&
+                mobileNumber.trim() !== ""
+            );
+        } else {
+            return (
+                btcAddress.trim() !== "" &&
+                btcNetwork.trim() !== ""
+            );
+        }
+    }, [paymentForm, addMethodType]);
+
     const handleSubmit = async () => {
         try {
             if (editingMethod) {
@@ -105,24 +125,24 @@ export default function PaymentMethodModal({
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-[450px] dark:bg-background border-borderColorPrimary dark:border-white/20">
+            <DialogContent className="w-[95vw] max-w-[450px] sm:w-full dark:bg-background border-borderColorPrimary dark:border-white/20 p-4 sm:p-6 rounded-2xl">
                 <DialogHeader>
-                    <DialogTitle>
+                    <DialogTitle className="text-xl sm:text-2xl">
                         {editingMethod ? "Edit Payment Method" : "Add Payment Method"}
                     </DialogTitle>
-                    <DialogDescription>
+                    <DialogDescription className="text-xs sm:text-sm">
                         {editingMethod
                             ? "Update your account details below."
                             : "Choose a payment type and enter your details to receive payouts."}
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="space-y-6 pt-4">
+                <div className="space-y-4 sm:space-y-6 pt-2 sm:pt-4">
                     <RadioGroup
                         defaultValue="mobile_money"
                         value={addMethodType}
                         onValueChange={(val: any) => setAddMethodType(val)}
-                        className="grid grid-cols-2 gap-4"
+                        className="grid grid-cols-2 gap-3 sm:gap-4"
                     >
                         <div>
                             <RadioGroupItem
@@ -132,9 +152,9 @@ export default function PaymentMethodModal({
                             />
                             <Label
                                 htmlFor="mm-modal"
-                                className="flex flex-col items-center justify-between rounded-md border-2 border-borderColorPrimary bg-backgroundSecondary/50 p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-blue-600 [&:has([data-state=checked])]:border-blue-600 cursor-pointer"
+                                className="flex flex-col items-center justify-between rounded-xl border-2 border-borderColorPrimary bg-backgroundSecondary/50 p-3 sm:p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-blue-600 [&:has([data-state=checked])]:border-blue-600 cursor-pointer text-xs sm:text-sm transition-all"
                             >
-                                <Smartphone className="mb-3 h-6 w-6" />
+                                <Smartphone className="mb-2 sm:mb-3 h-5 w-5 sm:h-6 sm:w-6" />
                                 Mobile Money
                             </Label>
                         </div>
@@ -142,9 +162,9 @@ export default function PaymentMethodModal({
                             <RadioGroupItem value="btc" id="btc-modal" className="peer sr-only" />
                             <Label
                                 htmlFor="btc-modal"
-                                className="flex flex-col items-center justify-between rounded-md border-2 border-borderColorPrimary bg-backgroundSecondary/50 p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-orange-500 [&:has([data-state=checked])]:border-orange-500 cursor-pointer"
+                                className="flex flex-col items-center justify-between rounded-xl border-2 border-borderColorPrimary bg-backgroundSecondary/50 p-3 sm:p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-orange-500 [&:has([data-state=checked])]:border-orange-500 cursor-pointer text-xs sm:text-sm transition-all"
                             >
-                                <Wallet className="mb-3 h-6 w-6" />
+                                <Wallet className="mb-2 sm:mb-3 h-5 w-5 sm:h-6 sm:w-6" />
                                 Bitcoin (BTC)
                             </Label>
                         </div>
@@ -300,18 +320,23 @@ export default function PaymentMethodModal({
                     </div>
                 </div>
 
-                <DialogFooter className="pt-4">
-                    <Button variant="outline" onClick={onClose}>
+                <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-4 sm:pt-6 font-medium">
+                    <Button
+                        variant="outline"
+                        onClick={onClose}
+                        className="w-full sm:w-auto order-2 sm:order-1 rounded-xl"
+                    >
                         Cancel
                     </Button>
                     <Button
                         onClick={handleSubmit}
-                        disabled={addPaymentMutation.isPending || updatePaymentMutation.isPending}
-                        className={
-                            addMethodType === "btc"
-                                ? "bg-orange-500 hover:bg-orange-600 text-white"
-                                : "bg-blue-600 hover:bg-blue-700 text-white"
-                        }
+                        disabled={addPaymentMutation.isPending || updatePaymentMutation.isPending || !isFormValid}
+                        className={`w-full sm:w-auto order-1 sm:order-2 rounded-xl transition-all duration-200 ${!isFormValid
+                                ? "bg-gray-200 dark:bg-gray-800 text-gray-400 cursor-not-allowed opacity-50"
+                                : addMethodType === "btc"
+                                    ? "bg-orange-500 hover:bg-orange-600 text-white shadow-orange-500/20 shadow-lg"
+                                    : "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-600/20 shadow-lg"
+                            }`}
                     >
                         {addPaymentMutation.isPending || updatePaymentMutation.isPending ? (
                             <>

@@ -43,8 +43,8 @@ export function extractErrorMessage(error: any): string {
 
   // Fallbacks for other possible error shapes
   return (
-    error?.response?.data?.error || // Backend sends { error: "..." }
     error?.response?.data?.message || // Backend sends { message: "..." }
+    error?.response?.data?.error || // Backend sends { error: "..." }
     error?.message ||
     // Manually thrown Error (new Error(...))
     "Something went wrong, please try again"

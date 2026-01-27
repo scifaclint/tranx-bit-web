@@ -187,7 +187,7 @@ export const authApi = {
     credentials: RegisterCredentials,
   ): Promise<RegisterResponse> => {
     const response = await api.post("/auth/register", credentials);
-    console.log("register data", response.data);
+    // console.log("register data", response.data);
     return response.data;
   },
 

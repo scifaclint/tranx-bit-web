@@ -24,6 +24,7 @@ import {
   type CarouselApi,
 } from "@/components/ui/carousel";
 import { useAuthStore } from "@/stores";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   Tooltip,
   TooltipContent,
@@ -35,6 +36,7 @@ export default function HeaderWithBalance() {
   const pathname = usePathname();
   const router = useRouter();
   const { user } = useAuthStore();
+  const isMobile = useIsMobile();
   // console.log(user);
   const ads = [
     { src: "/ads/amazon-ads.svg", alt: "Amazon Gift Cards" },
@@ -78,6 +80,12 @@ export default function HeaderWithBalance() {
     if (hiddenPages.includes(pathname)) {
       return true;
     }
+
+    // Hide sell page on mobile
+    if (isMobile && pathname === "/sell-giftcards") {
+      return true;
+    }
+
     if (pathname.startsWith("/transactions/")) {
       return true;
     }

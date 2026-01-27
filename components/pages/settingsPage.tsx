@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import axios from "axios";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
 import {
@@ -62,6 +63,7 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { MoreVertical, Star, CheckCircle2 } from "lucide-react";
 import { PAYMENT_LOGOS, NETWORK_LABELS } from "@/lib/payment-constants";
+import { validateImageSizeAndType } from "@/lib/upload-utils";
 
 type TabType = "general" | "personal" | "kyc" | "payment" | "security";
 
@@ -86,6 +88,7 @@ export default function SettingsPage() {
     marketing: false,
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState("");
 
   // Get user from auth store
   const { user, setAuth } = useAuthStore();
@@ -125,6 +128,19 @@ export default function SettingsPage() {
     }
   }, [user]);
 
+  // Change Detection
+  const hasChanges = useMemo(() => {
+    if (!user) return false;
+
+    const nameChanged =
+      formData.firstName !== (user.first_name || "") ||
+      formData.lastName !== (user.last_name || "");
+
+    const imageChanged = profileImageFile !== null;
+
+    return nameChanged || imageChanged;
+  }, [formData, profileImageFile, user]);
+
   // Payment Methods Hooks
   const { data: paymentsData, isLoading: isLoadingPayments } =
     usePaymentMethods();
@@ -144,24 +160,7 @@ export default function SettingsPage() {
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      // Validate file size (3MB = 3 * 1024 * 1024 bytes)
-      const maxSize = 3 * 1024 * 1024;
-      if (file.size > maxSize) {
-        toast.error("Image too large", {
-          description: "Please select an image smaller than 3MB",
-        });
-        return;
-      }
-
-      // Validate file type
-      if (!file.type.startsWith("image/")) {
-        toast.error("Invalid file type", {
-          description: "Please select an image file",
-        });
-        return;
-      }
-
+    if (file && validateImageSizeAndType(file)) {
       const reader = new FileReader();
       reader.onloadend = () => {
         setProfileImage(reader.result as string);
@@ -179,37 +178,56 @@ export default function SettingsPage() {
   };
 
   const handleSave = async () => {
-    setIsSaving(true);
-    try {
-      // Create FormData
-      const formDataToSend = new FormData();
-      formDataToSend.append("first_name", formData.firstName);
-      formDataToSend.append("last_name", formData.lastName);
+    if (!hasChanges) return;
 
-      // Only append image if a new one was selected
+    setIsSaving(true);
+    let finalImageKey = undefined;
+
+    try {
+      // 1. Handshake & Upload if image exists
       if (profileImageFile) {
-        formDataToSend.append("photo", profileImageFile);
+        setLoadingMessage("Processing image...");
+
+        // Request signed URL
+        const handshake = await authApi.requestAvatarUpload({
+          contentType: profileImageFile.type
+        });
+
+        if (handshake.status && handshake.data.uploadUrl) {
+          // Upload directly to bucket (using plain axios to avoid app interceptors/auth headers)
+          await axios.put(handshake.data.uploadUrl, profileImageFile, {
+            headers: {
+              "Content-Type": profileImageFile.type,
+            },
+          });
+          finalImageKey = handshake.data.key;
+        }
       }
 
-      // Call API
-      const response = await authApi.updateUser(formDataToSend);
+      // 2. Update Profile
+      setLoadingMessage("Updating your profile...");
+      const response = await authApi.updateUser({
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        imageKey: finalImageKey,
+      });
 
       if (response.status && response.data.user) {
         // Update the store with new user data
         const token = useAuthStore.getState().token;
-        if (token) {
-          setAuth(response.data.user);
-        }
+        setAuth(response.data.user, token || "");
 
         toast.success("Profile updated successfully!");
-        setProfileImageFile(null); // Clear the file after successful upload
+        setProfileImageFile(null); // Clear the file
       }
     } catch (error: any) {
+      console.error("Profile update error:", error);
       toast.error("Failed to update profile", {
         description: error?.message || "Please try again later",
       });
     } finally {
       setIsSaving(false);
+      setLoadingMessage("");
     }
   };
 
@@ -631,13 +649,13 @@ export default function SettingsPage() {
                   <div className="pt-4">
                     <Button
                       onClick={handleSave}
-                      disabled={isSaving}
-                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                      disabled={isSaving || !hasChanges}
+                      className="bg-blue-600 hover:bg-blue-700 text-white min-w-[140px]"
                     >
                       {isSaving ? (
                         <>
                           <Loader className="mr-2 h-4 w-4 animate-spin" />
-                          Saving...
+                          {loadingMessage || "Saving..."}
                         </>
                       ) : (
                         "Save Changes"

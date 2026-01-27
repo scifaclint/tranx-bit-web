@@ -25,6 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { extractErrorMessage } from "@/lib/utils";
 
 const formVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -397,15 +398,13 @@ export const RegisterForm = ({
           onRegister(formData.email);
           setIsLoading(false);
         }
-      } catch (error: unknown) {
+      } catch (error: any) {
         setIsLoading(false);
-        // console.log(error);
-        const errorMessage =
-          error instanceof Error
-            ? error.message
-            : "Registration failed. Please try again.";
-        toast.error(errorMessage, {
-          description: "Please check your information and try again.",
+        const errorMessage = extractErrorMessage(error);
+        const errorTitle = error?.response?.data?.error || "Registration error";
+
+        toast.error(errorTitle, {
+          description: errorMessage,
         });
       }
     },
