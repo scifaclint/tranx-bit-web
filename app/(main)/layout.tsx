@@ -33,7 +33,7 @@ export default function AuthLayout({
         `}
           >
             <UserHeader onOpenMobileMenu={() => setIsMobileOpen(true)} />
-            <div className="w-full px-4 sm:px-6 md:px-8 py-6">
+            <div className="w-full px-4 sm:px-6 md:px-8 py-4 sm:py-6">
               <div className="w-full max-w-6xl mx-auto">
                 {children}
               </div>

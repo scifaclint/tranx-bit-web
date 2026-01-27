@@ -17,50 +17,29 @@ import { useApproveOrder, useRejectOrder } from "@/hooks/useAdmin"
 import { toast } from "sonner"
 import { Loader } from "lucide-react"
 
+import { AdminOrder } from "@/lib/api/admin"
+import Image from "next/image"
 
 interface OrderDetailsModalProps {
     isOpen: boolean
     onClose: () => void
-    orderId: string
-    type?: "buy" | "sell"
-    // In a real app, you might pass the full order object or fetch it by ID
-    // For now, we'll use mock data inside or passed props
+    order?: AdminOrder // Changed to accept full order object
 }
 
-export default function OrderDetailsModal({ isOpen, onClose, orderId, type = "buy" }: OrderDetailsModalProps) {
+export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetailsModalProps) {
     const [inputCode, setInputCode] = useState("")
-    // Mock data - in reality this would come from the order object or an API call
-    const orderDetails = {
-        id: orderId,
-        customer: {
-            name: "John Doe",
-            email: "john@email.com",
-            phone: "+1234567890",
-            customerId: "USER_4521"
-        },
-        type: type, // Use the passed type
-        card: "Amazon Gift Card",
-        amount: "$50.00",
-        rate: "85%",
-        total: "$42.50",
-        paymentMethod: "Bank Transfer",
-        bank: "Chase ****1234",
-        account: "****5678",
-        routing: "121000248",
-        images: ["/placeholder.png", "/placeholder.png"],
-        code: "XXXX-XXXX-XXXX-1234", // This would be the customer's code if selling, or empty/null if buying
-        status: "Pending Verification",
-        date: "Dec 31, 2025 10:30 AM",
-    }
+    const [selectedImage, setSelectedImage] = useState<string | null>(null)
 
     const approveMutation = useApproveOrder()
     const rejectMutation = useRejectOrder()
     const isLoading = approveMutation.isPending || rejectMutation.isPending
 
+    if (!order) return null;
+
     const handleApprove = async () => {
         try {
             await approveMutation.mutateAsync({
-                orderId,
+                orderId: order._id,
                 giftCardCodes: inputCode ? [inputCode] : []
             })
             toast.success("Order approved successfully")
@@ -75,7 +54,7 @@ export default function OrderDetailsModal({ isOpen, onClose, orderId, type = "bu
         if (!reason) return
         try {
             await rejectMutation.mutateAsync({
-                orderId,
+                orderId: order._id,
                 rejectionReason: reason
             })
             toast.success("Order rejected successfully")
@@ -85,24 +64,29 @@ export default function OrderDetailsModal({ isOpen, onClose, orderId, type = "bu
         }
     }
 
-    const handleCopyCode = () => {
-        navigator.clipboard.writeText(orderDetails.code)
-        toast.success("Code copied to clipboard")
+    const handleCopyCode = (text: string) => {
+        if (!text) {
+            toast.error("Nothing to copy")
+            return
+        }
+        navigator.clipboard.writeText(text)
+        toast.success("Copied to clipboard")
     }
 
-    const isBuying = orderDetails.type === 'buy'
+    const isBuying = order.orderType === 'buy'
+    const statusColor = order.status === 'completed' ? "text-green-600 border-green-600 bg-green-50" :
+        order.status === 'under_review' ? "text-yellow-600 border-yellow-600 bg-yellow-50" :
+            "text-red-500 border-red-500 bg-red-50";
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <div className="flex items-center justify-between mr-8">
-                        <DialogTitle>Order #{orderDetails.id.split('-')[1]} - {isBuying ? "BUYING" : "SELLING"}</DialogTitle>
+                        <DialogTitle>Order #{order.orderNumber || order._id.slice(-8)} - {isBuying ? "BUYING" : "SELLING"}</DialogTitle>
                         <div className="flex items-center gap-2">
-                            <Badge variant="outline" className={cn("bg-yellow-50",
-                                orderDetails.status.includes("Pending") ? "text-yellow-600 border-yellow-600" : "text-foreground"
-                            )}>
-                                {orderDetails.status}
+                            <Badge variant="outline" className={cn("capitalize", statusColor)}>
+                                {order.status.replace('_', ' ')}
                             </Badge>
                         </div>
                     </div>
@@ -123,13 +107,13 @@ export default function OrderDetailsModal({ isOpen, onClose, orderId, type = "bu
                             </div>
                             <div className="grid grid-cols-2 gap-y-2 text-sm p-4">
                                 <span className="text-muted-foreground">Name:</span>
-                                <span className="font-medium text-right">{orderDetails.customer.name}</span>
+                                <span className="font-medium text-right">{order.userId.firstName} {order.userId.lastName}</span>
                                 <span className="text-muted-foreground">Email:</span>
-                                <span className="font-medium text-right">{orderDetails.customer.email}</span>
+                                <span className="font-medium text-right">{order.userId.email}</span>
                                 <span className="text-muted-foreground">Phone:</span>
-                                <span className="font-medium text-right">{orderDetails.customer.phone}</span>
-                                <span className="text-muted-foreground">Customer ID:</span>
-                                <span className="font-medium text-right">#{orderDetails.customer.customerId}</span>
+                                <span className="font-medium text-right">{order.userId.phone}</span>
+                                <span className="text-muted-foreground">Username:</span>
+                                <span className="font-medium text-right">@{order.userId.username}</span>
                             </div>
                         </div>
 
@@ -140,87 +124,145 @@ export default function OrderDetailsModal({ isOpen, onClose, orderId, type = "bu
                             </div>
                             <div className="grid grid-cols-2 gap-y-2 text-sm p-4">
                                 <span className="text-muted-foreground">Card:</span>
-                                <span className="font-medium text-right">{orderDetails.card}</span>
+                                <span className="font-medium text-right">{order.items[0]?.cardBrand} - {order.items[0]?.cardName}</span>
                                 <span className="text-muted-foreground">Denomination:</span>
-                                <span className="font-medium text-right">{orderDetails.amount}</span>
-                                <span className="text-muted-foreground">Your Buy Rate:</span>
-                                <span className="font-medium text-right">{orderDetails.rate}</span>
+                                <span className="font-medium text-right">{order.cardCurrency} {order.cardValue}</span>
+                                <span className="text-muted-foreground">Calculated Rate:</span>
+                                <span className="font-medium text-right">{((order.amountToReceive || 0) / (order.cardValue || 1) * 100).toFixed(0)}%</span>
                                 <div className="col-span-2 border-t my-1"></div>
                                 <span className="text-muted-foreground font-semibold">Customer Receives:</span>
-                                <span className="font-bold text-right text-lg text-green-600">{orderDetails.total}</span>
+                                <span className="font-bold text-right text-lg text-green-600">${order.amountToReceive?.toLocaleString()}</span>
                             </div>
                         </div>
 
                         {/* Card Images */}
-                        <div className="border rounded-lg overflow-hidden">
-                            <div className="bg-muted/50 px-4 py-2 border-b text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                                Card Images (Customer uploaded)
+                        {order.cardImages && order.cardImages.length > 0 && (
+                            <div className="border rounded-lg overflow-hidden">
+                                <div className="bg-muted/50 px-4 py-2 border-b text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                    Card Images (Customer uploaded)
+                                </div>
+                                <div className="p-4 flex gap-4 overflow-x-auto">
+                                    {order.cardImages.map((img, idx) => (
+                                        <div
+                                            key={idx}
+                                            className="relative h-24 w-40 bg-muted border rounded-md overflow-hidden group cursor-pointer shrink-0"
+                                            onClick={() => setSelectedImage(img)}
+                                        >
+                                            <Image
+                                                src={img}
+                                                alt={`Card ${idx + 1}`}
+                                                fill
+                                                className="object-cover transition-transform group-hover:scale-105"
+                                            />
+                                            <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                <span className="text-white text-[10px] font-bold bg-black/40 px-2 py-1 rounded">CLICK TO ZOOM</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
-                            <div className="p-4 flex gap-4 overflow-x-auto">
-                                <div className="relative h-20 w-32 bg-muted border rounded flex items-center justify-center cursor-pointer hover:bg-muted/80">
-                                    <span className="text-xs text-muted-foreground">[Front]</span>
-                                </div>
-                                <div className="relative h-20 w-32 bg-muted border rounded flex items-center justify-center cursor-pointer hover:bg-muted/80">
-                                    <span className="text-xs text-muted-foreground">[Back]</span>
-                                </div>
-                                <div className="relative h-20 w-32 bg-muted border rounded flex items-center justify-center cursor-pointer hover:bg-muted/80">
-                                    <span className="text-xs text-muted-foreground">[Receipt]</span>
-                                </div>
-                                <Button variant="ghost" size="sm" className="h-20 text-xs">View All</Button>
-                            </div>
-                        </div>
+                        )}
 
-                        {/* Card Code */}
-                        <div className="border rounded-lg overflow-hidden">
-                            <div className="bg-muted/50 px-4 py-2 border-b text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                                Card Code/PIN
+                        {/* Additional Comments */}
+                        {order.additionalComments && (
+                            <div className="border rounded-lg overflow-hidden">
+                                <div className="bg-muted/50 px-4 py-2 border-b text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                    Customer Comments
+                                </div>
+                                <div className="p-4 text-sm italic">
+                                    "{order.additionalComments}"
+                                </div>
                             </div>
-                            <div className="p-4 flex items-center justify-between">
-                                <code className="text-lg font-mono font-bold tracking-widest">{orderDetails.code}</code>
-                                <Button variant="outline" size="sm" onClick={handleCopyCode}>
-                                    <Copy className="mr-2 h-3 w-3" /> Copy
-                                </Button>
-                            </div>
-                        </div>
+                        )}
 
                         {/* Payment Info */}
                         <div className="border rounded-lg overflow-hidden">
                             <div className="bg-muted/50 px-4 py-2 border-b text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                                Customer's Payment Info
+                                Customer's Payout Info ({order.paymentMethodId.type.replace('_', ' ')})
                             </div>
                             <div className="grid grid-cols-2 gap-y-2 text-sm p-4">
-                                <span className="text-muted-foreground">Method:</span>
-                                <span className="font-medium text-right">{orderDetails.paymentMethod}</span>
-                                <span className="text-muted-foreground">Bank:</span>
-                                <span className="font-medium text-right">{orderDetails.bank}</span>
-                                <span className="text-muted-foreground">Account:</span>
-                                <span className="font-medium text-right">{orderDetails.account}</span>
-                                <span className="text-muted-foreground">Account Name:</span>
-                                <span className="font-medium text-right">{orderDetails.customer.name}</span>
-                                <span className="text-muted-foreground">Routing:</span>
-                                <span className="font-medium text-right">{orderDetails.routing}</span>
+                                {order.paymentMethodId.type === 'mobile_money' ? (
+                                    <>
+                                        <span className="text-muted-foreground">Network:</span>
+                                        <span className="font-medium text-right uppercase">{order.paymentMethodId.mobileNetwork}</span>
+                                        <span className="text-muted-foreground">Account Name:</span>
+                                        <span className="font-medium text-right">{order.paymentMethodId.accountName}</span>
+                                        <span className="text-muted-foreground">Account Number:</span>
+                                        <div className="flex items-center justify-end gap-2">
+                                            <span className="font-medium font-mono">{order.paymentMethodId.mobileNumber}</span>
+                                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => handleCopyCode(order.paymentMethodId.mobileNumber!)}>
+                                                <Copy className="h-3 w-3" />
+                                            </Button>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <span className="text-muted-foreground">Network:</span>
+                                        <span className="font-medium text-right uppercase">{order.paymentMethodId.btcNetwork}</span>
+                                        <span className="text-muted-foreground">BTC Address:</span>
+                                        <div className="flex flex-col items-end gap-1">
+                                            <span className="font-medium font-mono text-[10px] break-all text-right">{order.paymentMethodId.btcAddress}</span>
+                                            <Button variant="outline" size="sm" className="h-7 mt-1" onClick={() => handleCopyCode(order.paymentMethodId.btcAddress!)}>
+                                                <Copy className="mr-1 h-3 w-3" /> Copy
+                                            </Button>
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         </div>
 
                         <div className="text-xs text-muted-foreground text-center mt-2">
-                            Submitted: {orderDetails.date}
+                            Submitted: {new Date(order.createdAt).toLocaleString()}
                         </div>
                     </div>
                 )}
 
-                {/* BUYING LAYOUT (Existing) */}
+                {/* Card Images (For both types, if available) */}
+                {isBuying && order.cardImages && order.cardImages.length > 0 && (
+                    <div className="border rounded-lg overflow-hidden mt-2">
+                        <div className="bg-muted/50 px-4 py-2 border-b text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                            Proof of Payment / Receipts
+                        </div>
+                        <div className="p-4 flex gap-4 overflow-x-auto">
+                            {order.cardImages.map((img, idx) => (
+                                <div
+                                    key={idx}
+                                    className="relative h-24 w-40 bg-muted border rounded-md overflow-hidden group cursor-pointer shrink-0"
+                                    onClick={() => setSelectedImage(img)}
+                                >
+                                    <Image
+                                        src={img}
+                                        alt={`Receipt ${idx + 1}`}
+                                        fill
+                                        className="object-cover transition-transform group-hover:scale-105"
+                                    />
+                                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                        <span className="text-white text-[10px] font-bold bg-black/40 px-2 py-1 rounded">CLICK TO ZOOM</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* BUYING LAYOUT */}
                 {isBuying && (
                     <div className="grid gap-6 py-4">
+                        <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-md flex items-center gap-3">
+                            <span className="h-2 w-2 rounded-full bg-blue-500 shrink-0" />
+                            <p className="font-medium text-sm">Customer is BUYING this card from YOU</p>
+                        </div>
+
                         {/* Customer Details */}
                         <div className="space-y-3">
                             <h3 className="font-semibold text-sm text-foreground/70 uppercase tracking-wider">Customer Information</h3>
                             <div className="grid grid-cols-2 gap-y-2 text-sm bg-muted/30 p-4 rounded-lg">
                                 <span className="text-muted-foreground">Name:</span>
-                                <span className="font-medium text-right">{orderDetails.customer.name}</span>
+                                <span className="font-medium text-right">{order.userId.firstName} {order.userId.lastName}</span>
                                 <span className="text-muted-foreground">Email:</span>
-                                <span className="font-medium text-right">{orderDetails.customer.email}</span>
+                                <span className="font-medium text-right">{order.userId.email}</span>
                                 <span className="text-muted-foreground">Phone:</span>
-                                <span className="font-medium text-right">{orderDetails.customer.phone}</span>
+                                <span className="font-medium text-right">{order.userId.phone}</span>
                             </div>
                         </div>
 
@@ -228,74 +270,56 @@ export default function OrderDetailsModal({ isOpen, onClose, orderId, type = "bu
                         <div className="space-y-3">
                             <h3 className="font-semibold text-sm text-foreground/70 uppercase tracking-wider">Transaction Details</h3>
                             <div className="grid grid-cols-2 gap-y-2 text-sm border p-4 rounded-lg">
-                                <span className="text-muted-foreground">Order Type:</span>
-                                <span className="font-medium text-right flex justify-end">
-                                    <Badge variant='default' className="uppercase">
-                                        🔵 Buying
-                                    </Badge>
-                                </span>
                                 <span className="text-muted-foreground">Gift Card:</span>
-                                <span className="font-medium text-right">{orderDetails.card}</span>
+                                <span className="font-medium text-right">{order.items[0]?.cardBrand} - {order.items[0]?.cardName}</span>
                                 <span className="text-muted-foreground">Amount:</span>
-                                <span className="font-medium text-right">{orderDetails.amount}</span>
-                                <span className="text-muted-foreground">Rate:</span>
-                                <span className="font-medium text-right">{orderDetails.rate}</span>
+                                <span className="font-medium text-right">{order.cardCurrency} {order.items[0]?.cardDenomination} x {order.items[0]?.quantity}</span>
                                 <div className="col-span-2 border-t my-2"></div>
-                                <span className="text-muted-foreground font-semibold">You Pay:</span>
-                                <span className="font-bold text-right text-lg">{orderDetails.total}</span>
-                            </div>
-                        </div>
-
-                        {/* Payment Details */}
-                        <div className="space-y-3">
-                            <h3 className="font-semibold text-sm text-foreground/70 uppercase tracking-wider">Payment Information</h3>
-                            <div className="grid grid-cols-2 gap-y-2 text-sm bg-muted/30 p-4 rounded-lg">
-                                <span className="text-muted-foreground">Method:</span>
-                                <span className="font-medium text-right">{orderDetails.paymentMethod}</span>
-                                <span className="text-muted-foreground">Details:</span>
-                                <span className="font-medium text-right">{orderDetails.bank}</span>
-                            </div>
-                        </div>
-
-                        {/* Images */}
-                        <div className="space-y-3">
-                            <h3 className="font-semibold text-sm text-foreground/70 uppercase tracking-wider">Receipts</h3>
-                            <div className="flex gap-4 overflow-x-auto pb-2">
-                                {orderDetails.images.map((img, index) => (
-                                    <div key={index} className="relative h-24 w-36 rounded-md border bg-muted flex-shrink-0 overflow-hidden group cursor-pointer">
-                                        <img src={img} alt={`Image ${index + 1}`} className="h-full w-full object-cover transition-transform group-hover:scale-105" />
-                                    </div>
-                                ))}
-                                <Button variant="outline" className="h-24 w-24 flex-shrink-0" size="sm">
-                                    View Full
-                                </Button>
+                                <span className="text-muted-foreground font-semibold">Total Paid:</span>
+                                <span className="font-bold text-right text-lg">${order.totalAmount.toLocaleString()}</span>
                             </div>
                         </div>
 
                         {/* Card Code Section */}
-                        <div className="space-y-3">
-                            <h3 className="font-semibold text-sm text-foreground/70 uppercase tracking-wider">Card Code</h3>
-                            <div className="grid gap-2">
-                                <div className="text-sm text-muted-foreground mb-1">Enter the gift card code to approve this order:</div>
-                                <div className="flex items-center gap-2">
-                                    <input
-                                        type="text"
-                                        value={inputCode}
-                                        onChange={(e) => setInputCode(e.target.value)}
-                                        placeholder="Enter card code (e.g. XXXX-XXXX-XXXX-XXXX)"
-                                        className="flex-1 px-3 py-2 text-sm rounded-md border border-input bg-background font-mono tracking-wider focus:outline-none focus:ring-2 focus:ring-ring"
-                                    />
+                        {order.status === 'under_review' && (
+                            <div className="space-y-3 p-4 border-2 border-blue-100 rounded-xl bg-blue-50/30">
+                                <h3 className="font-bold text-sm text-blue-700 uppercase tracking-wider">Approve with Gift Card Code</h3>
+                                <div className="grid gap-2">
+                                    <div className="text-sm text-muted-foreground mb-1">Enter the gift card code to send to the customer:</div>
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="text"
+                                            value={inputCode}
+                                            onChange={(e) => setInputCode(e.target.value)}
+                                            placeholder="Enter card code (e.g. XXXX-XXXX-XXXX-XXXX)"
+                                            className="flex-1 px-3 py-2.5 text-sm rounded-md border-2 border-blue-200 bg-background font-mono tracking-wider focus:outline-none focus:ring-2 focus:ring-blue-400"
+                                        />
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        )}
+
+                        {order.items[0]?.giftCardCodes && order.items[0].giftCardCodes.length > 0 && (
+                            <div className="space-y-3">
+                                <h3 className="font-semibold text-sm text-foreground/70 uppercase tracking-wider">Delivered Codes</h3>
+                                <div className="bg-zinc-100 p-4 rounded-lg">
+                                    {order.items[0].giftCardCodes.map((code, idx) => (
+                                        <div key={idx} className="flex items-center justify-between py-1">
+                                            <code className="font-mono font-bold">{code}</code>
+                                            <Button variant="ghost" size="sm" className="h-6" onClick={() => handleCopyCode(code)}>Copy</Button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
                         <div className="text-xs text-muted-foreground text-center">
-                            Created on {orderDetails.date}
+                            Created on {new Date(order.createdAt).toLocaleString()}
                         </div>
                     </div>
                 )}
 
-                <DialogFooter className="gap-2 sm:gap-0">
+                <DialogFooter className="gap-2 sm:gap-0 border-t pt-4">
                     <Button
                         variant="outline"
                         className="w-full sm:w-auto border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
@@ -305,19 +329,45 @@ export default function OrderDetailsModal({ isOpen, onClose, orderId, type = "bu
                         {rejectMutation.isPending ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <XCircle className="mr-2 h-4 w-4" />}
                         Reject
                     </Button>
-                    <Button
-                        className={cn("w-full sm:w-auto",
-                            !isBuying ? "bg-blue-600 hover:bg-blue-700" : "bg-green-600 hover:bg-green-700"
-                        )}
-                        onClick={handleApprove}
-                        disabled={(isBuying && !inputCode.trim()) || isLoading}
-                    >
-                        {approveMutation.isPending ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
-                        {isBuying ? "Approve Order" : "Mark as Paid"}
-                    </Button>
+                    {order.status === 'under_review' && (
+                        <Button
+                            className={cn("w-full sm:w-auto",
+                                !isBuying ? "bg-blue-600 hover:bg-blue-700" : "bg-green-600 hover:bg-green-700"
+                            )}
+                            onClick={handleApprove}
+                            disabled={(isBuying && !inputCode.trim()) || isLoading}
+                        >
+                            {approveMutation.isPending ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
+                            {!isBuying ? "Mark as Paid" : "Approve & Send Code"}
+                        </Button>
+                    )}
                 </DialogFooter>
             </DialogContent>
+
+            {/* Image Lightbox */}
+            <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
+                <DialogContent className="sm:max-w-[90vw] sm:max-h-[90vh] p-1 border-none bg-transparent shadow-none flex items-center justify-center">
+                    <DialogTitle className="sr-only">Image Preview</DialogTitle>
+                    {selectedImage && (
+                        <div className="relative w-full h-[85vh] flex items-center justify-center">
+                            <Image
+                                src={selectedImage}
+                                alt="Full size preview"
+                                fill
+                                className="object-contain"
+                                priority
+                            />
+                            <Button
+                                variant="ghost"
+                                className="absolute top-4 right-4 text-white bg-black/50 hover:bg-black/70 rounded-full h-10 w-10 p-0"
+                                onClick={() => setSelectedImage(null)}
+                            >
+                                <XCircle className="h-6 w-6" />
+                            </Button>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
         </Dialog>
     )
 }
-

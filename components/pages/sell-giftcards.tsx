@@ -516,7 +516,7 @@ function SellGiftCardsContent() {
 
   return (
     <div className="w-full max-w-6xl mx-auto py-8 px-4">
-      <div className="flex flex-col lg:flex-row gap-12 items-start">
+      <div className="flex flex-col lg:flex-row gap-6 lg:gap-12 items-start">
         {/* Left Side - Instructions */}
         <div className="w-full lg:flex-1 space-y-6">
           <div className="bg-white dark:bg-background border border-zinc-200 dark:border-borderColorPrimary rounded-2xl overflow-hidden shadow-sm">

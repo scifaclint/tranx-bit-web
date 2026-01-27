@@ -16,6 +16,7 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { usePathname } from "next/navigation";
 import { useAuthStore } from "@/stores";
 
 import { getWelcomeMessage } from "@/lib/constants";
@@ -26,17 +27,20 @@ interface UserHeaderProps {
 
 export default function UserHeader({ onOpenMobileMenu }: UserHeaderProps) {
     const { user } = useAuthStore();
+    const pathname = usePathname();
     const [notificationOpen, setNotificationOpen] = useState(false);
     const [greetingInfo, setGreetingInfo] = useState({ greeting: "Welcome", message: "" });
 
+    const isAdminRoute = pathname.startsWith("/internal-portal-Trx13");
+
     React.useEffect(() => {
         if (user) {
-            setGreetingInfo(getWelcomeMessage(user.first_name || "User"));
+            setGreetingInfo(getWelcomeMessage(user.first_name || "User", isAdminRoute));
         }
-    }, [user]);
+    }, [user, isAdminRoute]);
 
     return (
-        <div className="flex items-center justify-between mb-6 sm:mb-8 w-full sticky top-0 bg-background/95 backdrop-blur z-20 px-4 py-4 border-b border-border/40">
+        <div className="flex items-center justify-between mb-4 sm:mb-8 w-full sticky top-0 bg-background/95 backdrop-blur z-20 px-4 py-4 border-b border-border/40">
             <div className="flex items-center gap-3">
                 {/* Mobile Menu Button - VISIBLE ON MOBILE ONLY */}
                 <Button
@@ -66,7 +70,7 @@ export default function UserHeader({ onOpenMobileMenu }: UserHeaderProps) {
 
             <div className="flex items-center gap-2 sm:gap-3">
                 <ThemeToggle />
-                {user?.role === "admin" && (
+                {user?.role === "admin" && !isAdminRoute && (
                     <TooltipProvider>
                         <Tooltip>
                             <TooltipTrigger asChild>

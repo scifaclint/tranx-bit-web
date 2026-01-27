@@ -11,47 +11,32 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 
+import { AdminOrder } from "@/lib/api/admin"
+import Image from "next/image"
+import { useState } from "react"
+import { XCircle } from "lucide-react"
+
 interface RejectionModalProps {
     isOpen: boolean
     onClose: () => void
-    orderId: string
-    type?: "buy" | "sell"
+    order?: AdminOrder
 }
 
-export default function RejectionModal({ isOpen, onClose, orderId, type = "sell" }: RejectionModalProps) {
-    // Mock data
-    const orderDetails = {
-        id: orderId,
-        customer: {
-            name: "John Doe",
-            email: "john@email.com",
-            phone: "+1234567890",
-            customerId: "USER_4521"
-        },
-        type: type,
-        card: "iTunes Gift Card",
-        amount: "$100.00",
-        rate: "85%",
-        total: "$85.00", // Customer Would Receive
-        images: ["/placeholder.png", "/placeholder.png", "/placeholder.png"],
-        rejectionReason: "Card code is invalid and balance shows $0",
-        submittedDate: "Dec 31, 2025 10:30 AM",
-        rejectedDate: "Dec 31, 2025 11:45 AM",
-        rejectedBy: "Admin Mike"
-    }
+export default function RejectionModal({ isOpen, onClose, order }: RejectionModalProps) {
+    const [selectedImage, setSelectedImage] = useState<string | null>(null)
+    if (!order) return null;
+
+    const isBuying = order.orderType === 'buy'
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <div className="flex items-center justify-between mr-8">
-                        <DialogTitle>Order #{orderDetails.id.split('-')[1] || orderDetails.id} - REJECTED</DialogTitle>
-                        <div className="flex items-center gap-2">
-                            {/* No badge requested in ASCII but keeping consistent spacing */}
-                        </div>
+                        <DialogTitle>Order #{order.orderNumber || order._id.slice(-8)} - REJECTED</DialogTitle>
                     </div>
                     <DialogDescription className="hidden">
-                        Details of rejected order {orderId}
+                        Details of rejected order {order._id}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -69,13 +54,13 @@ export default function RejectionModal({ isOpen, onClose, orderId, type = "sell"
                         </div>
                         <div className="grid grid-cols-2 gap-y-2 text-sm p-4">
                             <span className="text-muted-foreground">Name:</span>
-                            <span className="font-medium text-right">{orderDetails.customer.name}</span>
+                            <span className="font-medium text-right">{order.userId.firstName} {order.userId.lastName}</span>
                             <span className="text-muted-foreground">Email:</span>
-                            <span className="font-medium text-right">{orderDetails.customer.email}</span>
+                            <span className="font-medium text-right">{order.userId.email}</span>
                             <span className="text-muted-foreground">Phone:</span>
-                            <span className="font-medium text-right">{orderDetails.customer.phone}</span>
-                            <span className="text-muted-foreground">Customer ID:</span>
-                            <span className="font-medium text-right">#{orderDetails.customer.customerId}</span>
+                            <span className="font-medium text-right">{order.userId.phone}</span>
+                            <span className="text-muted-foreground">Username:</span>
+                            <span className="font-medium text-right">@{order.userId.username}</span>
                         </div>
                     </div>
 
@@ -87,62 +72,88 @@ export default function RejectionModal({ isOpen, onClose, orderId, type = "sell"
                         <div className="grid grid-cols-2 gap-y-2 text-sm p-4">
                             <span className="text-muted-foreground">Type:</span>
                             <span className="font-medium text-right flex justify-end">
-                                <Badge variant={orderDetails.type === 'buy' ? 'default' : 'secondary'} className="uppercase">
-                                    {orderDetails.type === 'buy' ? '🔵 Buying' : '🟠 Selling'}
+                                <Badge variant={isBuying ? 'default' : 'secondary'} className="uppercase">
+                                    {isBuying ? '🔵 Buying' : '🟠 Selling'}
                                 </Badge>
                             </span>
                             <span className="text-muted-foreground">Card:</span>
-                            <span className="font-medium text-right">{orderDetails.card}</span>
+                            <span className="font-medium text-right">{order.items[0]?.cardBrand} - {order.items[0]?.cardName}</span>
                             <span className="text-muted-foreground">Amount:</span>
-                            <span className="font-medium text-right">{orderDetails.amount}</span>
-                            <span className="text-muted-foreground">Rate:</span>
-                            <span className="font-medium text-right">{orderDetails.rate}</span>
+                            <span className="font-medium text-right">{order.cardCurrency} {order.items[0]?.cardDenomination}</span>
                             <div className="col-span-2 border-t my-1"></div>
                             <span className="text-muted-foreground font-semibold">
-                                {orderDetails.type === 'buy' ? 'You Would Pay:' : 'Customer Would Receive:'}
+                                {isBuying ? 'You Would Pay:' : 'Customer Would Receive:'}
                             </span>
                             <span className="font-bold text-right text-lg text-red-600 line-through decoration-red-600/50">
-                                {orderDetails.total}
+                                ${order.totalAmount?.toLocaleString()}
                             </span>
                         </div>
                     </div>
 
                     {/* Card Images */}
-                    <div className="border rounded-lg overflow-hidden">
-                        <div className="bg-muted/50 px-4 py-2 border-b text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                            Card Images
+                    {order.cardImages && order.cardImages.length > 0 && (
+                        <div className="border rounded-lg overflow-hidden">
+                            <div className="bg-muted/50 px-4 py-2 border-b text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                Card Images
+                            </div>
+                            <div className="p-4 flex gap-4 overflow-x-auto">
+                                {order.cardImages.map((img, idx) => (
+                                    <div
+                                        key={idx}
+                                        className="relative h-20 w-32 bg-muted border rounded-md overflow-hidden flex-shrink-0 group cursor-pointer"
+                                        onClick={() => setSelectedImage(img)}
+                                    >
+                                        <Image src={img} alt={`Card ${idx}`} fill className="object-cover transition-transform group-hover:scale-105" />
+                                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                            <span className="text-white text-[10px] font-bold bg-black/40 px-2 py-1 rounded">ZOOM</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
-                        <div className="p-4 flex gap-4 overflow-x-auto">
-                            <div className="relative h-20 w-32 bg-muted border rounded flex items-center justify-center text-center p-2 cursor-pointer hover:bg-muted/80">
-                                <span className="text-xs text-muted-foreground">[Front]</span>
-                            </div>
-                            <div className="relative h-20 w-32 bg-muted border rounded flex items-center justify-center text-center p-2 cursor-pointer hover:bg-muted/80">
-                                <span className="text-xs text-muted-foreground">[Back]</span>
-                            </div>
-                            <div className="relative h-20 w-32 bg-muted border rounded flex items-center justify-center text-center p-2 cursor-pointer hover:bg-muted/80">
-                                <span className="text-xs text-muted-foreground">[Receipt]</span>
-                            </div>
-                            <Button variant="ghost" size="sm" className="h-20 text-xs">View All</Button>
-                        </div>
-                    </div>
+                    )}
 
-                    {/* Rejection Reason */}
+                    {/* Rejection Reason - Usually in notes or a specific field */}
                     <div className="border rounded-lg overflow-hidden border-red-100">
                         <div className="bg-red-50/50 px-4 py-2 border-b border-red-100 text-xs font-semibold uppercase tracking-wider text-red-800">
                             Rejection Reason
                         </div>
                         <div className="p-4 text-sm font-medium text-red-700 bg-red-50/30">
-                            "{orderDetails.rejectionReason}"
+                            "{order.notes || "No reason specified"}"
                         </div>
                     </div>
 
                     <div className="text-xs text-muted-foreground space-y-1 text-center mt-2">
-                        <div>Submitted: {orderDetails.submittedDate}</div>
-                        <div>Rejected: {orderDetails.rejectedDate}</div>
-                        <div>Rejected By: {orderDetails.rejectedBy}</div>
+                        <div>Submitted: {new Date(order.createdAt).toLocaleString()}</div>
+                        <div>Status Updated: {new Date(order.updatedAt).toLocaleString()}</div>
                     </div>
                 </div>
             </DialogContent>
+
+            {/* Image Lightbox */}
+            <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
+                <DialogContent className="sm:max-w-[90vw] sm:max-h-[90vh] p-1 border-none bg-transparent shadow-none flex items-center justify-center">
+                    <DialogTitle className="sr-only">Image Preview</DialogTitle>
+                    {selectedImage && (
+                        <div className="relative w-full h-[85vh] flex items-center justify-center">
+                            <Image
+                                src={selectedImage}
+                                alt="Full size preview"
+                                fill
+                                className="object-contain"
+                                priority
+                            />
+                            <Button
+                                variant="ghost"
+                                className="absolute top-4 right-4 text-white bg-black/50 hover:bg-black/70 rounded-full h-10 w-10 p-0"
+                                onClick={() => setSelectedImage(null)}
+                            >
+                                <XCircle className="h-6 w-6" />
+                            </Button>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
         </Dialog>
     )
 }

@@ -73,12 +73,12 @@ export interface AdminUser {
 
 export interface AdminOrderItem {
   giftCardId: string;
-  quantity: number;
-  unitPrice: number;
-  totalPrice: number;
   cardName: string;
   cardBrand: string;
   cardDenomination: number;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
   giftCardCodes?: string[];
 }
 
@@ -91,25 +91,32 @@ export interface AdminPagination {
   hasPrevPage: boolean;
 }
 
+export interface AdminPaymentMethod {
+  _id: string;
+  type: "mobile_money" | "btc";
+  accountName?: string;
+  mobileNumber?: string;
+  mobileNetwork?: string;
+  btcAddress?: string;
+  btcNetwork?: string;
+}
+
 export interface AdminOrder {
   _id: string;
   orderNumber: string;
   userId: AdminUser;
+  orderType: "buy" | "sell";
+  status: string;
   items: AdminOrderItem[];
   totalAmount: number;
   totalItems: number;
-  status: string;
-  paymentMethod: string;
-  paymentMethodId: string;
-  paymentConfirmedAt?: string;
-  completedAt?: string;
-  notes?: string;
-  recipientEmail?: string;
-  cardValue: number;
-  amountToReceive: number;
+  cardCurrency?: string;
+  cardValue?: number;
+  amountToReceive?: number;
+  paymentMethodId: AdminPaymentMethod;
   cardImages?: string[];
   additionalComments?: string;
-  orderType: "buy" | "sell";
+  notes?: string;
   createdAt: string;
   updatedAt: string;
   __v?: number;

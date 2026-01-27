@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useLogout } from "@/hooks/useLogout";
 import { Button } from "@/components/ui/button";
 import ConfirmationModal from "@/components/modals/confirmation-modal";
 // import { ThemeToggle } from "@/components/ui/theme-toggle";
@@ -44,6 +45,7 @@ const Sidebar = ({
 }: SidebarProps) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const { handleLogout, isLoggingOut } = useLogout();
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
@@ -297,17 +299,14 @@ const Sidebar = ({
       {/* Logout Confirmation Modal */}
       <ConfirmationModal
         isOpen={showLogoutModal}
-        onClose={() => setShowLogoutModal(false)}
-        onConfirm={() => {
-          // Logout logic will be implemented when backend is ready
-          // For now, redirect to auth page
-          window.location.href = "/auth";
-        }}
+        onClose={() => !isLoggingOut && setShowLogoutModal(false)}
+        onConfirm={handleLogout}
+        isLoading={isLoggingOut}
         title="Logout"
         description="Are you sure you want to logout? You will need to sign in again to access your account."
         confirmText="Yes, Logout"
         cancelText="Cancel"
-        variant="default"
+        variant="danger"
       />
     </>
   );

@@ -95,7 +95,7 @@ export default function SellGiftcardOrderPage() {
   const amountToReceive = orderData.amountToReceive || 0;
   const paymentMethod = orderData.paymentMethodId;
   const paymentMethodDisplay = paymentMethod?.type === "mobile_money"
-    ? `${paymentMethod.mobileNetwork} - ${paymentMethod.accountName}`
+    ? `${paymentMethod.mobileNetwork} - ${paymentMethod.accountName} (${paymentMethod.mobileNumber})`
     : `BTC - ${paymentMethod?.btcAddress}`;
 
   return (

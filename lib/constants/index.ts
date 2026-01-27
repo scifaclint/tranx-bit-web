@@ -6,6 +6,83 @@ interface DynamicMessages {
     dayOfWeek: Record<DayOfWeek, string[]>;
 }
 
+export const adminGreetings = {
+    timeOfDay: {
+        morning: [
+            "Good morning, Boss! Let's make some money",
+            "Morning, Chief! Dashboard looking good",
+            "Rise and grind, Admin!",
+            "Good morning! Ready to manage the empire?",
+            "Morning! Time to check those numbers"
+        ],
+        afternoon: [
+            "Good afternoon, Boss! How's business?",
+            "Afternoon, Admin! Everything running smooth?",
+            "Hey there! Midday check-in time",
+            "Good afternoon! Let's see what's moving",
+            "Afternoon grind, let's get it"
+        ],
+        evening: [
+            "Good evening, Boss! Wrapping up the day?",
+            "Evening, Admin! Time to review today's wins",
+            "Hey! Evening analytics time",
+            "Good evening! Let's see how we did today",
+            "Evening check-in, Chief!"
+        ],
+        lateNight: [
+            "Still grinding? Respect, Boss!",
+            "Burning the midnight oil, Admin?",
+            "Late night hustle! What's cooking?",
+            "Night owl mode activated, Chief!",
+            "Can't sleep? Business never stops!"
+        ]
+    },
+
+    dayOfWeek: {
+        monday: [
+            "Happy Monday, Boss! New week, new revenue",
+            "Monday grind starts now, Admin!",
+            "Let's crush this week, Chief!",
+            "Monday motivation: count that cash!"
+        ],
+        tuesday: [
+            "Tuesday check-in, Boss!",
+            "Hey Admin! Let's keep the momentum",
+            "Tuesday hustle continues, Chief!",
+            "What's good, Boss? Sales looking fire?"
+        ],
+        wednesday: [
+            "Hump day, Admin! Halfway there",
+            "Wednesday wins, let's go Boss!",
+            "Midweek check, Chief! How we looking?",
+            "Hey Admin! Wednesday grind time"
+        ],
+        thursday: [
+            "Almost Friday, Boss!",
+            "Thursday power moves, Admin!",
+            "One more day, Chief! Let's finish strong",
+            "Thursday grind, Boss! Keep pushing"
+        ],
+        friday: [
+            "Happy Friday, Boss! Week's almost done",
+            "TGIF, Admin! Let's close strong",
+            "Friday vibes, Chief! Review the wins",
+            "Friday feeling, Boss! Business looking good?"
+        ],
+        saturday: [
+            "Weekend warrior, Boss!",
+            "Saturday hustle, Admin! Respect",
+            "Weekend grind, Chief! Dedication",
+            "Even on Saturday? That's the spirit, Boss!"
+        ],
+        sunday: [
+            "Sunday check-in, Boss! Planning ahead?",
+            "Sunday prep, Admin! Smart moves",
+            "Sunday hustle, Chief! Setting up the week",
+            "Sunday vibes, Boss! Business never sleeps"
+        ]
+    }
+};
 const dynamicMessages: DynamicMessages = {
     timeOfDay: {
         morning: [
@@ -106,15 +183,17 @@ function getDayOfWeek(): DayOfWeek {
 }
 
 // Main function
-export function getWelcomeMessage(username: string): { greeting: string, message: string } {
+export function getWelcomeMessage(username: string, isAdmin: boolean = false): { greeting: string, message: string } {
     const timeOfDay = getTimeOfDay();
     const dayOfWeek = getDayOfWeek();
+
+    const source = isAdmin ? adminGreetings : dynamicMessages;
 
     // Randomly pick between time-based or day-based
     const useTimeBased = Math.random() > 0.5;
     const messages = useTimeBased
-        ? dynamicMessages.timeOfDay[timeOfDay]
-        : dynamicMessages.dayOfWeek[dayOfWeek];
+        ? source.timeOfDay[timeOfDay]
+        : source.dayOfWeek[dayOfWeek];
 
     const message = messages[Math.floor(Math.random() * messages.length)];
 

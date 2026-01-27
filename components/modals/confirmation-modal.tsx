@@ -1,6 +1,6 @@
 "use client";
 
-import { X } from "lucide-react";
+import { X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface ConfirmationModalProps {
@@ -12,6 +12,7 @@ interface ConfirmationModalProps {
   confirmText?: string;
   cancelText?: string;
   variant?: "default" | "danger";
+  isLoading?: boolean;
 }
 
 export default function ConfirmationModal({
@@ -23,12 +24,13 @@ export default function ConfirmationModal({
   confirmText = "Confirm",
   cancelText = "Cancel",
   variant = "default",
+  isLoading = false,
 }: ConfirmationModalProps) {
   if (!isOpen) return null;
 
   const handleConfirm = () => {
+    if (isLoading) return;
     onConfirm();
-    onClose();
   };
 
   return (
@@ -45,11 +47,10 @@ export default function ConfirmationModal({
           {/* Header */}
           <div className="flex items-start justify-between mb-4">
             <h2
-              className={`text-xl font-semibold ${
-                variant === "danger"
-                  ? "text-red-600 dark:text-red-400"
-                  : "text-gray-900 dark:text-gray-100"
-              }`}
+              className={`text-xl font-semibold ${variant === "danger"
+                ? "text-red-600 dark:text-red-400"
+                : "text-gray-900 dark:text-gray-100"
+                }`}
             >
               {title}
             </h2>
@@ -68,18 +69,27 @@ export default function ConfirmationModal({
 
           {/* Actions */}
           <div className="flex items-center justify-end gap-3">
-            <Button variant="outline" onClick={onClose}>
+            <Button
+              variant="outline"
+              onClick={onClose}
+              disabled={isLoading}
+            >
               {cancelText}
             </Button>
             <Button
               onClick={handleConfirm}
+              disabled={isLoading}
               className={
                 variant === "danger"
-                  ? "bg-red-600 hover:bg-red-700 text-white"
-                  : "bg-blue-600 hover:bg-blue-700 text-white"
+                  ? "bg-red-600 hover:bg-red-700 text-white min-w-[100px]"
+                  : "bg-blue-600 hover:bg-blue-700 text-white min-w-[100px]"
               }
             >
-              {confirmText}
+              {isLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                confirmText
+              )}
             </Button>
           </div>
         </div>

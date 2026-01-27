@@ -11,6 +11,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+import { cn } from "@/lib/utils"
 import {
     Table,
     TableBody,
@@ -56,95 +57,104 @@ interface ViewCardItemProps {
     onDelete: () => void;
 }
 
-const ViewCardItem = ({ card, onEdit, onToggleStatus, onDelete }: ViewCardItemProps) => (
-    <Card className="overflow-hidden border-borderColorPrimary bg-white dark:bg-backgroundSecondary transition-all duration-200 hover:shadow-md group">
-        {/* Card Image Wrapper */}
-        <div className="relative aspect-[16/10] bg-muted/30 overflow-hidden group-hover:scale-[1.02] transition-transform duration-300">
-            {card.imageUrl ? (
-                <Image
-                    src={card.imageUrl}
-                    alt={card.name}
-                    fill
-                    className="object-cover"
-                />
-            ) : (
-                <div className="w-full h-full flex items-center justify-center text-muted-foreground/50">
-                    <span className="text-xs font-bold uppercase tracking-widest">{card.name.substring(0, 3)}</span>
-                </div>
-            )}
+const ViewCardItem = ({ card, onEdit, onToggleStatus, onDelete }: ViewCardItemProps) => {
+    const statusColor = card.status === 'active' ? "bg-green-500" : "bg-gray-400";
 
-            {/* Quick Status Overlay */}
-            <div className="absolute top-2 left-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                <Badge variant="outline" className={`text-[9px] px-1.5 py-0 bg-white/90 dark:bg-black/80 backdrop-blur-sm ${card.status === 'active' ? "text-green-600 border-green-600/50" : "text-gray-500 border-gray-500/50"}`}>
-                    {card.status}
-                </Badge>
-            </div>
-
-            {/* Actions Dropdown Trigger (Overlay) */}
-            <div className="absolute top-2 right-2">
+    return (
+        <Card className="group relative bg-background border border-borderColorPrimary rounded-[1rem] p-2 transition-all duration-300 hover:shadow-xl hover:border-black/5 dark:hover:border-white/5 hover:-translate-y-1 flex flex-col items-center overflow-hidden">
+            {/* Action Overlay */}
+            <div className="absolute top-2 right-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="secondary" size="icon" className="h-8 w-8 rounded-full bg-white/90 dark:bg-black/80 backdrop-blur-sm shadow-sm hover:bg-white dark:hover:bg-black">
-                            <MoreHorizontal className="h-4 w-4" />
+                        <Button
+                            variant="secondary"
+                            size="icon"
+                            className="h-7 w-7 rounded-full bg-white/90 dark:bg-black/90 backdrop-blur-md shadow-sm border border-borderColorPrimary/50"
+                        >
+                            <MoreHorizontal className="h-3.5 w-3.5" />
                         </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48">
-                        <DropdownMenuLabel>Card Management</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={onEdit} className="cursor-pointer">
-                            <Eye className="mr-2 h-4 w-4" /> View Details / Edit
+                    <DropdownMenuContent align="end" className="w-44">
+                        <DropdownMenuItem onClick={onEdit} className="cursor-pointer text-xs font-semibold">
+                            <Pencil className="mr-2 h-4 w-4 text-blue-500" /> Edit Details
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={onToggleStatus} className={`cursor-pointer ${card.status === 'active' ? "text-red-600" : "text-green-600"}`}>
-                            <Power className="mr-2 h-4 w-4" />
-                            {card.status === 'active' ? 'Disable Card' : 'Activate Card'}
+                        <DropdownMenuItem onClick={onToggleStatus} className="cursor-pointer text-xs font-semibold">
+                            <Power className={cn("mr-2 h-4 w-4", card.status === 'active' ? "text-amber-500" : "text-green-500")} />
+                            {card.status === 'active' ? 'Deactivate' : 'Activate'}
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={onDelete} className="text-red-600 cursor-pointer focus:bg-red-50 dark:focus:bg-red-900/10">
-                            <Trash className="mr-2 h-4 w-4" /> Delete Card
+                        <DropdownMenuItem onClick={onDelete} className="text-red-500 cursor-pointer text-xs font-semibold">
+                            <Trash className="mr-2 h-4 w-4" /> Delete
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
             </div>
-        </div>
 
-        <CardContent className="p-4">
-            <div className="flex flex-col gap-2">
-                <div className="flex items-start justify-between gap-2">
-                    <h3 className="font-bold text-sm leading-tight line-clamp-1 flex-1 group-hover:text-blue-600 transition-colors">
-                        {card.name}
-                    </h3>
-                </div>
+            {/* Slim Logo Wrapper */}
+            <div className="w-full aspect-[21/9] bg-backgroundSecondary rounded-[0.75rem] flex items-center justify-center p-3 relative overflow-hidden mb-2 transition-colors duration-300">
+                {card.imageUrl ? (
+                    <Image
+                        src={card.imageUrl}
+                        alt={card.name}
+                        fill
+                        className="object-contain p-2 group-hover:scale-105 transition-transform duration-500"
+                    />
+                ) : (
+                    <div className="text-xl font-black text-muted-foreground/10 italic select-none uppercase">
+                        {card.brand?.substring(0, 2) || "GC"}
+                    </div>
+                )}
 
-                <div className="flex items-center gap-2 flex-wrap">
-                    {/* Handle potential multiple types if backend allows in future, or just single for now */}
-                    <Badge variant={card.type === 'buy' ? 'default' : 'secondary'} className="uppercase text-[9px] px-2 py-0 h-4 font-bold tracking-tight">
+                {/* Compact Badges */}
+                <div className="absolute top-2 left-2">
+                    <Badge variant={card.type === 'buy' ? 'default' : 'secondary'} className="text-[7px] h-3.5 px-1 font-black uppercase tracking-tighter">
                         {card.type}
                     </Badge>
-
-                    {card.type === 'buy' && (
-                        <span className="text-xs font-bold text-blue-600 ml-auto">
-                            ${card.prices?.[0]?.price || '0.00'}+
-                        </span>
-                    )}
-                    {card.type === 'sell' && card.sellRate && (
-                        <span className="text-xs font-bold text-green-600 ml-auto font-mono">
-                            {card.sellRate}/$
-                        </span>
-                    )}
-                </div>
-
-                <div className="flex items-center justify-between pt-1 border-t border-dashed border-borderColorPrimary mt-1">
-                    <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">
-                        {card.brand || 'No Brand'}
-                    </span>
-                    <span className="text-[10px] text-muted-foreground font-mono">
-                        {card.prices?.length || 0} Denoms
-                    </span>
                 </div>
             </div>
-        </CardContent>
-    </Card>
-);
+
+            {/* Compact Content Area */}
+            <div className="w-full px-1 pb-1 space-y-2">
+                <div className="text-center">
+                    <h3 className="font-bold text-[12px] tracking-tight line-clamp-1">
+                        {card.name}
+                    </h3>
+                    <div className="flex items-center justify-center gap-1.5 mt-0.5">
+                        <div className={cn("h-1 w-1 rounded-full", statusColor)} />
+                        <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground/60">{card.status}</span>
+                    </div>
+                </div>
+
+                <div className="flex items-center justify-center gap-1.5">
+                    {card.type === 'sell' ? (
+                        <div className="text-[10px] font-black text-green-600 bg-green-500/10 px-2 py-0.5 rounded-lg border border-green-500/5">
+                            {card.sellRate}/$
+                        </div>
+                    ) : (
+                        <div className="text-[10px] font-black text-blue-600 bg-blue-500/10 px-2 py-0.5 rounded-lg border border-blue-500/5">
+                            ${card.prices?.[0]?.price || '0'}
+                        </div>
+                    )}
+                    <div className="text-[9px] font-black text-muted-foreground/70 bg-muted/60 px-1.5 py-0.5 rounded-lg uppercase">
+                        {card.currency || 'USD'}
+                    </div>
+                </div>
+
+                <div className="pt-2 border-t border-dashed border-borderColorPrimary/50 flex items-center justify-between">
+                    <span className="text-[8px] font-bold text-muted-foreground/30 uppercase">
+                        {card.prices?.length || 0} LVLS
+                    </span>
+                    <button
+                        className="text-[8px] font-black uppercase tracking-tighter text-blue-600 hover:underline"
+                        onClick={onEdit}
+                    >
+                        EDIT
+                    </button>
+                </div>
+            </div>
+        </Card>
+    );
+};
 
 export default function CardsManageMentPage() {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false)
@@ -274,7 +284,7 @@ export default function CardsManageMentPage() {
                 <div className="mt-6">
                     <ScrollArea className="h-[calc(100vh-320px)]">
                         {filteredCards.length > 0 ? (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-10">
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 pb-10">
                                 {filteredCards.map((card) => (
                                     <ViewCardItem
                                         key={card._id}

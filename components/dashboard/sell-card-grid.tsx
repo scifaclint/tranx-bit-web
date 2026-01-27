@@ -162,17 +162,16 @@ export function SellGiftCardGrid() {
                                         <Tooltip>
                                             <TooltipTrigger asChild>
                                                 <div className="w-full h-20 lg:h-28 bg-backgroundSecondary rounded-[1rem] lg:rounded-[1.5rem] flex items-center justify-center p-4 lg:p-6 relative overflow-hidden mb-3 transition-colors duration-300">
-                                                    <div
-                                                        className={`w-full h-full ${brandColor} transition-colors duration-300`}
-                                                        style={{
-                                                            maskImage: `url(${card.imageUrl})`,
-                                                            WebkitMaskImage: `url(${card.imageUrl})`,
-                                                            maskRepeat: 'no-repeat',
-                                                            maskPosition: 'center',
-                                                            maskSize: 'contain',
-                                                            backgroundColor: 'currentColor'
-                                                        }}
-                                                    />
+                                                    {card.imageUrl ? (
+                                                        <Image
+                                                            src={card.imageUrl}
+                                                            alt={card.brand}
+                                                            fill
+                                                            className="object-contain p-2"
+                                                        />
+                                                    ) : (
+                                                        <div className={`w-full h-full opacity-10 ${brandColor}`} />
+                                                    )}
                                                 </div>
                                             </TooltipTrigger>
                                             <TooltipContent side="top" className="bg-black dark:bg-white text-white dark:text-black font-bold text-xs rounded-lg px-3 py-1.5 border-none">
@@ -203,13 +202,13 @@ export function SellGiftCardGrid() {
 
                                             {/* Action Area: Clear Value + Reactive Button */}
                                             <div className="space-y-2 lg:space-y-3">
-                                                <div className="flex items-center justify-between px-1">
+                                                {/* <div className="flex items-center justify-between px-1">
                                                     <span className="text-[8px] lg:text-[9px] font-bold text-bodyColor/20 uppercase tracking-widest">You Get</span>
                                                     <div className="text-xs lg:text-sm font-black text-bodyColor flex items-center gap-0.5">
                                                         <span className="text-green-500 text-[10px] lg:text-xs">$</span>
                                                         <AnimatedNumber value={payout} />
                                                     </div>
-                                                </div>
+                                                </div> */}
 
                                                 <Button
                                                     onClick={() => router.push(`/sell-giftcards?brandName=${card.brand}&amount=${amount}`)}

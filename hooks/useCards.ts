@@ -6,6 +6,8 @@ export const useCards = (options = {}) => {
     return useQuery({
         queryKey: queryKeys.cards.all,
         queryFn: () => cardsApi.getAll(),
+        staleTime: 2 * 60 * 1000, // 2 minutes
+        refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes in background
         ...options,
     });
 };

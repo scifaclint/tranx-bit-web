@@ -19,11 +19,14 @@ import { useAuthStore } from "@/stores";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { authApi } from "@/lib/api/auth";
+import { useLogout } from "@/hooks/useLogout";
+import { Loader2 } from "lucide-react";
 const ProfileDropdown = () => {
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const router = useRouter(); // Uncommented for settings navigation
 
   const { user, clearAuth } = useAuthStore();
+  const { handleLogout, isLoggingOut } = useLogout();
 
   // Derived state from real user data
   const userName = user ? `${user.first_name || ""} ${user.last_name || ""}`.trim() : "User";
@@ -42,11 +45,7 @@ const ProfileDropdown = () => {
   };
 
   const handleLogoutConfirm = async () => {
-    // You might want to call api.logout() here too
-    await authApi.logout();
-    clearAuth();
-    setShowLogoutDialog(false);
-    router.replace("/auth");
+    await handleLogout();
   };
 
   return (
@@ -96,7 +95,7 @@ const ProfileDropdown = () => {
           <DialogFooter className="gap-4 sm:gap-0">
             <Button
               variant="outline"
-
+              disabled={isLoggingOut}
               onClick={() => setShowLogoutDialog(false)}
             >
               Cancel
@@ -104,10 +103,17 @@ const ProfileDropdown = () => {
             <Button
               variant="destructive"
               onClick={handleLogoutConfirm}
-              className="bg-red-600 ml-2 hover:bg-red-700"
+              disabled={isLoggingOut}
+              className="bg-red-600 ml-2 hover:bg-red-700 min-w-[100px]"
             >
-              <LogOut className="mr-2 h-4 w-4" />
-              Logout
+              {isLoggingOut ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Logout
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -78,6 +78,7 @@ interface PaymentMethodDetails {
   type: "mobile_money" | "btc";
   mobileNetwork?: string;
   accountName?: string;
+  mobileNumber?: string;
   btcNetwork?: string;
   btcAddress?: string;
 }
