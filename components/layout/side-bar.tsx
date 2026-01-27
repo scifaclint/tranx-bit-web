@@ -181,9 +181,13 @@ const Sidebar = ({ onCollapse, userType = "user" }: SidebarProps) => {
 
     // Wrap with Link only if not logout
     return isLogout ? (
-      <div>{content}</div>
+      <div onClick={() => setIsMobileOpen(false)}>{content}</div>
     ) : (
-      <Link href={item.href} className="block">
+      <Link
+        href={item.href}
+        className="block"
+        onClick={() => setIsMobileOpen(false)}
+      >
         {content}
       </Link>
     );

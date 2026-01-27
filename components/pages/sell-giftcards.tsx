@@ -36,6 +36,7 @@ import {
   Plus,
   Gift,
   Wallet,
+  ChevronUp,
 } from "lucide-react";
 import Image from "next/image";
 import { toast } from "sonner";
@@ -46,6 +47,7 @@ import { ordersApi } from "@/lib/api/orders";
 import { PAYMENT_LOGOS, NETWORK_LABELS } from "@/lib/payment-constants";
 import "flag-icons/css/flag-icons.min.css";
 import PaymentMethodModal from "@/components/modals/payment-method-modal";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const CURRENCIES = [
   { id: "usd", name: "US Dollar", flag: "us", symbol: "$" },
@@ -86,6 +88,8 @@ function SellGiftCardsContent() {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [cardCurrency, setCardCurrency] = useState("usd");
   const [currencyOpen, setCurrencyOpen] = useState(false);
+  const isMobile = useIsMobile();
+  const [isInstructionsOpen, setIsInstructionsOpen] = useState(false);
   const searchParams = useSearchParams();
 
   // Hooks
@@ -515,61 +519,89 @@ function SellGiftCardsContent() {
       <div className="flex flex-col lg:flex-row gap-12 items-start">
         {/* Left Side - Instructions */}
         <div className="w-full lg:flex-1 space-y-6">
-          <div className="bg-white dark:bg-background border border-zinc-200 dark:border-borderColorPrimary rounded-2xl p-8 shadow-sm">
-            <h2 className="text-2xl font-bold tracking-tight mb-6">Order Instructions</h2>
-            <div className="space-y-4 text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
-              <p>
-                <strong>Step 1: Verify Your Card Balance</strong>
-                <br />
-                Always check and confirm your gift card balance before submitting.
-                This ensures a smooth transaction and faster processing time.
-              </p>
-              <p>
-                <strong>Important Balance Verification Tips:</strong>
-              </p>
-              <ul className="list-disc list-inside space-y-2 ml-2">
-                <li>
-                  <strong>Amazon cards:</strong> Balance verification is typically
-                  not required before submission.
-                </li>
-                <li>
-                  <strong>Onevanilla cards:</strong> Do NOT check balance on
-                  VanillaGift.com as this can deactivate your card. Instead, call
-                  the Onevanilla customer service to confirm your card is active
-                  and has the correct balance.
-                </li>
-                <li>
-                  <strong>iTunes/Apple cards:</strong> Search &quot;check iTunes
-                  balance&quot; to find Apple&apos;s official balance checker on
-                  their website.
-                </li>
-                <li>
-                  <strong>Retail cards (Walmart, Best Buy, etc.):</strong> Visit
-                  the retailer&apos;s official website to verify your card
-                  balance.
-                </li>
-              </ul>
-              <p>
-                <strong>Step 2: Submit Your Card</strong>
-                <br />
-                Once you&apos;ve confirmed the balance is correct, complete the
-                form on the right with your card details.
-              </p>
-              <p>
-                <strong>Processing Time:</strong>
-                <br />
-                We typically process payments within 30-60 minutes after
-                validating your card. During peak times, processing may take
-                slightly longer due to high order volume.
-              </p>
-              <p>
-                <strong>What Happens Next:</strong>
-                <br />
-                After we verify and use your card successfully, payment will be
-                transferred to your TranxBit account automatically. The
-                transaction will then be marked as complete by our system.
-              </p>
-            </div>
+          <div className="bg-white dark:bg-background border border-zinc-200 dark:border-borderColorPrimary rounded-2xl overflow-hidden shadow-sm">
+            {/* Header / Toggle (Mobile Only) */}
+            <button
+              onClick={() => setIsInstructionsOpen(!isInstructionsOpen)}
+              className="w-full flex items-center justify-between p-6 lg:p-8 text-left focus:outline-none"
+              disabled={!isMobile}
+            >
+              <h2 className="text-xl sm:text-2xl font-bold tracking-tight">Order Instructions</h2>
+              {isMobile && (
+                <div className="p-1 bg-zinc-100 dark:bg-zinc-800 rounded-lg">
+                  {isInstructionsOpen ? (
+                    <ChevronUp className="h-5 w-5" />
+                  ) : (
+                    <ChevronDown className="h-5 w-5" />
+                  )}
+                </div>
+              )}
+            </button>
+
+            <AnimatePresence initial={false}>
+              {(!isMobile || isInstructionsOpen) && (
+                <motion.div
+                  initial={isMobile ? { height: 0, opacity: 0 } : false}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                >
+                  <div className="px-6 lg:px-8 pb-8 space-y-4 text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed border-t border-zinc-100 dark:border-zinc-800 lg:border-t-0 mt-[-1px]">
+                    <p>
+                      <strong>Step 1: Verify Your Card Balance</strong>
+                      <br />
+                      Always check and confirm your gift card balance before submitting.
+                      This ensures a smooth transaction and faster processing time.
+                    </p>
+                    <p>
+                      <strong>Important Balance Verification Tips:</strong>
+                    </p>
+                    <ul className="list-disc list-inside space-y-2 ml-2">
+                      <li>
+                        <strong>Amazon cards:</strong> Balance verification is typically
+                        not required before submission.
+                      </li>
+                      <li>
+                        <strong>Onevanilla cards:</strong> Do NOT check balance on
+                        VanillaGift.com as this can deactivate your card. Instead, call
+                        the Onevanilla customer service to confirm your card is active
+                        and has the correct balance.
+                      </li>
+                      <li>
+                        <strong>iTunes/Apple cards:</strong> Search &quot;check iTunes
+                        balance&quot; to find Apple&apos;s official balance checker on
+                        their website.
+                      </li>
+                      <li>
+                        <strong>Retail cards (Walmart, Best Buy, etc.):</strong> Visit
+                        the retailer&apos;s official website to verify your card
+                        balance.
+                      </li>
+                    </ul>
+                    <p>
+                      <strong>Step 2: Submit Your Card</strong>
+                      <br />
+                      Once you&apos;ve confirmed the balance is correct, complete the
+                      form on the right with your card details.
+                    </p>
+                    <p>
+                      <strong>Processing Time:</strong>
+                      <br />
+                      We typically process payments within 30-60 minutes after
+                      validating your card. During peak times, processing may take
+                      slightly longer due to high order volume.
+                    </p>
+                    <p>
+                      <strong>What Happens Next:</strong>
+                      <br />
+                      After we verify and use your card successfully, payment will be
+                      transferred to your TranxBit account automatically. The
+                      transaction will then be marked as complete by our system.
+                    </p>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
 

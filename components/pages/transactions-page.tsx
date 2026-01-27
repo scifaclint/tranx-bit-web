@@ -30,6 +30,7 @@ import {
 import Image from "next/image";
 import { useUserOrders } from "@/hooks/useOrders";
 import { motion } from "framer-motion";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 type FilterStatus =
   | "all"
@@ -57,6 +58,7 @@ export default function TransactionPage() {
   const [statusFilter, setStatusFilter] = useState<FilterStatus>("all");
   const [typeFilter, setTypeFilter] = useState<FilterType>("all");
   const [page, setPage] = useState(1);
+  const isMobile = useIsMobile();
 
   // API Call
   const { data: ordersData, isLoading, isFetching } = useUserOrders(page);
@@ -149,12 +151,12 @@ export default function TransactionPage() {
       {/* Header with Filter Dropdowns */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold">Transactions</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">Transactions</h1>
           {isFetching && <Loader className="h-4 w-4 text-muted-foreground animate-spin" />}
         </div>
 
         {/* Filter Controls */}
-        <div className="flex items-center gap-3">
+        <div className={`flex items-center gap-3 ${isMobile ? "w-full overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide" : ""}`}>
           {/* Status Filter */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -238,93 +240,135 @@ export default function TransactionPage() {
           </p>
         </motion.div>
       ) : (
-        <div className="border rounded-lg overflow-hidden dark:bg-background border-borderColorPrimary shadow-sm">
-          {/* Table Header */}
-          <div className="grid grid-cols-[2fr_1fr_1fr_1.2fr_1fr_auto] gap-4 px-6 py-4 bg-backgroundSecondary/50 border-b border-borderColorPrimary font-semibold text-sm">
-            <div>Product name</div>
-            <div>Type</div>
-            <div>Amount</div>
-            <div>Date</div>
-            <div>Status</div>
-            <div className="w-8"></div>
-          </div>
+        <div className="dark:bg-background border-borderColorPrimary shadow-sm rounded-lg overflow-hidden border">
+          {/* Table Header - Desktop Only */}
+          {!isMobile && (
+            <div className="grid grid-cols-[2fr_1fr_1fr_1.2fr_1fr_auto] gap-4 px-6 py-4 bg-backgroundSecondary/50 border-b border-borderColorPrimary font-semibold text-sm">
+              <div>Product name</div>
+              <div>Type</div>
+              <div>Amount</div>
+              <div>Date</div>
+              <div>Status</div>
+              <div className="w-8"></div>
+            </div>
+          )}
 
-          {/* Table Body with ScrollArea */}
-          <ScrollArea className="h-[calc(100vh-350px)] min-h-[400px]">
-            <div className="divide-y divide-border/50">
-              {filteredTransactions.map((transaction) => (
-                <div
-                  key={transaction.orderId}
-                  onClick={() => handleRowClick(transaction.orderId)}
-                  className="grid grid-cols-[2fr_1fr_1fr_1.2fr_1fr_auto] gap-4 px-6 py-4 hover:bg-backgroundSecondary transition-all duration-200 cursor-pointer items-center group"
-                >
-                  {/* Product name (Brand) */}
-                  <div className="flex items-center gap-3">
-                    <div className="relative w-10 h-10 flex-shrink-0 bg-muted/60 rounded-lg flex items-center justify-center ring-1 ring-border/50 group-hover:ring-border transition-all overflow-hidden p-1">
-                      <CreditCard className="w-6 h-6 text-muted-foreground" />
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="font-medium text-sm group-hover:text-foreground/80 transition-colors truncate max-w-[150px]">
-                        {transaction.productName || transaction.brand}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {transaction.orderId}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Type */}
-                  <div>
-                    <Badge
-                      variant="outline"
-                      className="text-xs font-medium w-fit"
+          {/* Table Body / Card List */}
+          <ScrollArea className={`${isMobile ? "h-[calc(100vh-300px)]" : "h-[calc(100vh-350px)]"} min-h-[400px]`}>
+            <div className={`divide-y divide-border/50 ${isMobile ? "p-4 space-y-4 divide-y-0" : ""}`}>
+              {filteredTransactions.map((transaction) => {
+                if (isMobile) {
+                  return (
+                    <div
+                      key={transaction.orderId}
+                      onClick={() => handleRowClick(transaction.orderId)}
+                      className="p-5 bg-backgroundSecondary/30 rounded-2xl border border-borderColorPrimary/50 active:scale-[0.98] transition-all space-y-4"
                     >
-                      {transaction.type.charAt(0).toUpperCase() +
-                        transaction.type.slice(1)}
-                    </Badge>
-                  </div>
+                      <div className="flex justify-between items-start">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-muted/40 rounded-xl flex items-center justify-center border border-borderColorPrimary/30">
+                            <CreditCard className="w-5 h-5 text-muted-foreground" />
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="font-bold text-sm">
+                              {transaction.productName || transaction.brand}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground font-mono">
+                              #{transaction.orderId.slice(-8).toUpperCase()}
+                            </span>
+                          </div>
+                        </div>
+                        <Badge
+                          variant="outline"
+                          className={`text-[10px] py-0 h-5 font-semibold ${transaction.status.toLowerCase().includes("completed")
+                            ? "bg-green-500/10 text-green-500 border-green-500/20"
+                            : transaction.status.toLowerCase().includes("pending")
+                              ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
+                              : "bg-red-500/10 text-red-500 border-red-500/20"
+                            }`}
+                        >
+                          {transaction.status.toLowerCase().includes("completed") ? "Completed" : transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1).toLowerCase()}
+                        </Badge>
+                      </div>
 
-                  {/* Amount */}
-                  <div className="font-semibold text-sm tabular-nums">
-                    ${transaction.amount.toFixed(2)}
-                  </div>
+                      <div className="flex justify-between items-end pt-2">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-[10px] px-1.5 h-4 bg-muted/20">
+                              {transaction.type.toUpperCase()}
+                            </Badge>
+                            <span className="text-[10px] text-muted-foreground">{transaction.date}</span>
+                          </div>
+                          <div className="text-lg font-bold tabular-nums">
+                            ${transaction.amount.toFixed(2)}
+                          </div>
+                        </div>
+                        <div className="p-2 bg-muted/20 rounded-full">
+                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
 
-                  {/* Date */}
-                  <div className="text-sm text-muted-foreground">
-                    {transaction.date}
-                  </div>
+                return (
+                  <div
+                    key={transaction.orderId}
+                    onClick={() => handleRowClick(transaction.orderId)}
+                    className="grid grid-cols-[2fr_1fr_1fr_1.2fr_1fr_auto] gap-4 px-6 py-4 hover:bg-backgroundSecondary transition-all duration-200 cursor-pointer items-center group"
+                  >
+                    {/* Desktop row content remains same */}
+                    <div className="flex items-center gap-3">
+                      <div className="relative w-10 h-10 flex-shrink-0 bg-muted/60 rounded-lg flex items-center justify-center ring-1 ring-border/50 group-hover:ring-border transition-all overflow-hidden p-1">
+                        <CreditCard className="w-6 h-6 text-muted-foreground" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="font-medium text-sm group-hover:text-foreground/80 transition-colors truncate max-w-[150px]">
+                          {transaction.productName || transaction.brand}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {transaction.orderId}
+                        </span>
+                      </div>
+                    </div>
 
-                  {/* Status */}
-                  <div>
-                    <Badge
-                      variant="outline"
-                      className={`w-fit text-xs font-medium flex items-center gap-1.5 ${transaction.status.toLowerCase().includes("completed")
-                        ? "border-green-300 bg-green-50 text-green-700 dark:border-green-700 dark:bg-green-950/30 dark:text-green-400"
-                        : transaction.status.toLowerCase().includes("pending")
-                          ? "border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-400"
-                          : "border-red-300 bg-red-50 text-red-700 dark:border-red-700 dark:bg-red-950/30 dark:text-red-400"
-                        }`}
-                    >
-                      {transaction.status.toLowerCase().includes("completed") && (
-                        <CheckCircle2 className="h-3 w-3" />
-                      )}
-                      {transaction.status.toLowerCase().includes("pending") && (
-                        <Clock className="h-3 w-3" />
-                      )}
-                      {!transaction.status.toLowerCase().includes("completed") && !transaction.status.toLowerCase().includes("pending") && (
-                        <XCircle className="h-3 w-3" />
-                      )}
-                      {transaction.status.charAt(0).toUpperCase() +
-                        transaction.status.slice(1).toLowerCase()}
-                    </Badge>
-                  </div>
+                    <div>
+                      <Badge variant="outline" className="text-xs font-medium w-fit">
+                        {transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1)}
+                      </Badge>
+                    </div>
 
-                  {/* Arrow Icon */}
-                  <div className="flex items-center justify-end">
-                    <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground group-hover:translate-x-1 transition-all" />
+                    <div className="font-semibold text-sm tabular-nums">
+                      ${transaction.amount.toFixed(2)}
+                    </div>
+
+                    <div className="text-sm text-muted-foreground">
+                      {transaction.date}
+                    </div>
+
+                    <div>
+                      <Badge
+                        variant="outline"
+                        className={`w-fit text-xs font-medium flex items-center gap-1.5 ${transaction.status.toLowerCase().includes("completed")
+                          ? "border-green-300 bg-green-50 text-green-700 dark:border-green-700 dark:bg-green-950/30 dark:text-green-400"
+                          : transaction.status.toLowerCase().includes("pending")
+                            ? "border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-400"
+                            : "border-red-300 bg-red-50 text-red-700 dark:border-red-700 dark:bg-red-950/30 dark:text-red-400"
+                          }`}
+                      >
+                        {transaction.status.toLowerCase().includes("completed") && <CheckCircle2 className="h-3 w-3" />}
+                        {transaction.status.toLowerCase().includes("pending") && <Clock className="h-3 w-3" />}
+                        {!transaction.status.toLowerCase().includes("completed") && !transaction.status.toLowerCase().includes("pending") && <XCircle className="h-3 w-3" />}
+                        {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1).toLowerCase()}
+                      </Badge>
+                    </div>
+
+                    <div className="flex items-center justify-end">
+                      <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground group-hover:translate-x-1 transition-all" />
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </ScrollArea>
 
