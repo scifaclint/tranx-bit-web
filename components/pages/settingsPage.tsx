@@ -64,6 +64,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { MoreVertical, Star, CheckCircle2 } from "lucide-react";
 import { PAYMENT_LOGOS, NETWORK_LABELS } from "@/lib/payment-constants";
 import { validateImageSizeAndType } from "@/lib/upload-utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 type TabType = "general" | "personal" | "kyc" | "payment" | "security";
 
@@ -77,6 +78,7 @@ type PaymentMethod = {
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<TabType>("general");
+  const isMobile = useIsMobile();
   const { theme = "system", setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(null);
@@ -321,11 +323,11 @@ export default function SettingsPage() {
       </div>
 
       {/* Main Layout */}
-      <div className="flex flex-col lg:flex-row gap-6">
-        {/* Left Navigation Menu */}
-        <div className="w-full lg:w-64 flex-shrink-0">
-          <Card className="p-2 dark:bg-background border-borderColorPrimary">
-            <nav className="space-y-1">
+      <div className={`flex ${isMobile ? "flex-col" : "flex-row"} gap-6`}>
+        {/* Navigation Menu */}
+        <div className={`w-full ${isMobile ? "" : "lg:w-64"} flex-shrink-0`}>
+          <div className={`${isMobile ? "overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide sticky top-0 bg-gray-50/80 dark:bg-background/80 backdrop-blur-md z-10" : ""}`}>
+            <div className={`${isMobile ? "flex items-center gap-2 min-w-max" : "flex flex-col gap-1 p-2 bg-white dark:bg-background border border-borderColorPrimary rounded-xl shadow-sm overflow-hidden"}`}>
               {menuItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = activeTab === item.id;
@@ -333,26 +335,36 @@ export default function SettingsPage() {
                   <button
                     key={item.id}
                     onClick={() => setActiveTab(item.id)}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all ${isActive
-                      ? "bg-primary/10 text-primary font-medium"
-                      : "hover:bg-muted"
-                      }`}
+                    className={`
+                      ${isMobile
+                        ? `px-4 py-2 rounded-full text-xs font-semibold border transition-all whitespace-nowrap
+                           ${isActive
+                          ? "bg-black text-white border-black dark:bg-white dark:text-black dark:border-white shadow-sm"
+                          : "bg-white text-gray-600 border-borderColorPrimary dark:bg-backgroundSecondary dark:text-gray-400"
+                        }`
+                        : `w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all
+                           ${isActive
+                          ? "bg-primary/10 text-primary font-medium"
+                          : "hover:bg-muted"
+                        }`
+                      }
+                    `}
                   >
                     <Icon
-                      className={`h-5 w-5 ${isActive ? "text-blue-700" : ""}`}
+                      className={`${isMobile ? "h-3.5 w-3.5 inline-block mr-1.5" : "h-5 w-5"} ${isActive ? (isMobile ? "" : "text-blue-700") : ""}`}
                       strokeWidth={isActive ? 2.5 : 1.5}
                     />
-                    <span className="text-sm">{item.label}</span>
+                    <span className={isMobile ? "" : "text-sm"}>{item.label}</span>
                   </button>
                 );
               })}
-            </nav>
-          </Card>
+            </div>
+          </div>
         </div>
 
         {/* Right Content Area */}
         <div className="flex-1">
-          <Card className="p-6 min-h-[500px] dark:bg-background border-borderColorPrimary">
+          <div className={`${isMobile ? "p-0" : "p-6 bg-white dark:bg-background border border-borderColorPrimary rounded-xl shadow-sm"} min-h-[500px]`}>
             {activeTab === "general" && (
               <div className="animate-in fade-in-0 slide-in-from-bottom-2 duration-300">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-6">
@@ -531,15 +543,15 @@ export default function SettingsPage() {
                 </h2>
 
                 {/* Profile Picture Section */}
-                <div className="flex items-center gap-6 mb-8">
+                <div className={`flex ${isMobile ? "flex-col text-center" : "items-center gap-6"} mb-8 items-center`}>
                   <div className="relative">
-                    <div className="w-24 h-24 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-3xl overflow-hidden">
+                    <div className={`${isMobile ? "w-28 h-28" : "w-24 h-24"} rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-3xl overflow-hidden shadow-lg border-2 border-white dark:border-borderColorPrimary`}>
                       {profileImage ? (
                         <Image
                           src={profileImage}
                           alt="Profile"
-                          width={96}
-                          height={96}
+                          width={isMobile ? 112 : 96}
+                          height={isMobile ? 112 : 96}
                           className="w-full h-full object-cover"
                         />
                       ) : (
@@ -551,7 +563,7 @@ export default function SettingsPage() {
                     </div>
                     <label
                       htmlFor="profile-upload"
-                      className="absolute bottom-0 right-0 bg-blue-600 hover:bg-blue-700 text-white rounded-full p-2 cursor-pointer shadow-lg transition-colors"
+                      className="absolute bottom-0 right-0 bg-blue-600 hover:bg-blue-700 text-white rounded-full p-2.5 cursor-pointer shadow-lg transition-all active:scale-90"
                     >
                       <Camera className="w-4 h-4" />
                       <input
@@ -563,8 +575,8 @@ export default function SettingsPage() {
                       />
                     </label>
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                  <div className={isMobile ? "mt-4" : ""}>
+                    <h3 className="font-bold text-lg text-gray-900 dark:text-gray-100">
                       {formData.firstName || user?.first_name || "User"}{" "}
                       {formData.lastName || user?.last_name || ""}
                     </h3>
@@ -933,7 +945,7 @@ export default function SettingsPage() {
                 </div>
               </div>
             )}
-          </Card>
+          </div>
         </div>
       </div>
 
