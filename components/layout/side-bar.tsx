@@ -19,7 +19,6 @@ import {
   BadgeDollarSign,
   Receipt,
   LogOut,
-  Menu,
   X,
   ChevronLeft,
   ChevronRight,
@@ -33,11 +32,17 @@ export const AdminBaseRoute = "/internal-portal-Trx13";
 interface SidebarProps {
   onCollapse?: (collapsed: boolean) => void;
   userType?: "user" | "admin";
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
-const Sidebar = ({ onCollapse, userType = "user" }: SidebarProps) => {
+const Sidebar = ({
+  onCollapse,
+  userType = "user",
+  isOpen = false,
+  onClose,
+}: SidebarProps) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -181,12 +186,12 @@ const Sidebar = ({ onCollapse, userType = "user" }: SidebarProps) => {
 
     // Wrap with Link only if not logout
     return isLogout ? (
-      <div onClick={() => setIsMobileOpen(false)}>{content}</div>
+      <div onClick={() => onClose?.()}>{content}</div>
     ) : (
       <Link
         href={item.href}
         className="block"
-        onClick={() => setIsMobileOpen(false)}
+        onClick={() => onClose?.()}
       >
         {content}
       </Link>
@@ -233,21 +238,11 @@ const Sidebar = ({ onCollapse, userType = "user" }: SidebarProps) => {
 
   return (
     <>
-      {/* Mobile Menu Button */}
-      <Button
-        variant="outline"
-        size="icon"
-        onClick={() => setIsMobileOpen(true)}
-        className="lg:hidden fixed top-4 left-4 z-40  shadow-lg"
-      >
-        <Menu className="w-6 h-6" />
-      </Button>
-
       {/* Mobile Overlay */}
-      {isMobileOpen && (
+      {isOpen && (
         <div
-          onClick={() => setIsMobileOpen(false)}
-          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
+          onClick={onClose}
+          className="lg:hidden fixed inset-0 bg-black/30 backdrop-blur-sm z-40 transition-all duration-300"
         />
       )}
 
@@ -256,13 +251,13 @@ const Sidebar = ({ onCollapse, userType = "user" }: SidebarProps) => {
         className={`
           lg:hidden fixed top-0 left-0 h-full w-72 bg-sideBarBackground border-r border-borderColorPrimary z-50 
           transform transition-transform duration-300 ease-in-out flex flex-col
-          ${isMobileOpen ? "translate-x-0" : "-translate-x-full"}
+          ${isOpen ? "translate-x-0" : "-translate-x-full"}
         `}
       >
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => setIsMobileOpen(false)}
+          onClick={onClose}
           className="absolute top-4 right-4"
         >
           <X className="w-5 h-5" />

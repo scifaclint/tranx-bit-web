@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { SellGiftCardGrid } from "@/components/dashboard/sell-card-grid";
+import DashboardWidgets from "@/components/dashboard/dashboard-widgets";
 
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState("sell");
@@ -40,6 +41,7 @@ export default function DashboardPage() {
 
   return (
     <div className="w-full max-w-6xl mx-auto">
+      <DashboardWidgets />
       {/* Action Cards Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
         <Card
