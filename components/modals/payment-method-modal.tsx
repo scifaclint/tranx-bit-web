@@ -86,10 +86,11 @@ export default function PaymentMethodModal({
         if (!name.trim()) return false;
 
         if (addMethodType === "mobile_money") {
+            const num = mobileNumber.replace(/\s/g, "");
             return (
                 mobileNetwork.trim() !== "" &&
                 accountName.trim() !== "" &&
-                mobileNumber.trim() !== ""
+                /^\d{10,15}$/.test(num)
             );
         } else {
             return (
@@ -257,6 +258,11 @@ export default function PaymentMethodModal({
                                             })
                                         }
                                     />
+                                    {paymentForm.mobileNumber.length > 0 && !/^\d{10,15}$/.test(paymentForm.mobileNumber.replace(/\s/g, "")) && (
+                                        <p className="text-[10px] text-red-500 ml-1">
+                                            Mobile number must be between 10 and 15 digits
+                                        </p>
+                                    )}
                                     {supportedData?.data.supportedMethods.mobile_money.fields
                                         .validation.mobileNumber && (
                                             <p className="text-[10px] text-muted-foreground ml-1">
@@ -332,10 +338,10 @@ export default function PaymentMethodModal({
                         onClick={handleSubmit}
                         disabled={addPaymentMutation.isPending || updatePaymentMutation.isPending || !isFormValid}
                         className={`w-full sm:w-auto order-1 sm:order-2 rounded-xl transition-all duration-200 ${!isFormValid
-                                ? "bg-gray-200 dark:bg-gray-800 text-gray-400 cursor-not-allowed opacity-50"
-                                : addMethodType === "btc"
-                                    ? "bg-orange-500 hover:bg-orange-600 text-white shadow-orange-500/20 shadow-lg"
-                                    : "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-600/20 shadow-lg"
+                            ? "bg-gray-200 dark:bg-gray-800 text-gray-400 cursor-not-allowed opacity-50"
+                            : addMethodType === "btc"
+                                ? "bg-orange-500 hover:bg-orange-600 text-white shadow-orange-500/20 shadow-lg"
+                                : "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-600/20 shadow-lg"
                             }`}
                     >
                         {addPaymentMutation.isPending || updatePaymentMutation.isPending ? (

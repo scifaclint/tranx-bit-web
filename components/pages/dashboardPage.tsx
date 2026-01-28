@@ -119,7 +119,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Tabs and Search Section */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+      {/* <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full sm:w-auto">
           <TabsList className="bg-backgroundSecondary dark:bg-backgroundSecondary border border-borderColorPrimary p-1 rounded-xl h-auto">
             <TabsTrigger
@@ -162,9 +162,9 @@ export default function DashboardPage() {
             </SelectContent>
           </Select>
         </div>
-      </div>
+      </div> */}
 
-      <AnimatePresence mode="wait">
+      {/* <AnimatePresence mode="wait">
         {activeTab === "sell" && (
           <motion.div
             key="sell-grid"
@@ -176,7 +176,7 @@ export default function DashboardPage() {
             <SellGiftCardGrid />
           </motion.div>
         )}
-      </AnimatePresence>
+      </AnimatePresence> */}
     </div>
   );
 }

@@ -13,27 +13,23 @@ export interface RejectOrderPayload {
   rejectionReason: string;
 }
 
-export interface CardPrice {
-  denomination: number;
-  price: number;
-}
-
 export interface AddCardPayload {
   name: string;
   brand: string;
-  type: "buy" | "sell";
-  category: string;
-  description: string;
-  imageUrl: string;
-  currency: string;
-  sellRate: number;
-  stockQuantity: number;
-  minQuantity: number;
-  maxQuantity: number;
-  discount: number;
-  status: "active" | "inactive";
-  instructions: string;
-  prices: CardPrice[];
+  type: "buy" | "sell" | "both";
+  fixedCurrency?: string;
+  sellRate?: number;
+  buyRate?: number;
+  denominations: string; // JSON array string
+  image?: File;
+  description?: string;
+  instructions?: string;
+  minQuantity?: number;
+  maxQuantity?: number;
+}
+
+export interface UpdateCardPayload extends Partial<AddCardPayload> {
+  status?: "active" | "inactive";
 }
 
 // ============= RESPONSE TYPES =============
@@ -68,18 +64,13 @@ export interface AdminUser {
   lastName: string;
   phone: string;
   status: string;
-  emailVerified: boolean;
 }
 
 export interface AdminOrderItem {
-  giftCardId: string;
   cardName: string;
   cardBrand: string;
   cardDenomination: number;
   quantity: number;
-  unitPrice: number;
-  totalPrice: number;
-  giftCardCodes?: string[];
 }
 
 export interface AdminPagination {
@@ -107,19 +98,15 @@ export interface AdminOrder {
   userId: AdminUser;
   orderType: "buy" | "sell";
   status: string;
-  items: AdminOrderItem[];
   totalAmount: number;
-  totalItems: number;
-  cardCurrency?: string;
-  cardValue?: number;
-  amountToReceive?: number;
+  payoutCurrency: string;
   paymentMethodId: AdminPaymentMethod;
-  cardImages?: string[];
-  additionalComments?: string;
-  notes?: string;
+  cardValue: number;
+  cardCurrency: string;
+  items: AdminOrderItem[];
+  cardImages: string[];
   createdAt: string;
-  updatedAt: string;
-  __v?: number;
+  additionalComments?: string;
 }
 
 export type AdminOrderStatus =

@@ -13,9 +13,20 @@ export interface SellOrderPayload {
   cardId: string;
   cardValue: number;
   paymentMethodId: string;
+  card_currency: string;
+  payoutCurrency?: string;
+  expectedPayout?: number;
+  calculatedAt?: string;
   additionalComments?: string;
+  giftCardCodes?: string;
   cardImages?: File[]; // For FormData submission
-  card_currency?: string;
+}
+
+export interface CalculateOrderPayload {
+  cardId: string;
+  amount: number;
+  currency: string;
+  payoutCurrency: string;
 }
 
 // ============= RESPONSE TYPES =============
@@ -49,13 +60,28 @@ export interface SellOrderResponse {
     orderId: string;
     orderNumber: string;
     cardDetails: CardDetails;
-    cardValue: string;
-    amountToReceive: number;
-    sellRate: number;
+    cardValue: number;
+    cardCurrency: string;
+    payoutCurrency: string;
+    totalAmount: number;
     status: string;
     orderType: "sell";
     uploadedImages: number;
     createdAt: string;
+    cardImages: string[];
+  };
+}
+
+export interface CalculateOrderResponse {
+  status: boolean;
+  data: {
+    cardValue: number;
+    cardRate: number;
+    exchangeRate: number;
+    payoutAmount: number;
+    payoutCurrency: string;
+    calculatedAt: string;
+    expiresAt: string;
   };
 }
 
@@ -63,24 +89,25 @@ export interface SellOrderResponse {
 
 interface OrderItem {
   giftCardId: string;
-  quantity: number;
-  unitPrice: number;
-  totalPrice: number;
   cardName: string;
   cardBrand: string;
   cardDenomination: number;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
   giftCardCodes: string[];
   _id: string;
 }
 
 interface PaymentMethodDetails {
   _id: string;
-  type: "mobile_money" | "btc";
-  mobileNetwork?: string;
-  accountName?: string;
-  mobileNumber?: string;
-  btcNetwork?: string;
-  btcAddress?: string;
+  type: "mobile_money" | "btc" | string;
+  accountName?: string | null;
+  mobileNumber?: string | null;
+  mobileNetwork?: string | null;
+  accountNumber?: string | null;
+  btcAddress?: string | null;
+  btcNetwork?: string | null;
 }
 
 export interface OrderDetailsResponse {
@@ -88,20 +115,26 @@ export interface OrderDetailsResponse {
   message: string;
   data: {
     _id: string;
-    userId: string;
-    items: OrderItem[];
+    orderNumber: string;
+    orderType: "buy" | "sell";
+    status: string;
     totalAmount: number;
     totalItems: number;
-    status: string;
+    userId: string;
     paymentMethodId: PaymentMethodDetails;
-    cardValue?: number; // For sell orders
-    amountToReceive?: number; // For sell orders
-    cardImages?: string[]; // For sell orders
-    orderType: "buy" | "sell";
+    items: OrderItem[];
+    cardCurrency: string;
+    cardValue: number;
+    amountToReceive: number;
+    payoutCurrency: string;
+    cardImages: string[];
+    additionalComments?: string;
+    sellRate: number;
+    buyRate: number | null;
+    exchangeRate: number;
+    calculatedAt: string;
     createdAt: string;
     updatedAt: string;
-    orderNumber: string;
-    __v: number;
   };
 }
 
@@ -167,11 +200,22 @@ export const ordersApi = {
       formData.append("cardId", payload.cardId);
       formData.append("cardValue", payload.cardValue.toString());
       formData.append("paymentMethodId", payload.paymentMethodId);
+      formData.append("card_currency", payload.card_currency);
+      if (payload.payoutCurrency) {
+        formData.append("payoutCurrency", payload.payoutCurrency);
+      }
+      if (payload.expectedPayout) {
+        formData.append("expectedPayout", payload.expectedPayout.toString());
+      }
+      if (payload.calculatedAt) {
+        formData.append("calculatedAt", payload.calculatedAt);
+      }
+
       if (payload.additionalComments) {
         formData.append("additionalComments", payload.additionalComments);
       }
-      if (payload.card_currency) {
-        formData.append("card_currency", payload.card_currency);
+      if (payload.giftCardCodes) {
+        formData.append("giftCardCodes", payload.giftCardCodes);
       }
 
       // Append all images
@@ -205,6 +249,13 @@ export const ordersApi = {
 
   claimPayment: async (orderId: string): Promise<ClaimPaymentResponse> => {
     const response = await api.put(`/orders/${orderId}/claim-payment`);
+    return response.data;
+  },
+
+  calculateOrder: async (
+    payload: CalculateOrderPayload
+  ): Promise<CalculateOrderResponse> => {
+    const response = await api.post("/orders/calculate", payload);
     return response.data;
   },
 };

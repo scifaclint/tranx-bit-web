@@ -13,9 +13,12 @@ import {
   Copy,
   Check,
   Loader,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { toast } from "sonner";
 import { ordersApi, OrderDetailsResponse } from "@/lib/api/orders";
+import { useCurrencies } from "@/hooks/useCards";
 
 export default function SellGiftcardOrderPage() {
   const params = useParams();
@@ -26,6 +29,9 @@ export default function SellGiftcardOrderPage() {
   const [copiedOrderId, setCopiedOrderId] = useState(false);
   const [orderData, setOrderData] = useState<OrderDetailsResponse["data"] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showCodes, setShowCodes] = useState(false);
+  const { data: currenciesData } = useCurrencies();
+  const currencies = currenciesData?.data || [];
 
   useEffect(() => {
     const fetchOrder = async () => {
@@ -90,163 +96,208 @@ export default function SellGiftcardOrderPage() {
   }
 
   const firstItem = orderData.items?.[0];
-  const cardBrand = firstItem?.cardBrand || "Gift Card";
+  const cardName = firstItem?.cardName || firstItem?.cardBrand || "Gift Card";
   const cardValue = orderData.cardValue || 0;
   const amountToReceive = orderData.amountToReceive || 0;
   const paymentMethod = orderData.paymentMethodId;
   const paymentMethodDisplay = paymentMethod?.type === "mobile_money"
-    ? `${paymentMethod.mobileNetwork} - ${paymentMethod.accountName} (${paymentMethod.mobileNumber})`
+    ? `${paymentMethod.mobileNetwork?.toUpperCase()} - ${paymentMethod.accountName} (${paymentMethod.mobileNumber})`
     : `BTC - ${paymentMethod?.btcAddress}`;
 
+  const getSymbol = (currencyId?: string) => {
+    if (!currencyId) return "$";
+    const currency = currencies.find(c => c.id.toUpperCase() === currencyId.toUpperCase());
+    return currency?.symbol || currencyId.toUpperCase();
+  };
+
   return (
-    <div className=" max-w-3xl  space-y-3">
+    <div className="max-w-3xl space-y-4">
       {/* Back Button */}
       <Button
         variant="ghost"
         onClick={() => router.push("/sell-giftcards")}
-        className="flex items-center gap-2 bg-backgroundSecondary border border-borderColorPrimary dark:border-white/10"
+        className="flex items-center gap-2 bg-backgroundSecondary border border-borderColorPrimary dark:border-white/10 rounded-xl"
       >
         <ArrowLeft className="w-4 h-4" />
         Back to Sell Gift Cards
       </Button>
 
       {/* Page Title */}
-      <div>
-        <h1 className="text-2xl font-bold">Sell Order Confirmation</h1>
+      <div className="space-y-1">
+        <h1 className="text-2xl font-bold">Order Submitted</h1>
         <div className="flex items-center gap-2">
-          <p className="text-sm text-muted-foreground">Order #{orderData.orderNumber}</p>
+          <p className="text-sm text-zinc-500">Order ID: <span className="font-mono text-zinc-900 dark:text-zinc-100">{orderData.orderNumber}</span></p>
           <Button
             variant="ghost"
             size="icon"
             onClick={handleCopyOrderId}
-            className="h-6 w-6"
+            className="h-6 w-6 hover:bg-zinc-100 dark:hover:bg-zinc-800"
           >
             {copiedOrderId ? (
-              <Check className="h-3 w-3 text-green-600" />
+              <Check className="h-4 w-4 text-green-600" />
             ) : (
-              <Copy className="h-3 w-3" />
+              <Copy className="h-4 w-4" />
             )}
           </Button>
         </div>
       </div>
 
-      {/* Important Alert */}
-      <Card className="bg-amber-500/5 border-amber-500/20 dark:bg-amber-500/10 shadow-none">
+      {/* Status Alert */}
+      <Card className="bg-emerald-500/5 border-emerald-500/10 dark:bg-emerald-500/10 shadow-none rounded-2xl overflow-hidden">
         <div className="p-4 flex gap-3">
-          <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+          <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
           <div>
-            <h3 className="font-semibold text-amber-900 dark:text-amber-100 mb-1">
-              Please Review Your Order
+            <h3 className="font-semibold text-emerald-900 dark:text-emerald-100">
+              Order Under Review
             </h3>
-            <p className="text-sm text-amber-800 dark:text-amber-200">
-              Once you click &quot;Start Trade&quot;, your gift card information
-              will be submitted for verification and you&apos;ll receive your
-              payout upon approval.
+            <p className="text-sm text-emerald-800/80 dark:text-emerald-200/80 mt-1">
+              Your gift card details have been submitted. Our team is currently verifying the card.
+              You will be notified once the review is complete and your payout is processed.
             </p>
           </div>
         </div>
       </Card>
 
-      {/* Order Details */}
-      <Card className="dark:bg-background border-borderColorPrimary">
-        <div className="p-6 space-y-4">
-          {/* Brand and Type */}
+      {/* Order Summary */}
+      <Card className="dark:bg-zinc-900/50 border-borderColorPrimary rounded-2xl overflow-hidden">
+        <div className="p-6 space-y-6">
           <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-bold">{cardBrand}</h2>
-              <Badge variant="secondary" className="mt-1">
-                {orderData.orderType === "sell" ? "Sell Order" : "Buy Order"}
-              </Badge>
+            <h2 className="text-xl font-bold">{cardName}</h2>
+            <Badge variant="outline" className="bg-zinc-100 dark:bg-zinc-800 border-none px-3 py-1 font-semibold uppercase tracking-wider text-[10px]">
+              {orderData.status}
+            </Badge>
+          </div>
+
+          <Separator className="bg-borderColorPrimary/50" />
+
+          {/* Details Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div className="space-y-1">
+              <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Amount</p>
+              <p className="text-lg font-bold">{getSymbol(orderData.cardCurrency)}{cardValue.toLocaleString()}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Rate</p>
+              <p className="text-lg font-bold">{orderData.sellRate || 0}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Exchange</p>
+              <p className="text-lg font-bold">{orderData.exchangeRate || 0}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Date</p>
+              <p className="text-lg font-bold">{new Date(orderData.createdAt).toLocaleDateString()}</p>
             </div>
           </div>
 
-          <Separator />
+          <Separator className="bg-borderColorPrimary/50" />
 
-          {/* Order Info Grid */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm text-muted-foreground">Card Value</p>
-              <p className="font-semibold">
-                ${cardValue.toFixed(2)}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Status</p>
-              <p className="font-semibold capitalize">{orderData.status}</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Order Date</p>
-              <p className="font-semibold">
-                {new Date(orderData.createdAt).toLocaleDateString()}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Order Number</p>
-              <p className="font-semibold">{orderData.orderNumber}</p>
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Payout */}
-          <div className="bg-green-500/5 border border-green-500/20 rounded-lg p-4">
+          {/* Proof of Submission */}
+          <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">
-                  You will receive
-                </p>
-                <p className="text-2xl font-bold text-green-700 dark:text-green-400">
-                  ${amountToReceive.toFixed(2)}
-                </p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  via {paymentMethodDisplay}
-                </p>
+              <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
+                {orderData.cardImages && orderData.cardImages.length > 0 ? "Attached Cards" : "Giftcard Codes"}
+              </p>
+              {orderData.items[0]?.giftCardCodes && orderData.items[0].giftCardCodes.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowCodes(!showCodes)}
+                  className="h-7 px-2 text-[10px] font-bold uppercase tracking-wider text-zinc-500 hover:text-black dark:hover:text-white"
+                >
+                  {showCodes ? (
+                    <><EyeOff className="w-3.5 h-3.5 mr-1.5" /> Hide Codes</>
+                  ) : (
+                    <><Eye className="w-3.5 h-3.5 mr-1.5" /> View Codes</>
+                  )}
+                </Button>
+              )}
+            </div>
+
+            {orderData.items[0]?.giftCardCodes && orderData.items[0].giftCardCodes.length > 0 ? (
+              <div className="space-y-2">
+                {orderData.items[0].giftCardCodes.map((code, i) => (
+                  <div key={i} className="bg-zinc-50 dark:bg-zinc-800/50 p-4 rounded-2xl border border-borderColorPrimary flex items-center justify-between group">
+                    <code className="text-sm font-mono font-black text-zinc-800 dark:text-zinc-200">
+                      {showCodes ? code : "•".repeat(Math.min(code.length, 12))}
+                    </code>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+                      onClick={() => {
+                        navigator.clipboard.writeText(code);
+                        toast.success("Code copied to clipboard!");
+                      }}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
               </div>
-              <CheckCircle2 className="h-8 w-8 text-green-600 dark:text-green-400" />
+            ) : orderData.cardImages && orderData.cardImages.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {orderData.cardImages.map((img, i) => (
+                  <div key={i} className="relative group rounded-2xl overflow-hidden border border-borderColorPrimary bg-zinc-100 dark:bg-zinc-800">
+                    <img
+                      src={img}
+                      alt={`Card ${i + 1}`}
+                      className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-110"
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="rounded-full font-bold text-xs"
+                        onClick={() => window.open(img, '_blank')}
+                      >
+                        View Full Image
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-zinc-500 font-medium">Card details submitted securely.</p>
+            )}
+          </div>
+
+          <Separator className="bg-borderColorPrimary/50" />
+
+          {/* Final Payout */}
+          <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl p-6 border border-borderColorPrimary">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">You Will Get</p>
+                <p className="text-3xl font-black text-blue-600 dark:text-blue-400">
+                  {getSymbol(orderData.payoutCurrency)}{amountToReceive.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+                <div className="flex items-center gap-1.5 mt-2">
+                  <div className="w-3 h-3 rounded-full bg-blue-500 animate-pulse" />
+                  <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
+                    Sending to: {paymentMethodDisplay}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </Card>
 
-      {/* Trade Status or Action Buttons */}
-      {tradeStarted ? (
-        <Card className="bg-orange-500/5 border-orange-500/20 dark:bg-orange-500/10 shadow-none">
-          <div className="p-6 text-center space-y-2">
-            <div className="flex items-center justify-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-orange-500 animate-pulse" />
-              <h3 className="text-lg font-semibold text-orange-900 dark:text-orange-100">
-                Trade Under Review
-              </h3>
-            </div>
-            <p className="text-sm text-orange-800 dark:text-orange-200">
-              Your trade has been submitted and is currently being reviewed by
-              our team. You will be notified once the verification is complete.
-            </p>
-          </div>
-        </Card>
-      ) : (
-        <div className="flex gap-4">
-          <Button
-            onClick={handleStartTrade}
-            variant={"default"}
-            className="flex-1 h-12  "
-          >
-            Start Trade
-          </Button>
-          <Button
-            onClick={handleCancel}
-            variant="outline"
-            className="flex-1 h-12 bg-backgroundSecondary border-borderColorPrimary dark:border-white/10"
-          >
-            Cancel
-          </Button>
-        </div>
-      )}
+      {/* Actions */}
+      <div className="grid grid-cols-1 gap-3 pt-2">
+        <Button
+          onClick={() => router.push("/transactions")}
+          className="w-full h-14 bg-black dark:bg-white text-white dark:text-black font-bold rounded-2xl hover:opacity-90 active:scale-[0.98] transition-all text-base shadow-xl dark:shadow-white/5"
+        >
+          View Transaction History
+        </Button>
+      </div>
 
       {/* Customer Service */}
-      <div className="text-center text-sm text-muted-foreground">
-        <p>
-          Have questions? Contact customer service using the chat widget below
+      <div className="py-4 text-center">
+        <p className="text-sm text-zinc-500 font-medium">
+          Have questions? Chat with our support team using the widget below.
         </p>
       </div>
     </div>

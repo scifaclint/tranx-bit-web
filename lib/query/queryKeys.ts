@@ -7,6 +7,7 @@ export const queryKeys = {
   cards: {
     all: ["cards", "all"] as const,
     detail: (cardId: string) => ["cards", "detail", cardId] as const,
+    currencies: ["cards", "currencies"] as const,
   },
   admin: {
     orders: {

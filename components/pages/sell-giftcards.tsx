@@ -27,6 +27,13 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
+import {
   Check,
   ChevronDown,
   Loader,
@@ -40,7 +47,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { toast } from "sonner";
-import { useCards } from "@/hooks/useCards";
+import { useCards, useCurrencies } from "@/hooks/useCards";
 import { usePaymentMethods } from "@/hooks/usePayments";
 import { motion, AnimatePresence } from "framer-motion";
 import { ordersApi } from "@/lib/api/orders";
@@ -48,15 +55,9 @@ import { PAYMENT_LOGOS, NETWORK_LABELS } from "@/lib/payment-constants";
 import "flag-icons/css/flag-icons.min.css";
 import PaymentMethodModal from "@/components/modals/payment-method-modal";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAuthStore } from "@/stores";
 
-const CURRENCIES = [
-  { id: "usd", name: "US Dollar", flag: "us", symbol: "$" },
-  { id: "gbp", name: "UK Pounds", flag: "gb", symbol: "£" },
-  { id: "eur", name: "Euro", flag: "eu", symbol: "€" },
-  { id: "aud", name: "Australia Dollar", flag: "au", symbol: "A$" },
-  { id: "cad", name: "Canadian Dollar", flag: "ca", symbol: "C$" },
-  { id: "nzd", name: "New Zealand Dollar", flag: "nz", symbol: "NZ$" },
-];
+// CURRENCIES array removed - now using useCurrencies() hook
 
 export default function SellGiftCards() {
   return (
@@ -72,9 +73,17 @@ export default function SellGiftCards() {
 
 function SellGiftCardsContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isMobile = useIsMobile();
+  const { user } = useAuthStore();
+
   const [cardType, setCardType] = useState("ecodes");
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isInstructionsOpen, setIsInstructionsOpen] = useState(false);
+  const [currencyOpen, setCurrencyOpen] = useState(false);
+  const [paymentMethodOpen, setPaymentMethodOpen] = useState(false);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
   // Form State
   const [selectedBrand, setSelectedBrand] = useState("");
@@ -84,36 +93,57 @@ function SellGiftCardsContent() {
   const [frontImage, setFrontImage] = useState<File | null>(null);
   const [backImage, setBackImage] = useState<File | null>(null);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("");
-  const [paymentMethodOpen, setPaymentMethodOpen] = useState(false);
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [cardCurrency, setCardCurrency] = useState("usd");
-  const [currencyOpen, setCurrencyOpen] = useState(false);
-  const isMobile = useIsMobile();
-  const [isInstructionsOpen, setIsInstructionsOpen] = useState(false);
-  const searchParams = useSearchParams();
+
+  // Calculation State
+  const [calculationData, setCalculationData] = useState<{
+    payoutAmount: number;
+    payoutCurrency: string;
+    cardRate: number;
+    exchangeRate: number;
+    calculatedAt: string;
+  } | null>(null);
+  const [isCalculating, setIsCalculating] = useState(false);
 
   // Hooks
-  const { data: cardsData, isLoading: isLoadingCards } = useCards();
+  const { data: cardsData, isLoading: isLoadingCards } = useCards({ limit: 1000 });
   const { data: paymentsData, isLoading: isLoadingPayments } = usePaymentMethods();
+  const { data: currenciesData, isLoading: isLoadingCurrencies } = useCurrencies();
 
   // Derived Data
-  const brands = cardsData?.data?.cards?.filter(c => c.type === "sell" && c.status === "active") || [];
+  const brands = React.useMemo(() => {
+    const rawBrands = cardsData?.data?.cards?.filter(c => (c.type === "sell" || c.type === "both") && c.status === "active") || [];
+    return [...rawBrands].sort((a, b) => a.name.localeCompare(b.name));
+  }, [cardsData]);
+
+  const currencies = currenciesData?.data || [];
   const paymentMethods = paymentsData?.data || [];
 
+  const selectedBrandData = brands.find(
+    (brand) => brand._id === selectedBrand
+  );
+
+  // Determine Payout Currency
+  const payoutCurrency = React.useMemo(() => {
+    if (!user?.country) return "GHS";
+    const country = user.country.toLowerCase();
+    if (country === "nigeria" || country === "ng") return "NGN";
+    return "GHS";
+  }, [user]);
+
+  // Effects
   // Handle pre-population from dashboard
   useEffect(() => {
     const brandParam = searchParams.get("brandName");
     const amountParam = searchParams.get("amount");
 
     if (brandParam && brands.length > 0) {
-      // Find the real DB brand that matches the name passed from dashboard
       const matchedBrand = brands.find(b =>
         b.name.toLowerCase().includes(brandParam.toLowerCase())
       );
 
       if (matchedBrand) {
         setSelectedBrand(matchedBrand._id);
-        // If the brand has a default type (most are ecodes), we select it
         if (matchedBrand.category?.toLowerCase() === "physical") {
           setCardType("physical");
         } else {
@@ -127,18 +157,47 @@ function SellGiftCardsContent() {
     }
   }, [brands, searchParams]);
 
-  const selectedBrandData = brands.find(
-    (brand) => brand._id === selectedBrand
-  );
+  // Handle Fixed Currency Locking
+  useEffect(() => {
+    if (selectedBrandData?.fixedCurrency) {
+      setCardCurrency(selectedBrandData.fixedCurrency.toLowerCase());
+    }
+  }, [selectedBrand, selectedBrandData]);
 
-  const sellRate = selectedBrandData?.sellRate || 0;
+  // Dynamic Payout Calculation
+  useEffect(() => {
+    const fetchCalculation = async () => {
+      const cardAmount = parseFloat(amount);
+      // Valid amount check (must be greater than 0)
+      if (!selectedBrand || isNaN(cardAmount) || cardAmount <= 0) {
+        setCalculationData(null);
+        return;
+      }
 
-  const calculatePayout = () => {
-    const cardAmount = parseFloat(amount);
-    if (isNaN(cardAmount) || cardAmount <= 0) return 0;
-    return cardAmount * sellRate;
-  };
+      setIsCalculating(true);
+      try {
+        const response = await ordersApi.calculateOrder({
+          cardId: selectedBrand,
+          amount: cardAmount,
+          currency: cardCurrency.toUpperCase(),
+          payoutCurrency,
+        });
 
+        if (response.status) {
+          setCalculationData(response.data);
+        }
+      } catch (error) {
+        console.error("Calculation failed:", error);
+      } finally {
+        setIsCalculating(false);
+      }
+    };
+
+    const debounceTimer = setTimeout(fetchCalculation, 500);
+    return () => clearTimeout(debounceTimer);
+  }, [selectedBrand, amount, cardCurrency, payoutCurrency]);
+
+  // Handlers
   const handleImageUpload = (
     e: React.ChangeEvent<HTMLInputElement>,
     side: "front" | "back"
@@ -197,12 +256,18 @@ function SellGiftCardsContent() {
         cardId: selectedBrand,
         cardValue: parseFloat(amount),
         paymentMethodId: selectedPaymentMethod,
-        card_currency: cardCurrency,
+        card_currency: cardCurrency.toUpperCase(),
+        giftCardCodes: cardType === "ecodes" ? giftCardCode : undefined,
+        payoutCurrency,
+        expectedPayout: calculationData?.payoutAmount,
+        calculatedAt: calculationData?.calculatedAt,
         additionalComments: comment || undefined,
         cardImages: cardType === "physical" && frontImage && backImage
           ? [frontImage, backImage]
           : undefined,
       };
+
+      console.log("Submitting Sell Order Payload:", payload);
 
       const response = await ordersApi.createSellOrder(payload);
 
@@ -220,113 +285,140 @@ function SellGiftCardsContent() {
     }
   };
 
+
+  const BrandList = ({ onSelect }: { onSelect: (brandId: string) => void }) => (
+    <Command className="dark:bg-backgroundSecondary">
+      <CommandInput placeholder="Search brands..." className="h-10" />
+      <CommandList>
+        <CommandEmpty>No brand found.</CommandEmpty>
+        <CommandGroup>
+          <div className="flex flex-col gap-1 p-2">
+            {brands.map((brand) => (
+              <CommandItem
+                key={brand._id}
+                value={brand.name}
+                onSelect={() => onSelect(brand._id)}
+                className="flex items-center justify-between p-3 cursor-pointer hover:bg-zinc-50 dark:hover:bg-hoverColorPrimary rounded-lg border-2 border-transparent data-[selected=true]:border-black dark:data-[selected=true]:border-borderColorPrimary data-[selected=true]:bg-zinc-50 dark:data-[selected=true]:bg-backgroundSecondary transition-all"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-zinc-100 dark:bg-zinc-900 rounded-lg flex items-center justify-center">
+                    <Gift className="w-5 h-5 text-zinc-500" />
+                  </div>
+                  <span className="font-medium text-sm">
+                    {brand.name}
+                  </span>
+                </div>
+                {selectedBrand === brand._id && (
+                  <Check className="h-4 w-4 text-black dark:text-zinc-200" />
+                )}
+              </CommandItem>
+            ))}
+          </div>
+        </CommandGroup>
+      </CommandList>
+    </Command>
+  );
+
   const renderBrandPicker = () => (
     <div className="space-y-2">
       <Label>Select Card Brand</Label>
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild disabled={isLoadingCards}>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            className="w-full justify-between h-12 focus:ring-2 focus:ring-black/5 transition-all font-normal bg-white dark:bg-background border-zinc-200 dark:border-borderColorPrimary"
-          >
-            {isLoadingCards ? (
-              <div className="flex items-center gap-2">
-                <Loader className="h-4 w-4 animate-spin text-muted-foreground" />
-                <span>Loading brands...</span>
-              </div>
-            ) : selectedBrandData ? (
-              <div className="flex items-center gap-2">
-                <div className="relative w-6 h-6 flex-shrink-0">
-                  {selectedBrandData.imageUrl && !selectedBrandData.imageUrl.includes("example.com") ? (
-                    <Image
-                      src={selectedBrandData.imageUrl}
-                      alt={selectedBrandData.name}
-                      fill
-                      className="object-contain"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-zinc-100 dark:bg-zinc-900 rounded-sm flex items-center justify-center">
-                      <Gift className="w-3.5 h-3.5 text-zinc-400" />
-                    </div>
-                  )}
+      {isMobile ? (
+        <Drawer open={open} onOpenChange={setOpen}>
+          <DrawerTrigger asChild disabled={isLoadingCards}>
+            <Button
+              variant="outline"
+              className="w-full justify-between h-12 focus:ring-2 focus:ring-black/5 transition-all font-normal bg-white dark:bg-background border-zinc-200 dark:border-borderColorPrimary"
+            >
+              {isLoadingCards ? (
+                <div className="flex items-center gap-2">
+                  <Loader className="h-4 w-4 animate-spin text-muted-foreground" />
+                  <span>Loading brands...</span>
                 </div>
-                <span className="font-medium">{selectedBrandData.name}</span>
-              </div>
-            ) : (
-              <span className="text-muted-foreground">
-                {brands.length === 0 ? "No cards available" : "Select card brand"}
-              </span>
-            )}
-            <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-[var(--radix-popover-trigger-width)] dark:bg-backgroundSecondary p-0" align="start">
-          <Command className="dark:bg-backgroundSecondary">
-            <CommandInput placeholder="Search brands..." className="h-10" />
-            <CommandList>
-              <CommandEmpty>No brand found.</CommandEmpty>
-              <CommandGroup>
-                <div className="grid grid-cols-2 gap-1 p-2">
-                  {brands.map((brand) => (
-                    <CommandItem
-                      key={brand._id}
-                      value={brand.name}
-                      onSelect={() => {
-                        setSelectedBrand(brand._id === selectedBrand ? "" : brand._id);
-                        setOpen(false);
-                      }}
-                      className="flex flex-col items-center justify-center p-4 cursor-pointer hover:bg-zinc-50 dark:hover:bg-hoverColorPrimary rounded-xl border-2 border-transparent data-[selected=true]:border-black dark:data-[selected=true]:border-borderColorPrimary data-[selected=true]:bg-zinc-50 dark:data-[selected=true]:bg-backgroundSecondary transition-all gap-2"
-                    >
-                      <div className="relative w-12 h-12">
-                        {brand.imageUrl && !brand.imageUrl.includes("example.com") ? (
-                          <Image
-                            src={brand.imageUrl}
-                            alt={brand.name}
-                            fill
-                            className="object-contain"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-zinc-100 dark:bg-zinc-900 rounded-lg flex items-center justify-center">
-                            <Gift className="w-6 h-6 text-zinc-400" />
-                          </div>
-                        )}
-                      </div>
-                      <span className="text-xs font-semibold text-center truncate w-full">
-                        {brand.name}
-                      </span>
-                      {selectedBrand === brand._id && (
-                        <div className="absolute top-2 right-2 p-0.5 bg-black dark:bg-zinc-200 rounded-full">
-                          <Check className="h-3 w-3 text-white dark:text-black" />
-                        </div>
-                      )}
-                    </CommandItem>
-                  ))}
+              ) : selectedBrandData ? (
+                <div className="flex items-center gap-2">
+                  <Gift className="w-4 h-4 text-zinc-500" />
+                  <span className="font-medium">{selectedBrandData.name}</span>
                 </div>
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
+              ) : (
+                <span className="text-muted-foreground">Select card brand</span>
+              )}
+              <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </DrawerTrigger>
+          <DrawerContent>
+            <DrawerHeader>
+              <DrawerTitle>Select Card Brand</DrawerTitle>
+            </DrawerHeader>
+            <div className="px-4 pb-8 h-[60vh] overflow-hidden flex flex-col">
+              <BrandList onSelect={(id) => {
+                setSelectedBrand(id);
+                setOpen(false);
+              }} />
+            </div>
+          </DrawerContent>
+        </Drawer>
+      ) : (
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild disabled={isLoadingCards}>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={open}
+              className="w-full justify-between h-12 focus:ring-2 focus:ring-black/5 transition-all font-normal bg-white dark:bg-background border-zinc-200 dark:border-borderColorPrimary"
+            >
+              {isLoadingCards ? (
+                <div className="flex items-center gap-2">
+                  <Loader className="h-4 w-4 animate-spin text-muted-foreground" />
+                  <span>Loading brands...</span>
+                </div>
+              ) : selectedBrandData ? (
+                <div className="flex items-center gap-2">
+                  <Gift className="w-4 h-4 text-zinc-500" />
+                  <span className="font-medium">{selectedBrandData.name}</span>
+                </div>
+              ) : (
+                <span className="text-muted-foreground">
+                  {brands.length === 0 ? "No cards available" : "Select card brand"}
+                </span>
+              )}
+              <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[var(--radix-popover-trigger-width)] dark:bg-backgroundSecondary p-0" align="start">
+            <BrandList onSelect={(id) => {
+              setSelectedBrand(id);
+              setOpen(false);
+            }} />
+          </PopoverContent>
+        </Popover>
+      )}
     </div>
   );
 
   const renderCurrencyPicker = () => {
-    const selected = CURRENCIES.find((c) => c.id === cardCurrency) || CURRENCIES[0];
+    const selected = currencies.find((c) => c.id.toLowerCase() === cardCurrency.toLowerCase()) || currencies[0];
     return (
       <div className="space-y-2">
         <Label>Card Currency</Label>
         <Popover open={currencyOpen} onOpenChange={setCurrencyOpen}>
-          <PopoverTrigger asChild>
+          <PopoverTrigger asChild disabled={isLoadingCurrencies || currencies.length === 0 || !!selectedBrandData?.fixedCurrency}>
             <Button
               variant="outline"
               className="w-full justify-between h-12 bg-white dark:bg-background border-zinc-200 dark:border-borderColorPrimary focus:ring-2 focus:ring-black/5"
             >
-              <div className="flex items-center gap-2">
-                <span className={`fi fi-${selected.flag} rounded-sm`}></span>
-                <span className="font-medium">{selected.name} ({selected.id.toUpperCase()})</span>
-              </div>
+              {isLoadingCurrencies ? (
+                <div className="flex items-center gap-2">
+                  <Loader className="h-4 w-4 animate-spin text-muted-foreground" />
+                  <span>Loading currencies...</span>
+                </div>
+              ) : selected ? (
+                <div className="flex items-center gap-2">
+                  <span className={`fi fi-${selected.flag.toLowerCase()} rounded-sm`}></span>
+                  <span className="font-medium">{selected.name} ({selected.id.toUpperCase()})</span>
+                </div>
+              ) : (
+                <span className="text-muted-foreground">Select currency</span>
+              )}
               <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
           </PopoverTrigger>
@@ -334,7 +426,7 @@ function SellGiftCardsContent() {
             <Command className="dark:bg-backgroundSecondary">
               <CommandList>
                 <CommandGroup>
-                  {CURRENCIES.map((currency) => (
+                  {currencies.map((currency) => (
                     <CommandItem
                       key={currency.id}
                       onSelect={() => {
@@ -345,13 +437,13 @@ function SellGiftCardsContent() {
                     >
                       <div className="flex items-center justify-between w-full">
                         <div className="flex items-center gap-3">
-                          <span className={`fi fi-${currency.flag} rounded-sm`}></span>
+                          <span className={`fi fi-${currency.flag.toLowerCase()} rounded-sm`}></span>
                           <span className="font-medium text-sm">{currency.name}</span>
                         </div>
                         <span className="text-xs text-muted-foreground uppercase">{currency.id}</span>
                       </div>
                       <Check
-                        className={`ml-auto h-4 w-4 ${cardCurrency === currency.id ? "opacity-100" : "opacity-0"}`}
+                        className={`ml-auto h-4 w-4 ${cardCurrency.toLowerCase() === currency.id.toLowerCase() ? "opacity-100" : "opacity-0"}`}
                       />
                     </CommandItem>
                   ))}
@@ -489,25 +581,26 @@ function SellGiftCardsContent() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 10 }}
-          className="p-4 bg-zinc-50 dark:bg-backgroundSecondary border border-zinc-200 dark:border-borderColorPrimary rounded-xl"
+          className="p-4 bg-zinc-50 dark:bg-backgroundSecondary border border-zinc-200 dark:border-borderColorPrimary rounded-xl relative overflow-hidden"
         >
+          {isCalculating && (
+            <div className="absolute inset-0 bg-white/40 dark:bg-black/20 flex items-center justify-center z-10 backdrop-blur-[1px]">
+              <Loader className="h-5 w-5 animate-spin text-zinc-400" />
+            </div>
+          )}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium text-zinc-600 dark:text-zinc-400">You Will Get:</span>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Info className="h-4 w-4 text-zinc-400 cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Current rate: {(sellRate * 100).toFixed(0)}% of card value</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
             </div>
-            <span className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-              ${calculatePayout().toFixed(2)}
-            </span>
+            <div className="flex flex-col items-end">
+              <span className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+                {calculationData ? (
+                  `${payoutCurrency === "GHS" ? "GH₵" : "₦"}${calculationData.payoutAmount.toLocaleString()}`
+                ) : (
+                  <Loader className="h-6 w-6 animate-spin text-zinc-400" />
+                )}
+              </span>
+            </div>
           </div>
         </motion.div>
       ) : null}
@@ -626,7 +719,7 @@ function SellGiftCardsContent() {
                 <Label>Card Amount</Label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 font-medium">
-                    {CURRENCIES.find(c => c.id === cardCurrency)?.symbol || "$"}
+                    {currencies.find(c => c.id.toLowerCase() === cardCurrency.toLowerCase())?.symbol || "$"}
                   </span>
                   <Input
                     type="number"
@@ -664,7 +757,7 @@ function SellGiftCardsContent() {
               <Button
                 onClick={handleSubmit}
                 className="w-full h-12 bg-black dark:bg-white text-white dark:text-black font-bold rounded-xl hover:opacity-90 active:scale-[0.98] transition-all"
-                disabled={!selectedBrand || !amount || !giftCardCode || isSubmitting}
+                disabled={!selectedBrand || !amount || !giftCardCode || !selectedPaymentMethod || isSubmitting}
               >
                 {isSubmitting ? (
                   <div className="flex items-center gap-2">
@@ -686,7 +779,7 @@ function SellGiftCardsContent() {
                 <Label>Card Amount</Label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 font-medium">
-                    {CURRENCIES.find(c => c.id === cardCurrency)?.symbol || "$"}
+                    {currencies.find(c => c.id.toLowerCase() === cardCurrency.toLowerCase())?.symbol || "$"}
                   </span>
                   <Input
                     type="number"
@@ -746,7 +839,7 @@ function SellGiftCardsContent() {
               <Button
                 onClick={handleSubmit}
                 className="w-full h-12 bg-black dark:bg-white text-white dark:text-black font-bold rounded-xl hover:opacity-90 active:scale-[0.98] transition-all"
-                disabled={!selectedBrand || !amount || !frontImage || !backImage || isSubmitting}
+                disabled={!selectedBrand || !amount || !frontImage || !backImage || !selectedPaymentMethod || isSubmitting}
               >
                 {isSubmitting ? (
                   <div className="flex items-center gap-2">

@@ -31,6 +31,8 @@ import Image from "next/image";
 import { useUserOrders } from "@/hooks/useOrders";
 import { motion } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useCurrencies } from "@/hooks/useCards";
+import { useAuthStore } from "@/stores";
 
 type FilterStatus =
   | "all"
@@ -64,6 +66,24 @@ export default function TransactionPage() {
   const { data: ordersData, isLoading, isFetching } = useUserOrders(page);
   const transactions = ordersData?.data?.orders || [];
   const pagination = ordersData?.data?.pagination;
+  const { data: currenciesData } = useCurrencies();
+  const currencies = currenciesData?.data || [];
+  const { user } = useAuthStore();
+
+  // Get currency symbol
+  // TODO: Backend needs to send payoutCurrency field in /orders/user response
+  // For now, defaulting to user's country currency
+  const getSymbol = (currencyId?: string) => {
+    if (!currencyId) {
+      // Fallback to user's local currency until backend sends payoutCurrency
+      const userCountry = user?.country?.toLowerCase();
+      if (userCountry === "ghana") return "GH₵";
+      if (userCountry === "nigeria") return "₦";
+      return "$";
+    }
+    const currency = currencies.find(c => c.id.toUpperCase() === currencyId.toUpperCase());
+    return currency?.symbol || currencyId.toUpperCase();
+  };
 
   // Read filters from URL query parameters on mount
   useEffect(() => {
@@ -300,7 +320,7 @@ export default function TransactionPage() {
                             <span className="text-[10px] text-muted-foreground">{transaction.date}</span>
                           </div>
                           <div className="text-lg font-bold tabular-nums">
-                            ${transaction.amount.toFixed(2)}
+                            {getSymbol()}{transaction.amount.toLocaleString()}
                           </div>
                         </div>
                         <div className="p-2 bg-muted/20 rounded-full">
@@ -339,7 +359,7 @@ export default function TransactionPage() {
                     </div>
 
                     <div className="font-semibold text-sm tabular-nums">
-                      ${transaction.amount.toFixed(2)}
+                      {getSymbol()}{transaction.amount.toLocaleString()}
                     </div>
 
                     <div className="text-sm text-muted-foreground">

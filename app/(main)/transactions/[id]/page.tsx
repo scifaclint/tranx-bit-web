@@ -18,10 +18,12 @@ import {
   Hash,
   MessageSquare,
   Loader,
+  Copy,
 } from "lucide-react";
 import Image from "next/image";
 import { ordersApi, OrderDetailsResponse } from "@/lib/api/orders";
 import { toast } from "sonner";
+import { useCurrencies } from "@/hooks/useCards";
 
 export default function TransactionIDPage() {
   const params = useParams();
@@ -30,6 +32,8 @@ export default function TransactionIDPage() {
 
   const [orderData, setOrderData] = useState<OrderDetailsResponse["data"] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { data: currenciesData } = useCurrencies();
+  const currencies = currenciesData?.data || [];
 
   useEffect(() => {
     const fetchTransaction = async () => {
@@ -112,6 +116,12 @@ export default function TransactionIDPage() {
       ? `BTC - ${paymentMethod.btcAddress}`
       : "N/A";
 
+  const getSymbol = (currencyId?: string) => {
+    if (!currencyId) return "$";
+    const currency = currencies.find(c => c.id.toUpperCase() === currencyId.toUpperCase());
+    return currency?.symbol || currencyId.toUpperCase();
+  };
+
   return (
     <div className="w-full ">
       {/* Header */}
@@ -163,14 +173,14 @@ export default function TransactionIDPage() {
                   )}
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-lg">{cardBrand} Gift Card</h3>
+                  <h3 className="font-semibold text-lg">{firstItem?.cardName || cardBrand} Gift Card</h3>
                   <p className="text-sm text-muted-foreground">
                     {orderData.orderType.charAt(0).toUpperCase() + orderData.orderType.slice(1)}{" "}
                     Transaction
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-2xl font-bold">${cardValue.toFixed(2)}</p>
+                  <p className="text-2xl font-bold">{getSymbol(orderData.cardCurrency)}{cardValue.toLocaleString()}</p>
                 </div>
               </div>
 
@@ -185,6 +195,63 @@ export default function TransactionIDPage() {
               )}
             </CardContent>
           </Card>
+
+          {/* Uploaded Card Images or Codes */}
+          {((orderData.cardImages && orderData.cardImages.length > 0) ||
+            (firstItem?.giftCardCodes && firstItem.giftCardCodes.length > 0)) && (
+              <Card className="dark:bg-background border-borderColorPrimary">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Package className="h-5 w-5" />
+                    {orderData.cardImages && orderData.cardImages.length > 0 ? "Uploaded Card Images" : "Gift Card Codes"}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {firstItem?.giftCardCodes && firstItem.giftCardCodes.length > 0 ? (
+                    <div className="space-y-2">
+                      {firstItem.giftCardCodes.map((code, i) => (
+                        <div key={i} className="bg-zinc-50 dark:bg-zinc-800/50 p-3 rounded-xl border border-borderColorPrimary flex items-center justify-between group">
+                          <code className="text-sm font-mono font-bold text-zinc-800 dark:text-zinc-200">{code}</code>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+                            onClick={() => {
+                              navigator.clipboard.writeText(code);
+                              toast.success("Code copied to clipboard!");
+                            }}
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : orderData.cardImages && orderData.cardImages.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {orderData.cardImages.map((img, i) => (
+                        <div key={i} className="relative group rounded-xl overflow-hidden border border-borderColorPrimary bg-zinc-100 dark:bg-zinc-800">
+                          <img
+                            src={img}
+                            alt={`Card ${i + 1}`}
+                            className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
+                          />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              className="rounded-full font-bold text-xs"
+                              onClick={() => window.open(img, '_blank')}
+                            >
+                              View Full Image
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+                </CardContent>
+              </Card>
+            )}
 
           {/* Payment Details */}
           <Card className="dark:bg-background border-borderColorPrimary">
@@ -201,12 +268,12 @@ export default function TransactionIDPage() {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Card Amount</span>
-                <span className="font-medium">${cardValue.toFixed(2)}</span>
+                <span className="font-medium">{getSymbol(orderData.cardCurrency)}{cardValue.toLocaleString()}</span>
               </div>
               <Separator />
               <div className="flex items-center justify-between">
                 <span className="font-semibold">Total Amount</span>
-                <span className="font-bold text-lg">${amountToReceive.toFixed(2)}</span>
+                <span className="font-bold text-lg">{getSymbol(orderData.payoutCurrency)}{amountToReceive.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
             </CardContent>
           </Card>

@@ -1,30 +1,17 @@
 import api from "./axios";
 
-export interface CardPrice {
-  denomination: number;
-  price: number;
-}
-
 export interface Card {
   _id: string;
   name: string;
   brand: string;
-  type: "buy" | "sell";
+  type: "buy" | "sell" | "both";
   category: string;
-  prices: CardPrice[];
-  sellRate: number;
-  currency: string;
-  stockQuantity: number;
-  description: string;
   imageUrl: string;
-  instructions: string;
+  denominations: number[];
+  buyRate: number;
+  sellRate: number;
+  fixedCurrency: string;
   status: "active" | "inactive";
-  minQuantity: number;
-  maxQuantity: number;
-  discount: number;
-  createdAt: string;
-  updatedAt: string;
-  __v: number;
 }
 
 export interface PaginationInfo {
@@ -34,6 +21,21 @@ export interface PaginationInfo {
   cardsPerPage: number;
   hasNextPage: boolean;
   hasPrevPage: boolean;
+}
+
+export interface Currency {
+  id: string;
+  name: string;
+  symbol: string;
+  flag: string;
+  isActive: boolean;
+  rates: Record<string, number>;
+  ratesUpdatedAt: string;
+}
+
+export interface GetCurrenciesResponse {
+  status: boolean;
+  data: Currency[];
 }
 
 export interface GetAllCardsResponse {
@@ -52,13 +54,18 @@ export interface GetCardByIdResponse {
 }
 
 export const cardsApi = {
-  getAll: async (): Promise<GetAllCardsResponse> => {
-    const response = await api.get("/cards/all");
+  getAll: async (params?: { limit?: number; page?: number }): Promise<GetAllCardsResponse> => {
+    const response = await api.get("/cards/all", { params });
     return response.data;
   },
 
   getById: async (id: string): Promise<GetCardByIdResponse> => {
     const response = await api.get(`/cards/${id}`);
+    return response.data;
+  },
+
+  getCurrencies: async (): Promise<GetCurrenciesResponse> => {
+    const response = await api.get("/cards/currencies");
     return response.data;
   },
 };
