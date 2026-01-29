@@ -96,6 +96,7 @@ function SellGiftCardsContent() {
   const [cardImages, setCardImages] = useState<File[]>([]);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("");
   const [cardCurrency, setCardCurrency] = useState("usd");
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // Calculation State
   const [calculationData, setCalculationData] = useState<{
@@ -859,21 +860,26 @@ function SellGiftCardsContent() {
                         animate={{ opacity: 1, scale: 1 }}
                         className="h-full"
                       >
-                        <label className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-zinc-200 dark:border-borderColorPrimary rounded-2xl cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-all gap-2 group">
+                        <button
+                          onClick={() => fileInputRef.current?.click()}
+                          className="w-full flex flex-col items-center justify-center h-32 border-2 border-dashed border-zinc-200 dark:border-borderColorPrimary rounded-2xl cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-all gap-2 group"
+                        >
                           <div className="w-10 h-10 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
                             <Plus className="h-5 w-5 text-zinc-500" />
                           </div>
                           <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Add Image</span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={handleImageUpload}
-                          />
-                        </label>
+                        </button>
                       </motion.div>
                     )}
                   </AnimatePresence>
+                  {/* Persistent Input */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleImageUpload}
+                  />
                 </div>
               </div>
 
