@@ -180,7 +180,7 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
                         {/* Payment Info */}
                         <div className="border rounded-lg overflow-hidden">
                             <div className="bg-muted/50 px-4 py-2 border-b text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                                Customer's Payout Info ({order.paymentMethodId.type.replace('_', ' ')})
+                                Customer's Payout Info ({order.paymentMethod || order.paymentMethodId.type.replace('_', ' ')})
                             </div>
                             <div className="grid grid-cols-2 gap-y-2 text-sm p-4">
                                 {order.paymentMethodId.type === 'bank' ? (

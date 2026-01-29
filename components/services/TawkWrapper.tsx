@@ -23,7 +23,8 @@ export default function TawkToWidgetWrapper() {
             hideOnRoutes={[
                 "/auth*",
                 "/internal-portal-Trx13*",
-                "/reset-password*"
+                "/reset-password*",
+                "/sell-giftcards"
             ]}
         />
     );
