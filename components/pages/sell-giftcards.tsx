@@ -57,6 +57,7 @@ import PaymentMethodModal from "@/components/modals/payment-method-modal";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuthStore } from "@/stores";
 import { useUser } from "@/components/providers/userProvider";
+import MobilePicker from "@/components/modals/mobile-picker";
 
 // CURRENCIES array removed - now using useCurrencies() hook
 
@@ -284,10 +285,10 @@ function SellGiftCardsContent() {
 
   const BrandList = ({ onSelect }: { onSelect: (brandId: string) => void }) => (
     <Command className="flex flex-col h-full bg-transparent">
-      <div className="px-4 py-2 border-b border-zinc-200/20 dark:border-zinc-800/20">
+      <div className="px-4 py-3 border-b border-zinc-200/20 dark:border-zinc-800/20">
         <CommandInput
           placeholder="Search brands..."
-          className="h-12 bg-zinc-100/50 dark:bg-zinc-800/50 border-none rounded-xl focus:ring-0"
+          className="h-12 bg-zinc-100 dark:bg-zinc-800/80 border-none rounded-xl focus:ring-0 px-2 text-base shadow-sm"
         />
       </div>
       <CommandList className="flex-1 overflow-y-auto px-2 py-3 custom-scrollbar">
@@ -304,8 +305,8 @@ function SellGiftCardsContent() {
                 className="flex items-center justify-between p-4 cursor-pointer hover:bg-white/10 dark:hover:bg-white/5 rounded-2xl border border-transparent data-[selected=true]:border-blue-500/50 data-[selected=true]:bg-blue-500/10 transition-all duration-200"
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-white/10 dark:bg-black/20 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/10 shadow-sm">
-                    <Gift className="w-6 h-6 text-blue-500" />
+                  <div className="w-14 h-14 bg-blue-50 dark:bg-blue-900/20 rounded-2xl flex items-center justify-center border border-blue-100 dark:border-blue-800/30">
+                    <Gift className="w-7 h-7 text-blue-600 dark:text-blue-400" />
                   </div>
                   <div className="flex flex-col">
                     <span className="font-semibold text-base">
@@ -333,40 +334,40 @@ function SellGiftCardsContent() {
     <div className="space-y-2">
       <Label>Select Card Brand</Label>
       {isMobile ? (
-        <Sheet open={open} onOpenChange={setOpen}>
-          <SheetTrigger asChild disabled={isLoadingCards}>
-            <Button
-              variant="outline"
-              className="w-full justify-between h-12 focus:ring-2 focus:ring-black/5 transition-all font-normal bg-white dark:bg-background border-zinc-200 dark:border-borderColorPrimary"
-            >
-              {isLoadingCards ? (
-                <div className="flex items-center gap-2">
-                  <Loader className="h-4 w-4 animate-spin text-muted-foreground" />
-                  <span>Loading brands...</span>
-                </div>
-              ) : selectedBrandData ? (
-                <div className="flex items-center gap-2">
-                  <Gift className="w-4 h-4 text-zinc-500" />
-                  <span className="font-medium">{selectedBrandData.name}</span>
-                </div>
-              ) : (
-                <span className="text-muted-foreground">Select card brand</span>
-              )}
-              <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="bottom" className="h-[95vh] rounded-t-[20px] px-0 flex flex-col">
-            <SheetHeader className="px-6 py-4 border-b">
-              <SheetTitle className="text-left text-xl font-bold">Select Card Brand</SheetTitle>
-            </SheetHeader>
-            <div className="flex-1 overflow-hidden">
-              <BrandList onSelect={(id) => {
-                setSelectedBrand(id);
-                setOpen(false);
-              }} />
-            </div>
-          </SheetContent>
-        </Sheet>
+        <>
+          <Button
+            variant="outline"
+            onClick={() => setOpen(true)}
+            disabled={isLoadingCards}
+            className="w-full justify-between h-12 focus:ring-2 focus:ring-black/5 transition-all font-normal bg-white dark:bg-background border-zinc-200 dark:border-borderColorPrimary"
+          >
+            {isLoadingCards ? (
+              <div className="flex items-center gap-2">
+                <Loader className="h-4 w-4 animate-spin text-muted-foreground" />
+                <span>Loading brands...</span>
+              </div>
+            ) : selectedBrandData ? (
+              <div className="flex items-center gap-2">
+                <Gift className="w-4 h-4 text-zinc-500" />
+                <span className="font-medium">{selectedBrandData.name}</span>
+              </div>
+            ) : (
+              <span className="text-muted-foreground">Select card brand</span>
+            )}
+            <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+
+          <MobilePicker
+            isOpen={open}
+            onClose={() => setOpen(false)}
+            title="Select Card Brand"
+          >
+            <BrandList onSelect={(id) => {
+              setSelectedBrand(id);
+              setOpen(false);
+            }} />
+          </MobilePicker>
+        </>
       ) : (
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild disabled={isLoadingCards}>
