@@ -24,7 +24,9 @@ export default function TawkToWidgetWrapper() {
                 "/auth*",
                 "/internal-portal-Trx13*",
                 "/reset-password*",
-                "/sell-giftcards"
+                "/sell-giftcards",
+                "/transactions",
+                "/settings"
             ]}
         />
     );

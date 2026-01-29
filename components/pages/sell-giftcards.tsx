@@ -27,12 +27,12 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from "@/components/ui/drawer";
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import {
   Check,
   ChevronDown,
@@ -333,8 +333,8 @@ function SellGiftCardsContent() {
     <div className="space-y-2">
       <Label>Select Card Brand</Label>
       {isMobile ? (
-        <Drawer open={open} onOpenChange={setOpen}>
-          <DrawerTrigger asChild disabled={isLoadingCards}>
+        <Sheet open={open} onOpenChange={setOpen}>
+          <SheetTrigger asChild disabled={isLoadingCards}>
             <Button
               variant="outline"
               className="w-full justify-between h-12 focus:ring-2 focus:ring-black/5 transition-all font-normal bg-white dark:bg-background border-zinc-200 dark:border-borderColorPrimary"
@@ -354,19 +354,19 @@ function SellGiftCardsContent() {
               )}
               <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
-          </DrawerTrigger>
-          <DrawerContent className="h-[80vh] px-0">
-            <DrawerHeader className="px-6 py-4">
-              <DrawerTitle className="text-2xl font-bold">Select Card Brand</DrawerTitle>
-            </DrawerHeader>
+          </SheetTrigger>
+          <SheetContent side="bottom" className="h-[95vh] rounded-t-[20px] px-0 flex flex-col">
+            <SheetHeader className="px-6 py-4 border-b">
+              <SheetTitle className="text-left text-xl font-bold">Select Card Brand</SheetTitle>
+            </SheetHeader>
             <div className="flex-1 overflow-hidden">
               <BrandList onSelect={(id) => {
                 setSelectedBrand(id);
                 setOpen(false);
               }} />
             </div>
-          </DrawerContent>
-        </Drawer>
+          </SheetContent>
+        </Sheet>
       ) : (
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild disabled={isLoadingCards}>
