@@ -1,5 +1,6 @@
 "use client";
 import { useState, useMemo } from "react";
+import { extractErrorMessage } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -83,10 +84,8 @@ export function LoginForm({
       }
     } catch (error: any) {
       setPassword("");
-
-      toast.error("Login failed", {
-        description: "Please check your credentials and try again.",
-      });
+      const message = extractErrorMessage(error);
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }
