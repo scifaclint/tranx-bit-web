@@ -8,7 +8,7 @@ import { formVariants } from "@/lib/utils";
 import { Loader } from "lucide-react";
 import { toast } from "sonner";
 
-// import { authApi } from "@/lib/api/auth";
+import { authApi } from "@/lib/api/auth";
 
 interface ForgotPasswordFormProps {
   onSwitchMode: () => void;
@@ -23,7 +23,7 @@ export function ForgotPasswordForm({
   const [isLoading, setIsLoading] = useState(false);
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       toast.error("Please enter a valid email address");
       return;
@@ -32,17 +32,19 @@ export function ForgotPasswordForm({
     setIsLoading(true);
 
     try {
-      // Password reset logic will be implemented when backend is ready
-      // For now, simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      
-      toast.success("Password reset link has been sent to your email", {
-        description: "Please check your inbox and follow the instructions to reset your password.",
-      });
-      onSuccess(email);
+      const response = await authApi.forgotPassword(email);
+
+      if (response.status) {
+        toast.success(response.message || "Password reset link has been sent to your email", {
+          description: "Please check your inbox and follow the instructions to reset your password.",
+        });
+        onSuccess(email);
+      } else {
+        toast.error(response.message || "Failed to send reset link");
+      }
     } catch (error: any) {
       toast.error("Failed to send reset link", {
-        description: error?.message || "Please try again later.",
+        description: error?.response?.data?.message || "Please try again later.",
       });
     } finally {
       setIsLoading(false);

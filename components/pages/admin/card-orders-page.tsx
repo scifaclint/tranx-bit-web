@@ -70,6 +70,7 @@ import RejectionModal from "@/components/modals/rejections-modal"
 
 export default function CardOrderPage() {
     const [activeTab, setActiveTab] = useState<OrderStatus>("all")
+    const [currentPage, setCurrentPage] = useState(1)
     const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null)
     const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
     const [isRejectionModalOpen, setIsRejectionModalOpen] = useState(false)
@@ -83,6 +84,8 @@ export default function CardOrderPage() {
     // Query for the filtered orders (active tab)
     const { data: ordersResponse, isLoading } = useAdminOrders({
         status: statusFilter,
+        page: currentPage,
+        limit: 20
     })
 
     // Separate query for the global total count (always 'all')
@@ -90,6 +93,11 @@ export default function CardOrderPage() {
         status: undefined,
         limit: 1 // We only need the pagination total
     })
+
+    const handleTabChange = (tabId: OrderStatus) => {
+        setActiveTab(tabId)
+        setCurrentPage(1) // Reset to first page when tab changes
+    }
 
     const approveOrderMutation = useApproveOrder()
     const rejectOrderMutation = useRejectOrder()
@@ -131,7 +139,8 @@ export default function CardOrderPage() {
 
     const selectedOrder = orders.find(o => o._id === selectedOrderId)
 
-    const currentTotal = ordersResponse?.data?.pagination?.totalOrders || 0
+    const pagination = ordersResponse?.data?.pagination
+    const currentTotal = pagination?.totalOrders || 0
     const globalTotal = allOrdersResponse?.data?.pagination?.totalOrders || 0
 
     const tabs = [
@@ -170,7 +179,7 @@ export default function CardOrderPage() {
                     {tabs.map((tab) => (
                         <button
                             key={tab.id}
-                            onClick={() => setActiveTab(tab.id as OrderStatus)}
+                            onClick={() => handleTabChange(tab.id as OrderStatus)}
                             className={cn(
                                 "flex items-center space-x-2 px-4 py-2 rounded-full border-2 transition-all whitespace-nowrap text-sm mb-1",
                                 activeTab === tab.id
@@ -200,7 +209,7 @@ export default function CardOrderPage() {
                 </div>
 
                 <div className="mt-6">
-                    <ScrollArea className="h-[calc(100vh-320px)]">
+                    <ScrollArea className="h-[calc(100vh-380px)]">
                         {/* DESKTOP TABLE VIEW */}
                         <div className="hidden lg:block rounded-md border">
                             <Table>
@@ -210,7 +219,7 @@ export default function CardOrderPage() {
                                         <TableHead className="w-[200px]">Customer</TableHead>
                                         <TableHead>Card</TableHead>
                                         <TableHead>Type</TableHead>
-                                        <TableHead>Amount</TableHead>
+                                        <TableHead>Payout</TableHead>
                                         <TableHead>Status</TableHead>
                                         <TableHead>Date</TableHead>
                                         <TableHead className="text-right">Actions</TableHead>
@@ -246,13 +255,17 @@ export default function CardOrderPage() {
                                                 </Badge>
                                             </TableCell>
                                             <TableCell className="py-1 font-bold text-[13px]">
-                                                {order.totalAmount ? `$${order.totalAmount.toLocaleString()}` : "$0.00"}
+                                                <div className="flex flex-col">
+                                                    <span>{order.payoutCurrency} {order.amountToReceive?.toLocaleString() || "0"}</span>
+                                                    <span className="text-[10px] text-muted-foreground font-normal">${order.totalAmount?.toLocaleString() || "0"} USD</span>
+                                                </div>
                                             </TableCell>
                                             <TableCell className="py-1">
                                                 <Badge variant="outline" className={`text-[9px] px-1.5 h-4 capitalize font-bold tracking-tight
                                                     ${order.status === 'completed' ? "text-green-600 border-green-600 bg-green-50/50" :
-                                                        order.status === 'pending' || order.status === 'under_review' ? "text-yellow-600 border-yellow-600 bg-yellow-50/50" :
-                                                            "text-red-500 border-red-500 bg-red-50/50"}`}>
+                                                        order.status === 'under_review' ? "text-yellow-600 border-yellow-600 bg-yellow-50/50" :
+                                                            order.status === 'payment_claimed' ? "text-blue-600 border-blue-600 bg-blue-50/50" :
+                                                                "text-red-500 border-red-500 bg-red-50/50"}`}>
                                                     {order.status.replace('_', ' ')}
                                                 </Badge>
                                             </TableCell>
@@ -295,8 +308,9 @@ export default function CardOrderPage() {
                         <div className="lg:hidden space-y-3 pb-10">
                             {orders.map((order) => {
                                 const statusColors = order.status === 'completed' ? "text-green-600 bg-green-50 border-green-200" :
-                                    order.status === 'pending' || order.status === 'under_review' ? "text-yellow-600 bg-yellow-50 border-yellow-200" :
-                                        "text-red-500 bg-red-50 border-red-200";
+                                    order.status === 'under_review' ? "text-yellow-600 bg-yellow-50 border-yellow-200" :
+                                        order.status === 'payment_claimed' ? "text-blue-600 bg-blue-50 border-blue-200" :
+                                            "text-red-500 bg-red-50 border-red-200";
 
                                 return (
                                     <div key={order._id} className="p-4 border rounded-2xl bg-white dark:bg-backgroundSecondary shadow-sm space-y-4">
@@ -328,10 +342,11 @@ export default function CardOrderPage() {
 
                                         <div className="flex items-center justify-between pt-3 border-t border-dashed">
                                             <div className="flex flex-col">
-                                                <span className="text-[9px] text-muted-foreground font-black uppercase tracking-widest">Amount</span>
+                                                <span className="text-[9px] text-muted-foreground font-black uppercase tracking-widest">Payout</span>
                                                 <span className="text-base font-black text-foreground">
-                                                    {order.totalAmount ? `$${order.totalAmount.toLocaleString()}` : "$0.00"}
+                                                    {order.payoutCurrency} {order.amountToReceive?.toLocaleString() || "0"}
                                                 </span>
+                                                <span className="text-[10px] text-muted-foreground">${order.totalAmount?.toLocaleString() || "0"} USD</span>
                                             </div>
                                             <Button
                                                 variant="outline"
@@ -354,6 +369,35 @@ export default function CardOrderPage() {
                             </div>
                         )}
                     </ScrollArea>
+
+                    {/* Pagination Controls */}
+                    {pagination && pagination.totalPages > 1 && (
+                        <div className="flex items-center justify-between px-2 py-4 border-t mt-4">
+                            <div className="text-sm text-muted-foreground">
+                                Page {pagination.currentPage} of {pagination.totalPages} ({pagination.totalOrders} total)
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                    disabled={!pagination.hasPrevPage || isLoading}
+                                >
+                                    <ChevronLeft className="h-4 w-4 mr-1" />
+                                    Previous
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setCurrentPage(prev => Math.min(pagination.totalPages, prev + 1))}
+                                    disabled={!pagination.hasNextPage || isLoading}
+                                >
+                                    Next
+                                    <ChevronRight className="h-4 w-4 ml-1" />
+                                </Button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </CardContent>
 
@@ -379,3 +423,4 @@ export default function CardOrderPage() {
         </Card>
     )
 }
+

@@ -12,6 +12,14 @@ export interface Card {
   sellRate: number;
   fixedCurrency: string;
   status: "active" | "inactive";
+  currency?: string;
+  prices?: { denomination: number; price: number }[];
+  description?: string;
+  stockQuantity?: number;
+  minQuantity?: number;
+  maxQuantity?: number;
+  discount?: number;
+  instructions?: string;
 }
 
 export interface PaginationInfo {

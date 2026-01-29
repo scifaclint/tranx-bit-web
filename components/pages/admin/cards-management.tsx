@@ -125,18 +125,28 @@ const ViewCardItem = ({ card, onEdit, onToggleStatus, onDelete }: ViewCardItemPr
                     </div>
                 </div>
 
-                <div className="flex items-center justify-center gap-1.5">
-                    {card.type === 'sell' ? (
-                        <div className="text-[10px] font-black text-green-600 bg-green-500/10 px-2 py-0.5 rounded-lg border border-green-500/5">
-                            {card.sellRate}/$
-                        </div>
-                    ) : (
-                        <div className="text-[10px] font-black text-blue-600 bg-blue-500/10 px-2 py-0.5 rounded-lg border border-blue-500/5">
-                            ${card.prices?.[0]?.price || '0'}
+                <div className="flex flex-col items-center gap-1 mt-1">
+                    {(card.type === 'sell' || card.type === 'both') && (
+                        <div className="flex items-center gap-1.5">
+                            <div className="text-[10px] font-black text-green-600 bg-green-500/10 px-2 py-0.5 rounded-lg border border-green-500/5">
+                                {card.sellRate}/$
+                            </div>
+                            <span className="text-[7px] font-bold text-muted-foreground uppercase">Rate</span>
                         </div>
                     )}
+                    {(card.type === 'buy' || card.type === 'both') && (
+                        <div className="flex items-center gap-1.5">
+                            <div className="text-[10px] font-black text-blue-600 bg-blue-500/10 px-2 py-0.5 rounded-lg border border-blue-500/5">
+                                ${card.buyRate || card.prices?.[0]?.price || '0'}
+                            </div>
+                            <span className="text-[7px] font-bold text-muted-foreground uppercase">Price</span>
+                        </div>
+                    )}
+                </div>
+
+                <div className="flex items-center justify-center gap-1.5">
                     <div className="text-[9px] font-black text-muted-foreground/70 bg-muted/60 px-1.5 py-0.5 rounded-lg uppercase">
-                        {card.currency || 'USD'}
+                        {card.currency || card.fixedCurrency || 'USD'}
                     </div>
                 </div>
 
@@ -164,7 +174,7 @@ export default function CardsManageMentPage() {
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
     const [cardIdToDelete, setCardIdToDelete] = useState<string | null>(null)
 
-    const { data: cardsResponse, isLoading } = useCards()
+    const { data: cardsResponse, isLoading } = useCards({ limit: 1000 })
     const deleteCardMutation = useDeleteCard()
     const updateCardMutation = useUpdateCard()
 
@@ -172,14 +182,26 @@ export default function CardsManageMentPage() {
 
     const handleEdit = (card: BackendCard) => {
         setEditingCard({
-            ...card,
             id: card._id,
+            name: card.name,
+            brand: card.brand,
+            category: card.category,
+            type: card.type === "both" ? "both" : (card.type as "buy" | "sell"),
+            description: card.description,
             image: card.imageUrl,
+            currency: card.currency,
+            buyRate: card.buyRate,
+            sellRate: card.sellRate,
+            stockQuantity: card.stockQuantity,
+            minQuantity: card.minQuantity,
+            maxQuantity: card.maxQuantity,
+            discount: card.discount,
+            status: card.status === "active" ? "active" : "disabled",
+            instructions: card.instructions,
             prices: card.prices?.map(p => ({
                 denomination: p.denomination,
                 price: p.price
             })) || [],
-            status: card.status === "active" ? "active" : "disabled",
         })
         setIsAddModalOpen(true)
     }
@@ -305,32 +327,7 @@ export default function CardsManageMentPage() {
                     </ScrollArea>
                 </div>
 
-                {/* Pagination (Client-side for now based on response) */}
-                {cardsResponse?.data?.pagination && cardsResponse.data.pagination.totalPages > 1 && (
-                    <div className="flex items-center justify-between px-2 py-4 border-t">
-                        <div className="text-sm text-muted-foreground">
-                            Page {cardsResponse.data.pagination.currentPage} of {cardsResponse.data.pagination.totalPages}
-                        </div>
-                        <div className="flex items-center space-x-2">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                disabled={!cardsResponse.data.pagination.hasPrevPage}
-                            >
-                                <ChevronLeft className="h-4 w-4" />
-                                Previous
-                            </Button>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                disabled={!cardsResponse.data.pagination.hasNextPage}
-                            >
-                                Next
-                                <ChevronRight className="h-4 w-4" />
-                            </Button>
-                        </div>
-                    </div>
-                )}
+
 
 
             </CardContent>

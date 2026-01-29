@@ -126,12 +126,13 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
                                 <span className="text-muted-foreground">Card:</span>
                                 <span className="font-medium text-right">{order.items[0]?.cardBrand} - {order.items[0]?.cardName}</span>
                                 <span className="text-muted-foreground">Denomination:</span>
-                                <span className="font-medium text-right">{order.cardCurrency} {order.cardValue}</span>
-                                <span className="text-muted-foreground">Calculated Rate:</span>
-                                <span className="font-medium text-right">{((order.amountToReceive || 0) / (order.cardValue || 1) * 100).toFixed(0)}%</span>
+                                <span className="font-medium text-right">{order.cardCurrency} {order.items[0]?.cardDenomination} x {order.items[0]?.quantity}</span>
+                                <span className="text-muted-foreground">Rate:</span>
+                                <span className="font-medium text-right">{order.items[0]?.unitPrice}/{order.cardCurrency}</span>
                                 <div className="col-span-2 border-t my-1"></div>
                                 <span className="text-muted-foreground font-semibold">Customer Receives:</span>
-                                <span className="font-bold text-right text-lg text-green-600">${order.amountToReceive?.toLocaleString()}</span>
+                                <span className="font-bold text-right text-lg text-green-600">{order.payoutCurrency} {order.amountToReceive?.toLocaleString()}</span>
+                                <span className="text-[10px] text-muted-foreground text-right col-span-2 italic">(${order.totalAmount?.toLocaleString()} USD equivalent)</span>
                             </div>
                         </div>
 
@@ -164,13 +165,14 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
                         )}
 
                         {/* Additional Comments */}
-                        {order.additionalComments && (
+                        {(order.additionalComments || order.notes) && (
                             <div className="border rounded-lg overflow-hidden">
                                 <div className="bg-muted/50 px-4 py-2 border-b text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                                     Customer Comments
                                 </div>
                                 <div className="p-4 text-sm italic">
-                                    "{order.additionalComments}"
+                                    {order.notes && <div className="mb-2"><strong>Notes:</strong> {order.notes}</div>}
+                                    {order.additionalComments && <div><strong>Comments:</strong> "{order.additionalComments}"</div>}
                                 </div>
                             </div>
                         )}
@@ -181,7 +183,19 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
                                 Customer's Payout Info ({order.paymentMethodId.type.replace('_', ' ')})
                             </div>
                             <div className="grid grid-cols-2 gap-y-2 text-sm p-4">
-                                {order.paymentMethodId.type === 'mobile_money' ? (
+                                {order.paymentMethodId.type === 'bank' ? (
+                                    <>
+                                        <span className="text-muted-foreground">Account Name:</span>
+                                        <span className="font-medium text-right">{order.paymentMethodId.accountName}</span>
+                                        <span className="text-muted-foreground">Account Number:</span>
+                                        <div className="flex items-center justify-end gap-2">
+                                            <span className="font-medium font-mono">{order.paymentMethodId.accountNumber}</span>
+                                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => handleCopyCode(order.paymentMethodId.accountNumber!)}>
+                                                <Copy className="h-3 w-3" />
+                                            </Button>
+                                        </div>
+                                    </>
+                                ) : order.paymentMethodId.type === 'mobile_money' ? (
                                     <>
                                         <span className="text-muted-foreground">Network:</span>
                                         <span className="font-medium text-right uppercase">{order.paymentMethodId.mobileNetwork}</span>
@@ -189,16 +203,14 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
                                         <span className="font-medium text-right">{order.paymentMethodId.accountName}</span>
                                         <span className="text-muted-foreground">Account Number:</span>
                                         <div className="flex items-center justify-end gap-2">
-                                            <span className="font-medium font-mono">{order.paymentMethodId.mobileNumber}</span>
-                                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => handleCopyCode(order.paymentMethodId.mobileNumber!)}>
+                                            <span className="font-medium font-mono">{order.paymentMethodId.accountNumber}</span>
+                                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => handleCopyCode(order.paymentMethodId.accountNumber!)}>
                                                 <Copy className="h-3 w-3" />
                                             </Button>
                                         </div>
                                     </>
                                 ) : (
                                     <>
-                                        <span className="text-muted-foreground">Network:</span>
-                                        <span className="font-medium text-right uppercase">{order.paymentMethodId.btcNetwork}</span>
                                         <span className="text-muted-foreground">BTC Address:</span>
                                         <div className="flex flex-col items-end gap-1">
                                             <span className="font-medium font-mono text-[10px] break-all text-right">{order.paymentMethodId.btcAddress}</span>

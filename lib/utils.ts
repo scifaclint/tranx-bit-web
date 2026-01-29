@@ -5,7 +5,9 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export const formVariants = {
+import { Variants } from "framer-motion"
+
+export const formVariants: Variants = {
   hidden: {
     opacity: 0,
     y: 20,

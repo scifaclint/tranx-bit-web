@@ -33,19 +33,21 @@ export interface CardData {
     name: string
     brand: string
     category: string
-    type: "buy" | "sell"
-    description: string
+    type: "buy" | "sell" | "both"
+    description?: string
     image?: string
-    currency: string
-    sellRate: number | string
-    stockQuantity: number | string
-    minQuantity: number | string
-    maxQuantity: number | string
-    discount: number | string
-    status: "active" | "inactive" | "disabled"
-    instructions: string
+    currency?: string
+    buyRate?: number | string
+    sellRate?: number | string
+    stockQuantity?: number | string
+    minQuantity?: number | string
+    maxQuantity?: number | string
+    discount?: number | string
+    status?: "active" | "inactive" | "disabled"
+    instructions?: string
     price?: string | number | null // Compatibility with old structure
     prices?: { denomination: number; price: number }[]
+    denominations?: { denomination: number; price: number }[]
 }
 
 interface AddCardsModalProps {
@@ -68,6 +70,7 @@ export default function AddCardsModal({ isOpen, onClose, initialData }: AddCards
         description: "",
         image: "",
         currency: "USD",
+        buyRate: 0,
         sellRate: 0,
         stockQuantity: 100,
         minQuantity: 1,
@@ -88,6 +91,7 @@ export default function AddCardsModal({ isOpen, onClose, initialData }: AddCards
                 brand: initialData.brand || "",
                 category: initialData.category || "",
                 currency: initialData.currency || "USD",
+                buyRate: initialData.buyRate || 0,
                 sellRate: initialData.sellRate || 0,
                 stockQuantity: initialData.stockQuantity || 100,
                 minQuantity: initialData.minQuantity || 1,
@@ -96,7 +100,9 @@ export default function AddCardsModal({ isOpen, onClose, initialData }: AddCards
                 status: initialData.status === "disabled" ? "inactive" : (initialData.status as any) || "active",
                 instructions: initialData.instructions || ""
             })
-            if (initialData.prices && initialData.prices.length > 0) {
+            if (initialData.denominations && initialData.denominations.length > 0) {
+                setPrices(initialData.denominations as any)
+            } else if (initialData.prices && initialData.prices.length > 0) {
                 setPrices(initialData.prices)
             } else if (initialData.price) {
                 setPrices([{ denomination: 100, price: Number(initialData.price) }])
@@ -114,6 +120,7 @@ export default function AddCardsModal({ isOpen, onClose, initialData }: AddCards
                 description: "",
                 image: "",
                 currency: "USD",
+                buyRate: 0,
                 sellRate: 0,
                 stockQuantity: 100,
                 minQuantity: 1,
@@ -173,18 +180,19 @@ export default function AddCardsModal({ isOpen, onClose, initialData }: AddCards
         data.append('brand', formData.brand)
         data.append('type', formData.type)
         data.append('category', formData.category)
-        data.append('description', formData.description)
-        data.append('currency', formData.currency)
-        data.append('instructions', formData.instructions)
+        data.append('description', formData.description ?? "")
+        data.append('currency', formData.currency ?? "")
+        data.append('instructions', formData.instructions ?? "")
         data.append('status', formData.status === "active" ? "active" : "inactive")
 
-        data.append('sellRate', String(formData.sellRate))
-        data.append('stockQuantity', String(formData.stockQuantity))
-        data.append('minQuantity', String(formData.minQuantity))
-        data.append('maxQuantity', String(formData.maxQuantity))
-        data.append('discount', String(formData.discount))
+        data.append('buyRate', String(formData.buyRate ?? 0))
+        data.append('sellRate', String(formData.sellRate ?? 0))
+        data.append('stockQuantity', String(formData.stockQuantity ?? 100))
+        data.append('minQuantity', String(formData.minQuantity ?? 1))
+        data.append('maxQuantity', String(formData.maxQuantity ?? 100))
+        data.append('discount', String(formData.discount ?? 0))
 
-        data.append('prices', JSON.stringify(prices))
+        data.append('denominations', JSON.stringify(prices))
 
         if (selectedFile) {
             data.append('image', selectedFile)
@@ -354,22 +362,22 @@ export default function AddCardsModal({ isOpen, onClose, initialData }: AddCards
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="grid gap-2">
+                                    <Label htmlFor="buyRate">Buy Rate</Label>
+                                    <Input
+                                        id="buyRate"
+                                        type="number"
+                                        value={formData.buyRate}
+                                        onChange={(e) => setFormData({ ...formData, buyRate: e.target.value })}
+                                        required
+                                    />
+                                </div>
+                                <div className="grid gap-2">
                                     <Label htmlFor="sellRate">Sell Rate</Label>
                                     <Input
                                         id="sellRate"
                                         type="number"
                                         value={formData.sellRate}
                                         onChange={(e) => setFormData({ ...formData, sellRate: e.target.value })}
-                                        required
-                                    />
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="stock">Stock</Label>
-                                    <Input
-                                        id="stock"
-                                        type="number"
-                                        value={formData.stockQuantity}
-                                        onChange={(e) => setFormData({ ...formData, stockQuantity: e.target.value })}
                                         required
                                     />
                                 </div>

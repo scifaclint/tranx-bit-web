@@ -64,13 +64,52 @@ export interface AdminUser {
   lastName: string;
   phone: string;
   status: string;
+  emailVerified: boolean;
 }
 
 export interface AdminOrderItem {
+  _id: string;
+  giftCardId: string;
   cardName: string;
   cardBrand: string;
   cardDenomination: number;
   quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+  giftCardCodes: string[];
+}
+
+export interface AdminPaymentMethod {
+  _id: string;
+  type: string;
+  accountName?: string | null;
+  accountNumber?: string | null;
+  mobileNetwork?: string | null;
+  btcAddress?: string | null;
+  btcNetwork?: string | null;
+}
+
+export interface AdminOrder {
+  _id: string;
+  orderNumber: string;
+  userId: AdminUser;
+  orderType: "buy" | "sell";
+  status: string;
+  items: AdminOrderItem[];
+  totalAmount: number;
+  totalItems: number;
+  amountToReceive: number;
+  payoutCurrency: string;
+  cardCurrency: string;
+  cardImages: string[];
+  paymentMethod: string;
+  paymentMethodId: AdminPaymentMethod;
+  notes?: string;
+  additionalComments?: string;
+  isReferralBonusPaid: boolean;
+  referralBonusAmount: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface AdminPagination {
@@ -80,33 +119,6 @@ export interface AdminPagination {
   ordersPerPage: number;
   hasNextPage: boolean;
   hasPrevPage: boolean;
-}
-
-export interface AdminPaymentMethod {
-  _id: string;
-  type: "mobile_money" | "btc";
-  accountName?: string;
-  mobileNumber?: string;
-  mobileNetwork?: string;
-  btcAddress?: string;
-  btcNetwork?: string;
-}
-
-export interface AdminOrder {
-  _id: string;
-  orderNumber: string;
-  userId: AdminUser;
-  orderType: "buy" | "sell";
-  status: string;
-  totalAmount: number;
-  payoutCurrency: string;
-  paymentMethodId: AdminPaymentMethod;
-  cardValue: number;
-  cardCurrency: string;
-  items: AdminOrderItem[];
-  cardImages: string[];
-  createdAt: string;
-  additionalComments?: string;
 }
 
 export type AdminOrderStatus =

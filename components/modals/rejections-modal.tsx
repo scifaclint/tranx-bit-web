@@ -79,14 +79,15 @@ export default function RejectionModal({ isOpen, onClose, order }: RejectionModa
                             <span className="text-muted-foreground">Card:</span>
                             <span className="font-medium text-right">{order.items[0]?.cardBrand} - {order.items[0]?.cardName}</span>
                             <span className="text-muted-foreground">Amount:</span>
-                            <span className="font-medium text-right">{order.cardCurrency} {order.items[0]?.cardDenomination}</span>
+                            <span className="font-medium text-right">{order.cardCurrency} {order.items[0]?.cardDenomination} x {order.items[0]?.quantity}</span>
                             <div className="col-span-2 border-t my-1"></div>
                             <span className="text-muted-foreground font-semibold">
-                                {isBuying ? 'You Would Pay:' : 'Customer Would Receive:'}
+                                {isBuying ? 'Payable Amount:' : 'Expected Payout:'}
                             </span>
                             <span className="font-bold text-right text-lg text-red-600 line-through decoration-red-600/50">
-                                ${order.totalAmount?.toLocaleString()}
+                                {order.payoutCurrency} {order.amountToReceive?.toLocaleString()}
                             </span>
+                            <span className="text-[10px] text-muted-foreground text-right col-span-2 italic line-through">(${order.totalAmount?.toLocaleString()} USD equivalent)</span>
                         </div>
                     </div>
 
