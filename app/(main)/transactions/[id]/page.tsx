@@ -125,27 +125,27 @@ export default function TransactionIDPage() {
   return (
     <div className="w-full ">
       {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div className="flex items-center mb-4 gap-4">
+      <div className="flex items-center justify-between gap-4 mb-6">
+        <div className="flex items-center gap-3">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => router.back()}
-            className="rounded-full"
+            className="rounded-full h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0"
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div>
-            <h1 className="text-2xl font-bold">Transaction Details</h1>
-            <p className="text-sm text-muted-foreground mt-1">#{orderData.orderNumber}</p>
+          <div className="min-w-0">
+            <h1 className="text-lg sm:text-2xl font-bold truncate">Transaction Details</h1>
+            <p className="text-[10px] sm:text-sm text-muted-foreground">#{orderData.orderNumber}</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 flex-shrink-0">
           {getStatusBadge(orderData.status)}
-          <Button variant="outline" className="gap-2 bg-backgroundSecondary border-borderColorPrimary dark:border-white/10">
-            <Download className="h-4 w-4" />
-            Receipt
+          <Button variant="outline" size="sm" className="gap-1.5 bg-backgroundSecondary border-borderColorPrimary dark:border-white/10 h-8 sm:h-9 px-2 sm:px-3">
+            <Download className="h-3.5 w-3.5" />
+            <span className="text-xs sm:text-sm">Receipt</span>
           </Button>
         </div>
       </div>
@@ -162,25 +162,27 @@ export default function TransactionIDPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center gap-4">
-                <div className="relative w-16 h-16 bg-backgroundSecondary rounded-lg p-3 ring-1 ring-borderColorPrimary">
-                  {firstItem?.cardBrand ? (
-                    <div className="w-full h-full flex items-center justify-center text-xs font-bold">
-                      {firstItem.cardBrand.substring(0, 2).toUpperCase()}
-                    </div>
-                  ) : (
-                    <Package className="w-full h-full text-muted-foreground" />
-                  )}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                <div className="flex items-center gap-4 flex-1">
+                  <div className="relative w-14 h-14 sm:w-16 sm:h-16 bg-backgroundSecondary rounded-lg p-3 ring-1 ring-borderColorPrimary flex-shrink-0">
+                    {firstItem?.cardBrand ? (
+                      <div className="w-full h-full flex items-center justify-center text-xs font-bold">
+                        {firstItem.cardBrand.substring(0, 2).toUpperCase()}
+                      </div>
+                    ) : (
+                      <Package className="w-full h-full text-muted-foreground" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-base sm:text-lg truncate">{firstItem?.cardName || cardBrand} Gift Card</h3>
+                    <p className="text-xs sm:text-sm text-muted-foreground">
+                      {orderData.orderType.charAt(0).toUpperCase() + orderData.orderType.slice(1)}{" "}
+                      Transaction
+                    </p>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-lg">{firstItem?.cardName || cardBrand} Gift Card</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {orderData.orderType.charAt(0).toUpperCase() + orderData.orderType.slice(1)}{" "}
-                    Transaction
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-2xl font-bold">{getSymbol(orderData.cardCurrency)}{cardValue.toLocaleString()}</p>
+                <div className="sm:text-right pt-2 sm:pt-0 border-t sm:border-t-0 border-dashed border-borderColorPrimary">
+                  <p className="text-xl sm:text-2xl font-bold">{getSymbol(orderData.cardCurrency)}{cardValue.toLocaleString()}</p>
                 </div>
               </div>
 
@@ -261,19 +263,19 @@ export default function TransactionIDPage() {
                 Payment Details
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center justify-between">
+            <CardContent className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-4">
                 <span className="text-sm text-muted-foreground">Payment Method</span>
-                <span className="font-medium">{paymentMethodDisplay}</span>
+                <span className="font-medium text-sm sm:text-base">{paymentMethodDisplay}</span>
               </div>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-4">
                 <span className="text-sm text-muted-foreground">Card Amount</span>
-                <span className="font-medium">{getSymbol(orderData.cardCurrency)}{cardValue.toLocaleString()}</span>
+                <span className="font-medium text-sm sm:text-base">{getSymbol(orderData.cardCurrency)}{cardValue.toLocaleString()}</span>
               </div>
               <Separator />
               <div className="flex items-center justify-between">
-                <span className="font-semibold">Total Amount</span>
-                <span className="font-bold text-lg">{getSymbol(orderData.payoutCurrency)}{amountToReceive.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                <span className="font-semibold text-sm sm:text-base">Total Amount</span>
+                <span className="font-bold text-lg sm:text-xl text-primary">{getSymbol(orderData.payoutCurrency)}{amountToReceive.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
             </CardContent>
           </Card>
@@ -308,21 +310,20 @@ export default function TransactionIDPage() {
             </CardContent>
           </Card>
 
-          {/* Actions */}
-          <Card className="dark:bg-background border-borderColorPrimary">
-            <CardHeader>
-              <CardTitle>Need Help?</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Button variant="outline" className="w-full gap-2 bg-backgroundSecondary border-borderColorPrimary dark:border-white/10">
-                <MessageSquare className="h-4 w-4" />
-                Contact Support
-              </Button>
-              <p className="text-xs text-muted-foreground text-center">
-                Our support team is available 24/7 to assist you
-              </p>
-            </CardContent>
-          </Card>
+          {/* Help / Support Tip */}
+          <div className="bg-zinc-50 dark:bg-zinc-900/50 border border-borderColorPrimary rounded-2xl p-4 sm:p-5">
+            <div className="flex gap-4">
+              <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
+                <MessageSquare className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h4 className="font-semibold text-sm mb-1">Need help with this order?</h4>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Our team is available 24/7 to assist you. Simply click the <span className="text-primary font-medium">chat bubble</span> in the bottom right corner to start a conversation.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

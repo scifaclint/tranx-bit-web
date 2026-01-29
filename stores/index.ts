@@ -19,6 +19,7 @@ interface AuthStore {
   isLoading: boolean;
 
   setAuth: (user: User, token?: string, plan?: string | null) => void;
+  setUser: (user: User) => void;
   setToken: (token: string) => void;
   clearAuth: () => void;
   setLoading: (status: boolean) => void;
@@ -32,6 +33,7 @@ export const useAuthStore = create<AuthStore>()(
       isAuthenticated: false,
       isLoading: true,
       setToken: (token) => set({ token }),
+      setUser: (user) => set({ user }),
       setAuth: (user: User, token?: string) => {
         if (!user || !token) return;
         set({

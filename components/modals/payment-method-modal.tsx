@@ -150,20 +150,32 @@ export default function PaymentMethodModal({
                                 value="mobile_money"
                                 id="mm-modal"
                                 className="peer sr-only"
+                                disabled={!!editingMethod && editingMethod.type !== "mobile_money"}
                             />
                             <Label
                                 htmlFor="mm-modal"
-                                className="flex flex-col items-center justify-between rounded-xl border-2 border-borderColorPrimary bg-backgroundSecondary/50 p-3 sm:p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-blue-600 [&:has([data-state=checked])]:border-blue-600 cursor-pointer text-xs sm:text-sm transition-all"
+                                className={`flex flex-col items-center justify-between rounded-xl border-2 border-borderColorPrimary bg-backgroundSecondary/50 p-3 sm:p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-blue-600 [&:has([data-state=checked])]:border-blue-600 cursor-pointer text-xs sm:text-sm transition-all ${!!editingMethod && editingMethod.type !== "mobile_money"
+                                        ? "opacity-40 cursor-not-allowed grayscale-[0.5]"
+                                        : ""
+                                    }`}
                             >
                                 <Smartphone className="mb-2 sm:mb-3 h-5 w-5 sm:h-6 sm:w-6" />
                                 Mobile Money
                             </Label>
                         </div>
                         <div>
-                            <RadioGroupItem value="btc" id="btc-modal" className="peer sr-only" />
+                            <RadioGroupItem
+                                value="btc"
+                                id="btc-modal"
+                                className="peer sr-only"
+                                disabled={!!editingMethod && editingMethod.type !== "btc"}
+                            />
                             <Label
                                 htmlFor="btc-modal"
-                                className="flex flex-col items-center justify-between rounded-xl border-2 border-borderColorPrimary bg-backgroundSecondary/50 p-3 sm:p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-orange-500 [&:has([data-state=checked])]:border-orange-500 cursor-pointer text-xs sm:text-sm transition-all"
+                                className={`flex flex-col items-center justify-between rounded-xl border-2 border-borderColorPrimary bg-backgroundSecondary/50 p-3 sm:p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-orange-500 [&:has([data-state=checked])]:border-orange-500 cursor-pointer text-xs sm:text-sm transition-all ${!!editingMethod && editingMethod.type !== "btc"
+                                        ? "opacity-40 cursor-not-allowed grayscale-[0.5]"
+                                        : ""
+                                    }`}
                             >
                                 <Wallet className="mb-2 sm:mb-3 h-5 w-5 sm:h-6 sm:w-6" />
                                 Bitcoin (BTC)

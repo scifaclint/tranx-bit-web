@@ -56,6 +56,7 @@ import "flag-icons/css/flag-icons.min.css";
 import PaymentMethodModal from "@/components/modals/payment-method-modal";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuthStore } from "@/stores";
+import { useUser } from "@/components/providers/userProvider";
 
 // CURRENCIES array removed - now using useCurrencies() hook
 
@@ -76,6 +77,7 @@ function SellGiftCardsContent() {
   const searchParams = useSearchParams();
   const isMobile = useIsMobile();
   const { user } = useAuthStore();
+  const { refreshUser } = useUser();
 
   const [cardType, setCardType] = useState("ecodes");
   const [open, setOpen] = useState(false);
@@ -90,8 +92,7 @@ function SellGiftCardsContent() {
   const [amount, setAmount] = useState("");
   const [giftCardCode, setGiftCardCode] = useState("");
   const [comment, setComment] = useState("");
-  const [frontImage, setFrontImage] = useState<File | null>(null);
-  const [backImage, setBackImage] = useState<File | null>(null);
+  const [cardImages, setCardImages] = useState<File[]>([]);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("");
   const [cardCurrency, setCardCurrency] = useState("usd");
 
@@ -199,25 +200,18 @@ function SellGiftCardsContent() {
 
   // Handlers
   const handleImageUpload = (
-    e: React.ChangeEvent<HTMLInputElement>,
-    side: "front" | "back"
+    e: React.ChangeEvent<HTMLInputElement>
   ) => {
     const files = e.target.files;
-    if (files && files[0]) {
-      if (side === "front") {
-        setFrontImage(files[0]);
-      } else {
-        setBackImage(files[0]);
-      }
+    if (files && files[0] && cardImages.length < 2) {
+      setCardImages(prev => [...prev, files[0]]);
     }
+    // Reset input so the same file can be uploaded again if removed
+    e.target.value = "";
   };
 
-  const removeImage = (side: "front" | "back") => {
-    if (side === "front") {
-      setFrontImage(null);
-    } else {
-      setBackImage(null);
-    }
+  const removeImage = (index: number) => {
+    setCardImages(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async () => {
@@ -236,8 +230,8 @@ function SellGiftCardsContent() {
       return;
     }
 
-    if (cardType === "physical" && (!frontImage || !backImage)) {
-      toast.error("Please upload both front and back images");
+    if (cardType === "physical" && cardImages.length === 0) {
+      toast.error("Please upload at least one card image");
       return;
     }
 
@@ -262,8 +256,8 @@ function SellGiftCardsContent() {
         expectedPayout: calculationData?.payoutAmount,
         calculatedAt: calculationData?.calculatedAt,
         additionalComments: comment || undefined,
-        cardImages: cardType === "physical" && frontImage && backImage
-          ? [frontImage, backImage]
+        cardImages: cardType === "physical" && cardImages.length > 0
+          ? cardImages
           : undefined,
       };
 
@@ -273,6 +267,8 @@ function SellGiftCardsContent() {
 
       if (response.status) {
         toast.success("Order created successfully!");
+        // Silently refresh user data in the background
+        refreshUser();
         router.push(`/sell-giftcards/${response.data.orderId}`);
       } else {
         toast.error(response.message || "Failed to create order");
@@ -287,29 +283,43 @@ function SellGiftCardsContent() {
 
 
   const BrandList = ({ onSelect }: { onSelect: (brandId: string) => void }) => (
-    <Command className="dark:bg-backgroundSecondary">
-      <CommandInput placeholder="Search brands..." className="h-10" />
-      <CommandList>
-        <CommandEmpty>No brand found.</CommandEmpty>
+    <Command className="flex flex-col h-full bg-transparent">
+      <div className="px-4 py-2 border-b border-zinc-200/20 dark:border-zinc-800/20">
+        <CommandInput
+          placeholder="Search brands..."
+          className="h-12 bg-zinc-100/50 dark:bg-zinc-800/50 border-none rounded-xl focus:ring-0"
+        />
+      </div>
+      <CommandList className="flex-1 overflow-y-auto px-2 py-3 custom-scrollbar">
+        <CommandEmpty className="py-12 text-center text-muted-foreground">
+          No brand found.
+        </CommandEmpty>
         <CommandGroup>
-          <div className="flex flex-col gap-1 p-2">
+          <div className="grid grid-cols-1 gap-2">
             {brands.map((brand) => (
               <CommandItem
                 key={brand._id}
                 value={brand.name}
                 onSelect={() => onSelect(brand._id)}
-                className="flex items-center justify-between p-3 cursor-pointer hover:bg-zinc-50 dark:hover:bg-hoverColorPrimary rounded-lg border-2 border-transparent data-[selected=true]:border-black dark:data-[selected=true]:border-borderColorPrimary data-[selected=true]:bg-zinc-50 dark:data-[selected=true]:bg-backgroundSecondary transition-all"
+                className="flex items-center justify-between p-4 cursor-pointer hover:bg-white/10 dark:hover:bg-white/5 rounded-2xl border border-transparent data-[selected=true]:border-blue-500/50 data-[selected=true]:bg-blue-500/10 transition-all duration-200"
               >
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-zinc-100 dark:bg-zinc-900 rounded-lg flex items-center justify-center">
-                    <Gift className="w-5 h-5 text-zinc-500" />
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-white/10 dark:bg-black/20 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/10 shadow-sm">
+                    <Gift className="w-6 h-6 text-blue-500" />
                   </div>
-                  <span className="font-medium text-sm">
-                    {brand.name}
-                  </span>
+                  <div className="flex flex-col">
+                    <span className="font-semibold text-base">
+                      {brand.name}
+                    </span>
+                    {/* <span className="text-xs text-muted-foreground">
+                      Sell gift card
+                    </span> */}
+                  </div>
                 </div>
                 {selectedBrand === brand._id && (
-                  <Check className="h-4 w-4 text-black dark:text-zinc-200" />
+                  <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                    <Check className="h-4 w-4 text-white" />
+                  </div>
                 )}
               </CommandItem>
             ))}
@@ -345,11 +355,11 @@ function SellGiftCardsContent() {
               <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
           </DrawerTrigger>
-          <DrawerContent>
-            <DrawerHeader>
-              <DrawerTitle>Select Card Brand</DrawerTitle>
+          <DrawerContent className="h-[80vh] px-0">
+            <DrawerHeader className="px-6 py-4">
+              <DrawerTitle className="text-2xl font-bold">Select Card Brand</DrawerTitle>
             </DrawerHeader>
-            <div className="px-4 pb-8 h-[60vh] overflow-hidden flex flex-col">
+            <div className="flex-1 overflow-hidden">
               <BrandList onSelect={(id) => {
                 setSelectedBrand(id);
                 setOpen(false);
@@ -734,10 +744,25 @@ function SellGiftCardsContent() {
               <div className="space-y-2">
                 <Label>Gift Card Code</Label>
                 <Input
-                  placeholder="Enter your card code"
+                  placeholder="e.g. ABCD EFGH IJKL"
                   value={giftCardCode}
-                  onChange={(e) => setGiftCardCode(e.target.value)}
-                  className="h-12 rounded-xl border-zinc-200 dark:border-borderColorPrimary focus-visible:ring-black/5"
+                  onChange={(e) => {
+                    let val = e.target.value.toUpperCase();
+                    // Allow letters, numbers, dashes and spaces (temporary for formatting)
+                    // But we strip multiple spaces or weird characters
+                    const raw = val.replace(/[^A-Z0-9-\s]/g, "").replace(/\s+/g, " "); // Allow spaces, then collapse multiple spaces
+
+                    if (raw.includes("-")) {
+                      // If they explicitly use dashes, keep it raw but uppercase
+                      setGiftCardCode(raw);
+                    } else {
+                      // If just alphanumeric, auto-insert spaces every 4 characters
+                      const alphanumericOnly = raw.replace(/\s/g, ""); // Remove spaces for formatting
+                      const formatted = alphanumericOnly.match(/.{1,4}/g)?.join(" ") || alphanumericOnly;
+                      setGiftCardCode(formatted);
+                    }
+                  }}
+                  className="h-12 rounded-xl border-zinc-200 dark:border-borderColorPrimary focus-visible:ring-black/5 font-mono text-base tracking-wider"
                 />
               </div>
 
@@ -791,35 +816,63 @@ function SellGiftCardsContent() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label>Upload Card Images</Label>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label>Attach Card Images (Front/Back)</Label>
+                  <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider">
+                    {cardImages.length}/2 Images
+                  </span>
+                </div>
                 <div className="grid grid-cols-2 gap-4">
-                  {[
-                    { id: "front", label: "Front Image", file: frontImage },
-                    { id: "back", label: "Back Image", file: backImage }
-                  ].map((img) => (
-                    <div key={img.id} className="space-y-2">
-                      <Label className="text-[10px] text-zinc-500 uppercase tracking-wider">{img.label}</Label>
-                      {img.file ? (
-                        <div className="relative h-28 border-2 border-zinc-900 rounded-xl overflow-hidden group">
-                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 z-10">
-                            <button onClick={() => removeImage(img.id as "front" | "back")} className="p-2 bg-white rounded-full text-black hover:bg-zinc-100">
-                              <X className="h-4 w-4" />
-                            </button>
-                          </div>
-                          <div className="absolute inset-0 flex items-center justify-center bg-zinc-50 dark:bg-zinc-900">
-                            <span className="text-[10px] text-zinc-500 font-medium px-4 text-center truncate w-full">{img.file.name}</span>
-                          </div>
+                  <AnimatePresence mode="popLayout">
+                    {cardImages.map((file, index) => (
+                      <motion.div
+                        key={`${file.name}-${index}`}
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.9 }}
+                        className="relative h-32 border border-zinc-200 dark:border-borderColorPrimary rounded-2xl overflow-hidden group bg-zinc-50 dark:bg-zinc-900/50"
+                      >
+                        <div className="absolute top-2 right-2 z-20">
+                          <button
+                            onClick={() => removeImage(index)}
+                            className="w-8 h-8 bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/30 rounded-full flex items-center justify-center text-white transition-all transform active:scale-90"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
                         </div>
-                      ) : (
-                        <label className="flex flex-col items-center justify-center h-28 border-2 border-dashed border-zinc-200 dark:border-borderColorPrimary rounded-xl cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-all gap-1">
-                          <Upload className="h-5 w-5 text-zinc-400" />
-                          <span className="text-[10px] font-semibold text-zinc-500">UPLOAD</span>
-                          <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, img.id as "front" | "back")} />
+                        <div className="absolute inset-0 flex flex-col items-center justify-center p-3 text-center">
+                          <div className="w-8 h-8 bg-blue-500/10 rounded-full flex items-center justify-center mb-2">
+                            <Check className="h-4 w-4 text-blue-500" />
+                          </div>
+                          <span className="text-[10px] text-zinc-500 font-medium truncate w-full px-2">
+                            {file.name}
+                          </span>
+                        </div>
+                      </motion.div>
+                    ))}
+
+                    {cardImages.length < 2 && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="h-full"
+                      >
+                        <label className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-zinc-200 dark:border-borderColorPrimary rounded-2xl cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-all gap-2 group">
+                          <div className="w-10 h-10 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <Plus className="h-5 w-5 text-zinc-500" />
+                          </div>
+                          <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Add Image</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handleImageUpload}
+                          />
                         </label>
-                      )}
-                    </div>
-                  ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
 
@@ -839,7 +892,7 @@ function SellGiftCardsContent() {
               <Button
                 onClick={handleSubmit}
                 className="w-full h-12 bg-black dark:bg-white text-white dark:text-black font-bold rounded-xl hover:opacity-90 active:scale-[0.98] transition-all"
-                disabled={!selectedBrand || !amount || !frontImage || !backImage || !selectedPaymentMethod || isSubmitting}
+                disabled={!selectedBrand || !amount || (cardType === "ecodes" ? !giftCardCode : cardImages.length === 0) || !selectedPaymentMethod || isSubmitting}
               >
                 {isSubmitting ? (
                   <div className="flex items-center gap-2">

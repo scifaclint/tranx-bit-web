@@ -10,13 +10,12 @@ export const ConnectionStatus = () => {
     const [showStatus, setShowStatus] = useState(false);
     const [hasInternet, setHasInternet] = useState(true);
 
-    // Function to check internet access
-    const checkInternetAccess = useCallback(async () => {
+    const checkInternetAccess = useCallback(async (isInitial = false) => {
         try {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 20000); // 20   second timeout
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-            const response = await fetch('https://www.google.com/favicon.ico', {
+            await fetch('https://www.google.com/favicon.ico', {
                 method: 'HEAD',
                 mode: 'no-cors',
                 signal: controller.signal
@@ -26,40 +25,46 @@ export const ConnectionStatus = () => {
 
             if (!hasInternet) {
                 setHasInternet(true);
-                setShowStatus(true);
-                setTimeout(() => setShowStatus(false), 3000);
+                // Only show "Back Online" if it's NOT the first load/check
+                if (!isInitial) {
+                    setShowStatus(true);
+                    setTimeout(() => setShowStatus(false), 3000);
+                }
             }
         } catch {
             setHasInternet(false);
-            setShowStatus(true);
+            // We don't show the red bar on the very first load either if it's just a check
+            if (!isInitial) {
+                setShowStatus(true);
+            }
         }
     }, [hasInternet]);
 
     useEffect(() => {
-        // Initial checks
+        // Initial state sync without showing UI
         setIsOnline(navigator.onLine);
-        checkInternetAccess();
+        checkInternetAccess(true);
 
-        // Set up periodic checking
-        const intervalId = setInterval(checkInternetAccess, 10000);
-
-        // Update state on connection change
         const handleOnline = async () => {
             setIsOnline(true);
-            await checkInternetAccess();
+            await checkInternetAccess(false);
         };
 
         const handleOffline = () => {
-            setIsOnline(false);
-            setHasInternet(false);
-            setShowStatus(true);
+            // Delay showing offline status by 2 seconds to ignore minor flickers
+            setTimeout(() => {
+                if (!navigator.onLine) {
+                    setIsOnline(false);
+                    setHasInternet(false);
+                    setShowStatus(true);
+                }
+            }, 2000);
         };
 
         window.addEventListener('online', handleOnline);
         window.addEventListener('offline', handleOffline);
 
         return () => {
-            clearInterval(intervalId);
             window.removeEventListener('online', handleOnline);
             window.removeEventListener('offline', handleOffline);
         };

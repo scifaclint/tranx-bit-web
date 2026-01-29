@@ -22,6 +22,7 @@ export const metadata: Metadata = {
   description: "A platform for exchanging gift cards securely and efficiently.",
 };
 
+import { UserProvider } from "@/components/providers/userProvider";
 import TawkToWidgetWrapper from "@/components/services/TawkWrapper";
 
 export default function RootLayout({
@@ -42,8 +43,10 @@ export default function RootLayout({
         >
           <RouteGuard>
             <QueryProvider>
-              {children}
-              <ConnectionStatus />
+              <UserProvider>
+                {children}
+                <ConnectionStatus />
+              </UserProvider>
             </QueryProvider>
           </RouteGuard>
           <TawkToWidgetWrapper />
@@ -51,7 +54,7 @@ export default function RootLayout({
             position="bottom-right"
             visibleToasts={3}
             richColors
-            theme="system"
+            theme="light"
             toastOptions={{
               style: {
                 background: "var(--toastBackgroundColor)",
