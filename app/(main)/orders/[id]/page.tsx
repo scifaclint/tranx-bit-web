@@ -19,14 +19,14 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { ordersApi, OrderDetailsResponse } from "@/lib/api/orders";
-import { PAYMENT_LOGOS, NETWORK_LABELS, CARD_CURRENCIES } from "@/lib/payment-constants";
+import { PAYMENT_LOGOS, CARD_CURRENCIES } from "@/lib/payment-constants";
 import Image from "next/image";
 import "flag-icons/css/flag-icons.min.css";
 
-export default function SellGiftcardOrderPage() {
+export default function TransactionDetailsPage() {
   const params = useParams();
   const router = useRouter();
-  const orderId = params.orderId as string;
+  const transactionId = params.id as string;
 
   const [copiedOrderId, setCopiedOrderId] = useState(false);
   const [orderData, setOrderData] = useState<OrderDetailsResponse["data"] | null>(null);
@@ -37,31 +37,31 @@ export default function SellGiftcardOrderPage() {
   const [imagesFetched, setImagesFetched] = useState(false);
 
   useEffect(() => {
-    const fetchOrder = async () => {
+    const fetchTransaction = async () => {
       try {
-        const response = await ordersApi.getOrderDetails(orderId);
+        const response = await ordersApi.getOrderDetails(transactionId);
         if (response.status && response.data) {
           setOrderData(response.data);
         } else {
-          toast.error("Order not found");
-          router.push("/sell-giftcards");
+          toast.error("Transaction not found");
+          router.push("/orders");
         }
       } catch (error: any) {
-        const errorMessage = error?.response?.data?.message || "Failed to load order";
+        const errorMessage = error?.response?.data?.message || "Failed to load transaction";
         toast.error(errorMessage);
-        router.push("/sell-giftcards");
+        router.push("/orders");
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchOrder();
-  }, [orderId, router]);
+    fetchTransaction();
+  }, [transactionId, router]);
 
   const handleViewImages = async () => {
     setLoadingImages(true);
     try {
-      const response = await ordersApi.getOrderImages(orderId);
+      const response = await ordersApi.getOrderImages(transactionId);
       if (response.status && response.data.images) {
         setImageUrls(response.data.images);
         setImagesFetched(true);
@@ -76,7 +76,7 @@ export default function SellGiftcardOrderPage() {
   };
 
   const handleCopyOrderId = () => {
-    navigator.clipboard.writeText(orderData?.orderNumber || orderId);
+    navigator.clipboard.writeText(orderData?.orderNumber || transactionId);
     setCopiedOrderId(true);
     toast.success("Order ID copied to clipboard!");
     setTimeout(() => setCopiedOrderId(false), 2000);
@@ -88,7 +88,7 @@ export default function SellGiftcardOrderPage() {
     return currency || { symbol: currencyId.toUpperCase(), flag: "us", name: currencyId };
   };
 
-  const OrderDetailsSkeleton = () => (
+  const TransactionSkeleton = () => (
     <div className="max-w-3xl space-y-4 pb-8">
       <Skeleton className="h-10 w-48 rounded-xl" />
       <div className="space-y-1">
@@ -117,7 +117,7 @@ export default function SellGiftcardOrderPage() {
   );
 
   if (isLoading) {
-    return <OrderDetailsSkeleton />;
+    return <TransactionSkeleton />;
   }
 
   if (!orderData) {
@@ -136,23 +136,24 @@ export default function SellGiftcardOrderPage() {
     ? `${paymentMethod.mobileNetwork?.toUpperCase()} - ${paymentMethod.accountName} (${paymentMethod.mobileNumber})`
     : `BTC - ${paymentMethod?.btcAddress}`;
 
-  const rate = orderData.orderType === "sell" ? orderData.sellRate : orderData.buyRate;
+  const rateValue = orderData.orderType === "sell" ? orderData.sellRate : orderData.buyRate;
+  const rateLabel = orderData.orderType === "sell" ? "Sell Rate" : "Buy Rate";
 
   return (
     <div className="max-w-3xl space-y-4 pb-8">
       {/* Back Button */}
       <Button
         variant="ghost"
-        onClick={() => router.push("/sell-giftcards")}
+        onClick={() => router.push("/orders")}
         className="flex items-center gap-2 bg-backgroundSecondary border border-borderColorPrimary dark:border-white/10 rounded-xl"
       >
         <ArrowLeft className="w-4 h-4" />
-        Back to Sell Gift Cards
+        Back to Orders
       </Button>
 
       {/* Page Title */}
       <div className="space-y-1">
-        <h1 className="text-2xl font-bold">Order Submitted</h1>
+        <h1 className="text-2xl font-bold">Transaction Details</h1>
         <div className="flex items-center gap-2">
           <p className="text-sm text-zinc-500">Order ID: <span className="font-mono text-zinc-900 dark:text-zinc-100">{orderData.orderNumber}</span></p>
           <Button
@@ -170,7 +171,7 @@ export default function SellGiftcardOrderPage() {
         </div>
       </div>
 
-      {/* Status Alert */}
+      {/* Status Badge & Label */}
       <Card className="bg-zinc-50 dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-800 shadow-none rounded-2xl overflow-hidden">
         <div className="p-4 flex gap-3">
           <div className="w-10 h-10 bg-zinc-900 dark:bg-zinc-100 rounded-full flex items-center justify-center flex-shrink-0">
@@ -181,7 +182,11 @@ export default function SellGiftcardOrderPage() {
               {orderData.status.replace(/_/g, " ")}
             </h3>
             <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
-              Your gift card details have been submitted securely. You will be notified once the review is complete.
+              {orderData.status === "completed"
+                ? "This transaction has been successfully processed and funds released."
+                : orderData.status === "pending" || orderData.status === "processing"
+                  ? "This transaction is currently under review by our agents."
+                  : "There was an issue processing this transaction."}
             </p>
           </div>
         </div>
@@ -228,22 +233,22 @@ export default function SellGiftcardOrderPage() {
               <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Card Value</p>
               <p className="text-lg font-bold">{cardCurrencyInfo.symbol}{cardValue.toLocaleString()}</p>
             </div>
-            {rate !== undefined && (
+            {rateValue !== undefined && (
               <div className="space-y-1">
-                <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Rate</p>
-                <p className="text-lg font-bold">{rate}</p>
-              </div>
-            )}
-            {orderData.exchangeRate !== undefined && (
-              <div className="space-y-1">
-                <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Exchange</p>
-                <p className="text-lg font-bold">{orderData.exchangeRate}</p>
+                <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">{rateLabel}</p>
+                <p className="text-lg font-bold">{rateValue}</p>
               </div>
             )}
             <div className="space-y-1">
               <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Date</p>
               <p className="text-lg font-bold">{new Date(orderData.createdAt).toLocaleDateString()}</p>
             </div>
+            {orderData.exchangeRate !== undefined && (
+              <div className="space-y-1">
+                <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Exchange</p>
+                <p className="text-lg font-bold">{orderData.exchangeRate}</p>
+              </div>
+            )}
           </div>
 
           <Separator className="bg-borderColorPrimary/50" />
@@ -368,7 +373,7 @@ export default function SellGiftcardOrderPage() {
                 )}
               </div>
             ) : (
-              <p className="text-sm text-zinc-500 font-medium">Card details submitted securely.</p>
+              <p className="text-sm text-zinc-500 font-medium">Data details submitted securely.</p>
             )}
           </div>
 
@@ -411,9 +416,10 @@ export default function SellGiftcardOrderPage() {
           <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl p-6 border border-borderColorPrimary">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="space-y-1">
-                <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">You Will Get</p>
+                <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
+                  {orderData.orderType === "sell" ? "Amount To Receive" : "Amount To Pay"}
+                </p>
                 <div className="flex items-center gap-2">
-                  {/* <span className={`fi fi-${payoutCurrencyInfo.flag} text-xl rounded-sm`}></span> */}
                   <p className="text-3xl font-black text-zinc-900 dark:text-zinc-50">
                     {payoutCurrencyInfo.symbol}{amountToReceive.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
@@ -435,20 +441,10 @@ export default function SellGiftcardOrderPage() {
         </div>
       </Card>
 
-      {/* Actions */}
-      <div className="grid grid-cols-1 gap-3 pt-2">
-        <Button
-          onClick={() => router.push("/orders")}
-          className="w-full h-14 bg-black dark:bg-white text-white dark:text-black font-bold rounded-2xl hover:opacity-90 active:scale-[0.98] transition-all text-base shadow-xl dark:shadow-white/5"
-        >
-          View Order History
-        </Button>
-      </div>
-
-      {/* Customer Service */}
-      <div className="py-4 text-center">
-        <p className="text-sm text-zinc-500 font-medium">
-          Have questions? Chat with our support team using the widget below.
+      {/* Footer Support */}
+      <div className="py-8 text-center bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl border border-borderColorPrimary">
+        <p className="text-sm text-zinc-500 font-medium px-6">
+          Need help? Our team is available 24/7. Chat with our support team using the widget below.
         </p>
       </div>
     </div>

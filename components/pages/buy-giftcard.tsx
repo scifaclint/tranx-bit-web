@@ -44,7 +44,7 @@ export default function BuyGiftCardPage() {
     (brand) => brand._id === selectedBrand
   );
 
-  const amounts = selectedBrandData?.prices?.map(p => p.denomination) || [];
+  const amounts = selectedBrandData?.denominations || [];
 
   const handleOpenChange = (isOpen: boolean) => {
     setOpen(isOpen);

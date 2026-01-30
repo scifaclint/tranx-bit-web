@@ -138,7 +138,7 @@ export default function TransactionPage() {
 
   // Handle row click
   const handleRowClick = (transactionId: string) => {
-    router.push(`/transactions/${transactionId}`);
+    router.push(`/orders/${transactionId}`);
   };
 
   if (isLoading) {

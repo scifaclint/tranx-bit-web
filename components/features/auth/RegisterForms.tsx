@@ -180,6 +180,15 @@ export const RegisterForm = ({
   const { formData, validation, updateFormData } = useFormValidation();
   const [showPasswordHelp, setShowPasswordHelp] = useState(false);
 
+  // Auto-fill referral from URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get("ref");
+    if (ref && !formData.referral_username) {
+      updateFormData("referral_username", ref);
+    }
+  }, [updateFormData, formData.referral_username]);
+
   // Username Check States
   const [isCheckingUsername, setIsCheckingUsername] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(

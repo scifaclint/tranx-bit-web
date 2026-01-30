@@ -5,6 +5,7 @@ import api from "./axios";
 export interface ApproveOrderPayload {
   orderId: string;
   giftCardCodes: string[];
+  adminPin: string;
   adminNotes?: string;
 }
 
@@ -16,6 +17,18 @@ export interface RejectOrderPayload {
 export interface SetPinPayload {
   currentPassword: string;
   newPin: string;
+}
+
+export interface ApproveWithdrawalPayload {
+  transactionId: string;
+  pin: string;
+  adminNotes?: string;
+}
+
+export interface RejectWithdrawalPayload {
+  transactionId: string;
+  pin: string;
+  adminNotes: string;
 }
 
 export interface AddCardPayload {
@@ -42,6 +55,12 @@ export interface UpdateCardPayload extends Partial<AddCardPayload> {
 export interface ApproveOrderResponse {
   status: boolean;
   message: string;
+  data: {
+    orderId: string;
+    orderNumber: string;
+    status: string;
+    completedAt: string;
+  };
 }
 
 export interface RejectOrderResponse {
@@ -57,6 +76,34 @@ export interface AddCardResponse {
 export interface UpdateCardResponse {
   status: boolean;
   message: string;
+}
+
+export interface ApproveWithdrawalResponse {
+  status: boolean;
+  message: string;
+  data: {
+    _id: string;
+    status: string;
+    adminNotes: string;
+    amount: number;
+    currency: string;
+    reference: string;
+    type: string;
+  };
+}
+
+export interface RejectWithdrawalResponse {
+  status: boolean;
+  message: string;
+  data: {
+    _id: string;
+    status: string;
+    adminNotes: string;
+    amount: number;
+    currency: string;
+    reference: string;
+    type: string;
+  };
 }
 
 // ============= ORDER TYPES =============
@@ -92,6 +139,7 @@ export interface AdminPaymentMethod {
   mobileNetwork?: string | null;
   btcAddress?: string | null;
   btcNetwork?: string | null;
+  bankName?: string | null;
 }
 
 export interface AdminOrder {
@@ -146,6 +194,74 @@ export interface GetAllOrdersResponse {
 export interface DeleteCardResponse {
   status: boolean;
   message: string;
+}
+
+// ============= TRANSACTION TYPES =============
+
+export interface AdminTransaction {
+  _id: string;
+  userId: {
+    _id: string;
+    email: string;
+    username: string;
+    firstName: string;
+    lastName: string;
+    phone: string;
+    country: string;
+  };
+  reference: string;
+  type: string;
+  amount: number;
+  currency: string;
+  status: string;
+  paymentMethodId: AdminPaymentMethod;
+  createdAt: string;
+}
+
+export interface GetAllTransactionsResponse {
+  status: boolean;
+  message: string;
+  data: {
+    transactions: AdminTransaction[];
+    pagination: {
+      currentPage: number;
+      totalPages: number;
+      totalTransactions: number;
+      transactionsPerPage: number;
+    };
+  };
+}
+
+// ============= WITHDRAWAL TYPES =============
+
+export interface AdminWithdrawal {
+  _id: string;
+  userId: {
+    email: string;
+    username: string;
+    firstName: string;
+    lastName: string;
+  };
+  amount: number;
+  currency: string;
+  status: string;
+  balanceSource: string;
+  paymentMethodId: AdminPaymentMethod;
+  createdAt: string;
+}
+
+export interface GetAllWithdrawalsResponse {
+  status: boolean;
+  message: string;
+  data: {
+    withdrawals: AdminWithdrawal[];
+    pagination: {
+      currentPage: number;
+      totalPages: number;
+      totalItems: number;
+      limit: number;
+    };
+  };
 }
 
 // ============= API METHODS =============
@@ -204,6 +320,39 @@ export const adminApi = {
 
   setPin: async (payload: SetPinPayload): Promise<{ status: boolean; message: string }> => {
     const response = await api.post("/admin/set-pin", payload);
+    return response.data;
+  },
+
+  getAllTransactions: async (params?: {
+    page?: number;
+    limit?: number;
+    type?: string;
+    status?: string;
+  }): Promise<GetAllTransactionsResponse> => {
+    const response = await api.get("/admin/transactions", { params });
+    return response.data;
+  },
+
+  getAllWithdrawals: async (params?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+  }): Promise<GetAllWithdrawalsResponse> => {
+    const response = await api.get("/admin/withdrawals", { params });
+    return response.data;
+  },
+
+  approveWithdrawal: async (
+    payload: ApproveWithdrawalPayload
+  ): Promise<ApproveWithdrawalResponse> => {
+    const response = await api.post("/admin/withdrawals/approve", payload);
+    return response.data;
+  },
+
+  rejectWithdrawal: async (
+    payload: RejectWithdrawalPayload
+  ): Promise<RejectWithdrawalResponse> => {
+    const response = await api.post("/admin/withdrawals/reject", payload);
     return response.data;
   },
 };

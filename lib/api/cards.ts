@@ -5,21 +5,18 @@ export interface Card {
   name: string;
   brand: string;
   type: "buy" | "sell" | "both";
-  category: string;
-  imageUrl: string;
-  denominations: number[];
-  buyRate: number;
-  sellRate: number;
   fixedCurrency: string;
-  status: "active" | "inactive";
-  currency?: string;
-  prices?: { denomination: number; price: number }[];
+  sellRate: number;
+  buyRate: number | null;
+  denominations: number[];
   description?: string;
-  stockQuantity?: number;
-  minQuantity?: number;
-  maxQuantity?: number;
-  discount?: number;
+  imageUrl: string;
   instructions?: string;
+  status: "active" | "inactive";
+  minQuantity: number;
+  maxQuantity: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface PaginationInfo {

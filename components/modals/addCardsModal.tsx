@@ -32,22 +32,17 @@ export interface CardData {
     id?: string
     name: string
     brand: string
-    category: string
     type: "buy" | "sell" | "both"
     description?: string
     image?: string
-    currency?: string
+    fixedCurrency?: string
     buyRate?: number | string
     sellRate?: number | string
-    stockQuantity?: number | string
     minQuantity?: number | string
     maxQuantity?: number | string
-    discount?: number | string
     status?: "active" | "inactive" | "disabled"
     instructions?: string
-    price?: string | number | null // Compatibility with old structure
-    prices?: { denomination: number; price: number }[]
-    denominations?: { denomination: number; price: number }[]
+    denominations?: number[]
 }
 
 interface AddCardsModalProps {
@@ -59,23 +54,18 @@ interface AddCardsModalProps {
 export default function AddCardsModal({ isOpen, onClose, initialData }: AddCardsModalProps) {
     const [imagePreview, setImagePreview] = useState<string | null>(null)
     const [selectedFile, setSelectedFile] = useState<File | null>(null)
-    const [prices, setPrices] = useState<{ denomination: number; price: number }[]>([
-        { denomination: 100, price: 0 }
-    ])
+    const [denominations, setDenominations] = useState<number[]>([100])
     const [formData, setFormData] = useState<CardData>({
         name: "",
         brand: "",
-        category: "",
         type: "buy",
         description: "",
         image: "",
-        currency: "USD",
+        fixedCurrency: "USD",
         buyRate: 0,
         sellRate: 0,
-        stockQuantity: 100,
         minQuantity: 1,
         maxQuantity: 100,
-        discount: 0,
         status: "active",
         instructions: ""
     })
@@ -89,25 +79,20 @@ export default function AddCardsModal({ isOpen, onClose, initialData }: AddCards
             setFormData({
                 ...initialData,
                 brand: initialData.brand || "",
-                category: initialData.category || "",
-                currency: initialData.currency || "USD",
+                fixedCurrency: initialData.fixedCurrency || "USD",
                 buyRate: initialData.buyRate || 0,
                 sellRate: initialData.sellRate || 0,
-                stockQuantity: initialData.stockQuantity || 100,
                 minQuantity: initialData.minQuantity || 1,
                 maxQuantity: initialData.maxQuantity || 100,
-                discount: initialData.discount || 0,
                 status: initialData.status === "disabled" ? "inactive" : (initialData.status as any) || "active",
                 instructions: initialData.instructions || ""
             })
             if (initialData.denominations && initialData.denominations.length > 0) {
-                setPrices(initialData.denominations as any)
-            } else if (initialData.prices && initialData.prices.length > 0) {
-                setPrices(initialData.prices)
-            } else if (initialData.price) {
-                setPrices([{ denomination: 100, price: Number(initialData.price) }])
+                // Handle both old object structure and new number array if necessary during transition
+                const denoms = initialData.denominations.map(d => typeof d === 'object' ? (d as any).denomination : d)
+                setDenominations(denoms)
             } else {
-                setPrices([{ denomination: 100, price: 0 }])
+                setDenominations([100])
             }
             setImagePreview(initialData.image || null)
             setSelectedFile(null)
@@ -115,21 +100,18 @@ export default function AddCardsModal({ isOpen, onClose, initialData }: AddCards
             setFormData({
                 name: "",
                 brand: "",
-                category: "",
                 type: "buy",
                 description: "",
                 image: "",
-                currency: "USD",
+                fixedCurrency: "USD",
                 buyRate: 0,
                 sellRate: 0,
-                stockQuantity: 100,
                 minQuantity: 1,
                 maxQuantity: 100,
-                discount: 0,
                 status: "active",
                 instructions: ""
             })
-            setPrices([{ denomination: 100, price: 0 }])
+            setDenominations([100])
             setImagePreview(null)
             setSelectedFile(null)
         }
@@ -153,23 +135,18 @@ export default function AddCardsModal({ isOpen, onClose, initialData }: AddCards
         setFormData({ ...formData, image: "" })
     }
 
-    const addPriceRow = () => {
-        if (prices.length < 4) {
-            setPrices([...prices, { denomination: 0, price: 0 }])
-        }
+    const addDenomination = () => {
+        setDenominations([...denominations, 0])
     }
 
-    const removePriceRow = (index: number) => {
-        setPrices(prices.filter((_, i) => i !== index))
+    const removeDenomination = (index: number) => {
+        setDenominations(denominations.filter((_, i) => i !== index))
     }
 
-    const updatePrice = (index: number, field: "denomination" | "price", value: string) => {
-        const newPrices = [...prices]
-        newPrices[index] = {
-            ...newPrices[index],
-            [field]: Number(value)
-        }
-        setPrices(newPrices)
+    const updateDenomination = (index: number, value: string) => {
+        const newDenoms = [...denominations]
+        newDenoms[index] = Number(value)
+        setDenominations(newDenoms)
     }
 
     const handleSubmitForm = async (e: React.FormEvent) => {
@@ -179,20 +156,17 @@ export default function AddCardsModal({ isOpen, onClose, initialData }: AddCards
         data.append('name', formData.name)
         data.append('brand', formData.brand)
         data.append('type', formData.type)
-        data.append('category', formData.category)
         data.append('description', formData.description ?? "")
-        data.append('currency', formData.currency ?? "")
+        data.append('fixedCurrency', formData.fixedCurrency ?? "")
         data.append('instructions', formData.instructions ?? "")
         data.append('status', formData.status === "active" ? "active" : "inactive")
 
         data.append('buyRate', String(formData.buyRate ?? 0))
         data.append('sellRate', String(formData.sellRate ?? 0))
-        data.append('stockQuantity', String(formData.stockQuantity ?? 100))
         data.append('minQuantity', String(formData.minQuantity ?? 1))
         data.append('maxQuantity', String(formData.maxQuantity ?? 100))
-        data.append('discount', String(formData.discount ?? 0))
 
-        data.append('denominations', JSON.stringify(prices))
+        data.append('denominations', JSON.stringify(denominations))
 
         if (selectedFile) {
             data.append('image', selectedFile)
@@ -255,45 +229,20 @@ export default function AddCardsModal({ isOpen, onClose, initialData }: AddCards
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="grid gap-2">
-                                    <Label htmlFor="category">Category</Label>
+                                    <Label htmlFor="fixedCurrency">Fixed Currency</Label>
                                     <Input
-                                        id="category"
-                                        placeholder="e.g. E-commerce"
-                                        value={formData.category}
-                                        onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                                        required
-                                    />
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="currency">Currency</Label>
-                                    <Input
-                                        id="currency"
+                                        id="fixedCurrency"
                                         placeholder="e.g. USD"
-                                        value={formData.currency}
-                                        onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+                                        value={formData.fixedCurrency}
+                                        onChange={(e) => setFormData({ ...formData, fixedCurrency: e.target.value })}
                                         required
                                     />
                                 </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="grid gap-2">
-                                    <Label htmlFor="discount">Discount (%)</Label>
-                                    <Input
-                                        id="discount"
-                                        type="number"
-                                        placeholder="0"
-                                        value={formData.discount}
-                                        onChange={(e) => setFormData({ ...formData, discount: e.target.value })}
-                                        required
-                                    />
-                                </div>
-
                                 <div className="grid gap-2">
                                     <Label htmlFor="type">Type</Label>
                                     <Select
                                         value={formData.type}
-                                        onValueChange={(val) => setFormData({ ...formData, type: val as "buy" | "sell" })}
+                                        onValueChange={(val) => setFormData({ ...formData, type: val as "buy" | "sell" | "both" })}
                                     >
                                         <SelectTrigger id="type">
                                             <SelectValue placeholder="Select type" />
@@ -301,6 +250,7 @@ export default function AddCardsModal({ isOpen, onClose, initialData }: AddCards
                                         <SelectContent>
                                             <SelectItem value="buy">Buy</SelectItem>
                                             <SelectItem value="sell">Sell</SelectItem>
+                                            <SelectItem value="both">Both</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -309,55 +259,44 @@ export default function AddCardsModal({ isOpen, onClose, initialData }: AddCards
                             <div className="space-y-4">
                                 <div className="flex items-center justify-between">
                                     <div className="space-y-0.5">
-                                        <Label>Prices & Denominations</Label>
-                                        <p className="text-[10px] text-muted-foreground">Max 4 price tags allowed</p>
+                                        <Label>Accepted Denominations</Label>
+                                        <p className="text-[10px] text-muted-foreground">List all available face values</p>
                                     </div>
                                     <Button
                                         type="button"
                                         variant="outline"
                                         size="sm"
-                                        onClick={addPriceRow}
-                                        disabled={prices.length >= 4}
+                                        onClick={addDenomination}
                                     >
                                         <Plus className="h-4 w-4 mr-2" />
-                                        Add Price
+                                        Add Denomination
                                     </Button>
                                 </div>
-                                {prices.map((price, index) => (
-                                    <div key={index} className="grid grid-cols-2 gap-4 items-end bg-accent/10 p-4 rounded-lg relative">
-                                        <div className="grid gap-2">
-                                            <Label>Denomination</Label>
+                                <div className="grid grid-cols-4 gap-4 bg-accent/10 p-4 rounded-lg">
+                                    {denominations.map((denom, index) => (
+                                        <div key={index} className="relative group">
                                             <Input
                                                 type="number"
-                                                placeholder="e.g. 100"
-                                                value={price.denomination || ""}
-                                                onChange={(e) => updatePrice(index, "denomination", e.target.value)}
+                                                placeholder="100"
+                                                value={denom || ""}
+                                                onChange={(e) => updateDenomination(index, e.target.value)}
+                                                className="pr-8"
                                                 required
                                             />
+                                            {denominations.length > 1 && (
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="absolute -top-2 -right-2 h-6 w-6 text-destructive opacity-0 group-hover:opacity-100 transition-opacity bg-background border shadow-sm"
+                                                    onClick={() => removeDenomination(index)}
+                                                >
+                                                    <X className="h-3 w-3" />
+                                                </Button>
+                                            )}
                                         </div>
-                                        <div className="grid gap-2 pr-10">
-                                            <Label>Price ($)</Label>
-                                            <Input
-                                                type="number"
-                                                placeholder="0.00"
-                                                value={price.price || ""}
-                                                onChange={(e) => updatePrice(index, "price", e.target.value)}
-                                                required
-                                            />
-                                        </div>
-                                        {prices.length > 1 && (
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="icon"
-                                                className="absolute top-2 right-2 h-8 w-8 text-destructive"
-                                                onClick={() => removePriceRow(index)}
-                                            >
-                                                <Trash className="h-4 w-4" />
-                                            </Button>
-                                        )}
-                                    </div>
-                                ))}
+                                    ))}
+                                </div>
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
@@ -366,6 +305,7 @@ export default function AddCardsModal({ isOpen, onClose, initialData }: AddCards
                                     <Input
                                         id="buyRate"
                                         type="number"
+                                        step="0.01"
                                         value={formData.buyRate}
                                         onChange={(e) => setFormData({ ...formData, buyRate: e.target.value })}
                                         required
@@ -376,6 +316,7 @@ export default function AddCardsModal({ isOpen, onClose, initialData }: AddCards
                                     <Input
                                         id="sellRate"
                                         type="number"
+                                        step="0.01"
                                         value={formData.sellRate}
                                         onChange={(e) => setFormData({ ...formData, sellRate: e.target.value })}
                                         required
@@ -385,7 +326,7 @@ export default function AddCardsModal({ isOpen, onClose, initialData }: AddCards
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="grid gap-2">
-                                    <Label htmlFor="minQty">Min Qty</Label>
+                                    <Label htmlFor="minQty">Min Order Qty</Label>
                                     <Input
                                         id="minQty"
                                         type="number"
@@ -395,7 +336,7 @@ export default function AddCardsModal({ isOpen, onClose, initialData }: AddCards
                                     />
                                 </div>
                                 <div className="grid gap-2">
-                                    <Label htmlFor="maxQty">Max Qty</Label>
+                                    <Label htmlFor="maxQty">Max Order Qty</Label>
                                     <Input
                                         id="maxQty"
                                         type="number"
@@ -435,20 +376,20 @@ export default function AddCardsModal({ isOpen, onClose, initialData }: AddCards
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="instructions">Instructions</Label>
+                                <Label htmlFor="instructions">Instructions (Visible to User)</Label>
                                 <Textarea
                                     id="instructions"
-                                    placeholder="Enter usage instructions..."
+                                    placeholder="e.g. Upload clear physical card only..."
                                     value={formData.instructions}
                                     onChange={(e) => setFormData({ ...formData, instructions: e.target.value })}
                                 />
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="description">Description</Label>
+                                <Label htmlFor="description">General Description</Label>
                                 <Textarea
                                     id="description"
-                                    placeholder="Enter card description..."
+                                    placeholder="Enter card details..."
                                     value={formData.description}
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                 />
@@ -478,7 +419,7 @@ export default function AddCardsModal({ isOpen, onClose, initialData }: AddCards
                         <Button variant="outline" type="button" onClick={onClose} disabled={isLoading}>Cancel</Button>
                         <Button type="submit" disabled={isLoading}>
                             {isLoading && <Loader className="mr-2 h-4 w-4 animate-spin" />}
-                            {isEditing ? "Update Card" : "Save Card"}
+                            {isEditing ? "Update Details" : "Create Card"}
                         </Button>
                     </DialogFooter>
                 </form>

@@ -123,6 +123,73 @@ export type UpdatePaymentMethodPayload = {
     }
   );
 
+export interface WithdrawalPayload {
+  amount: number;
+  balanceSource: "main" | "referral";
+  paymentMethodId: string;
+  pin: string;
+  description?: string;
+}
+
+export interface WithdrawalResponse {
+  status: boolean;
+  data: {
+    transactionId: string;
+    reference: string;
+    status: string;
+    newBalance: number;
+    message?: string;
+  };
+}
+
+export interface Transaction {
+  _id: string;
+  reference: string;
+  type: "withdrawal" | "bonus" | "trade_credit" | "internal_transfer" | string;
+  amount: number;
+  currency: string;
+  status: "pending" | "success" | "failed" | "processing" | string;
+  balanceSource: "main" | "referral";
+  createdAt: string;
+}
+
+export interface GetTransactionsResponse {
+  status: boolean;
+  message: string;
+  data: {
+    transactions: Transaction[];
+    pagination: {
+      currentPage: number;
+      totalPages: number;
+      totalItems: number;
+    };
+  };
+}
+
+export interface TransactionDetailsResponse {
+  status: boolean;
+  message: string;
+  data: Transaction & {
+    userId: string;
+    description?: string;
+    adminNotes?: string;
+    updatedAt: string;
+    paymentMethodId?: {
+      _id: string;
+      type?: string;
+      bankName?: string;
+      accountName?: string;
+      accountNumber?: string;
+      mobileNetwork?: string | null;
+      mobileNumber?: string;
+    };
+    orderId?: {
+      _id: string;
+      orderNumber: string;
+    };
+  };
+}
+
 export const paymentApi = {
   addPaymentMethod: async (
     payload: AddPaymentMethodPayload
@@ -156,6 +223,21 @@ export const paymentApi = {
 
   getSupportedPaymentMethods: async (): Promise<GetSupportedPaymentMethodsResponse> => {
     const response = await api.get("/payments/supported");
+    return response.data;
+  },
+
+  withdraw: async (payload: WithdrawalPayload): Promise<WithdrawalResponse> => {
+    const response = await api.post("/transactions/withdraw", payload);
+    return response.data;
+  },
+
+  getTransactions: async (params?: { page?: number; limit?: number; type?: string; status?: string }): Promise<GetTransactionsResponse> => {
+    const response = await api.get("/transactions", { params });
+    return response.data;
+  },
+
+  getTransactionDetails: async (id: string): Promise<TransactionDetailsResponse> => {
+    const response = await api.get(`/transactions/${id}`);
     return response.data;
   },
 };

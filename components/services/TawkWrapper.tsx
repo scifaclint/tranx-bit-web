@@ -22,6 +22,7 @@ export default function TawkToWidgetWrapper() {
             user={tawkUser}
             hideOnRoutes={[
                 "/auth*",
+                "/register*",
                 "/internal-portal-Trx13*",
                 "/reset-password*",
                 "/sell-giftcards",

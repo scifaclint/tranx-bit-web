@@ -56,8 +56,8 @@ export default function LoadingAnimation({ }: LoadingAnimationProps) {
         return "Finding the best deals for you...";
       case pathname.startsWith("/sell-giftcards"):
         return "Preparing your selling dashboard...";
-      case pathname.startsWith("/transactions"):
-        return "Fetching your transactions...";
+      case pathname.startsWith("/orders"):
+        return "Fetching your orders...";
       case pathname.startsWith("/profile"):
         return "Loading your profile...";
       case pathname.startsWith("/settings"):

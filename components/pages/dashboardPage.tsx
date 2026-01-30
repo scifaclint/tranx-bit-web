@@ -7,22 +7,15 @@ import {
   DollarSign,
 } from "lucide-react";
 
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-
 import { Card } from "@/components/ui/card";
 
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+
 import { SellGiftCardGrid } from "@/components/dashboard/sell-card-grid";
 import DashboardWidgets from "@/components/dashboard/dashboard-widgets";
+import RecentTransactions from "@/components/dashboard/recent-transactions";
 
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState("sell");
@@ -116,6 +109,11 @@ export default function DashboardPage() {
             </p>
           </div>
         </Card>
+      </div>
+
+      {/* Recent Transactions */}
+      <div className="mb-8 h-[500px]">
+        <RecentTransactions />
       </div>
 
       {/* Tabs and Search Section */}

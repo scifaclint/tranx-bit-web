@@ -38,6 +38,31 @@ export const useVerifyAdmin = () => {
     });
 };
 
+export const useAdminTransactions = (params?: {
+    page?: number;
+    limit?: number;
+    type?: string;
+    status?: string;
+}) => {
+    return useQuery({
+        queryKey: queryKeys.admin.transactions.list(params),
+        queryFn: () => adminApi.getAllTransactions(params),
+        staleTime: Infinity,
+    });
+};
+
+export const useAdminWithdrawals = (params?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+}) => {
+    return useQuery({
+        queryKey: queryKeys.admin.withdrawals.list(params),
+        queryFn: () => adminApi.getAllWithdrawals(params),
+        staleTime: Infinity,
+    });
+};
+
 // ============= MUTATIONS =============
 
 export const useApproveOrder = () => {

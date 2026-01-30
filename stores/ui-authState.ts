@@ -23,16 +23,17 @@ export const useAuthMode = create<AuthStore>((set) => ({
 
     const params = new URLSearchParams(window.location.search);
     const mode = params.get("mode");
+    const path = window.location.pathname;
 
-    if (mode === "register" || mode === "signup") {
+    if (mode === "register" || mode === "signup" || path === "/register" || path === "/signup") {
       set({ authMode: "register" });
-    } else if (mode === "forgot-password") {
+    } else if (mode === "forgot-password" || path === "/forgot-password") {
       set({ authMode: "forgot-password" });
     } else if (mode === "verify-email") {
       set({ authMode: "verify-email" });
     } else if (mode === "reset-success") {
       set({ authMode: "reset-success" });
     }
-  
+
   },
 }));

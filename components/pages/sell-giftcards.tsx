@@ -153,11 +153,7 @@ function SellGiftCardsContent() {
 
       if (matchedBrand) {
         setSelectedBrand(matchedBrand._id);
-        if (matchedBrand.category?.toLowerCase() === "physical") {
-          setCardType("physical");
-        } else {
-          setCardType("ecodes");
-        }
+        // category is obsolete, so we don't auto-set cardType based on it
       }
     }
 

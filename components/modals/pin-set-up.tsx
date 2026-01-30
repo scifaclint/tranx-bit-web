@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Lock, AlertCircle, CheckCircle2, Eye, EyeOff, ArrowLeft, Loader2 } from "lucide-react";
 import { adminApi } from "@/lib/api/admin";
+import { authApi } from "@/lib/api/auth";
 import { toast } from "sonner";
 
 type Step = "initial" | "password" | "pin" | "confirmPin" | "success";
@@ -24,9 +25,10 @@ interface PinSetupDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onPinSet?: (pin: string) => void;
+    mode?: 'admin' | 'client'; // Determines which API to use
 }
 
-export default function PinSetupDialog({ open, onOpenChange, onPinSet }: PinSetupDialogProps) {
+export default function PinSetupDialog({ open, onOpenChange, onPinSet, mode = 'admin' }: PinSetupDialogProps) {
     const [step, setStep] = useState<Step>("initial");
     const [password, setPassword] = useState("");
     const [pin, setPin] = useState("");
@@ -83,10 +85,21 @@ export default function PinSetupDialog({ open, onOpenChange, onPinSet }: PinSetu
         setErrors({});
 
         try {
-            const response = await adminApi.setPin({
-                currentPassword: password,
-                newPin: pin
-            });
+            let response;
+
+            if (mode === 'client') {
+                // Client mode: use authApi.setUserPin
+                response = await authApi.setUserPin({
+                    pin: pin,
+                    password: password
+                });
+            } else {
+                // Admin mode: use adminApi.setPin
+                response = await adminApi.setPin({
+                    currentPassword: password,
+                    newPin: pin
+                });
+            }
 
             if (response.status) {
                 setStep("success");
@@ -134,13 +147,13 @@ export default function PinSetupDialog({ open, onOpenChange, onPinSet }: PinSetu
 
     return (
         <>
-            <Dialog open={open} onOpenChange={onOpenChange}>
+            <Dialog open={open} onOpenChange={mode === 'client' ? onOpenChange : undefined}>
                 <DialogContent
-                    className={`sm:max-w-md border-2 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] bg-white ${shake ? "animate-shake" : ""
-                        }`}
+                    className={`w-[95%] max-w-md border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] sm:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] bg-white rounded-xl ${shake ? "animate-shake" : ""
+                        } p-0 overflow-hidden`}
                 >
                     {/* Animated Header */}
-                    <DialogHeader className="space-y-3 border-b-2 border-black pb-4 mb-2">
+                    <DialogHeader className="p-4 sm:p-6 pb-2 sm:pb-4 border-b-2 border-black bg-zinc-50 dark:bg-zinc-900/50">
                         <motion.div
                             initial={{ scale: 0, rotate: -180 }}
                             animate={{ scale: 1, rotate: 0 }}
@@ -191,7 +204,7 @@ export default function PinSetupDialog({ open, onOpenChange, onPinSet }: PinSetu
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0, x: -20 }}
                                 transition={{ duration: 0.3 }}
-                                className="py-6 space-y-6"
+                                className="p-4 sm:p-6 space-y-5"
                             >
                                 <div className="flex flex-col items-center text-center space-y-4">
                                     <motion.div
@@ -220,7 +233,7 @@ export default function PinSetupDialog({ open, onOpenChange, onPinSet }: PinSetu
 
                                 <Button
                                     onClick={() => setStep("password")}
-                                    className="w-full bg-black hover:bg-black/90 text-white font-semibold"
+                                    className="w-full h-12 bg-black hover:bg-black/80 text-white font-bold rounded-xl shadow-[0px_4px_0px_0px_rgba(0,0,0,0.15)] active:shadow-none active:translate-y-[2px] transition-all"
                                     size="lg"
                                 >
                                     Set PIN Now
@@ -235,7 +248,7 @@ export default function PinSetupDialog({ open, onOpenChange, onPinSet }: PinSetu
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0, x: -20 }}
                                 transition={{ duration: 0.3 }}
-                                className="space-y-6 py-2"
+                                className="p-4 sm:p-6 space-y-5"
                             >
                                 <div className="space-y-2">
                                     <Label htmlFor="password" className="font-semibold">
@@ -250,8 +263,8 @@ export default function PinSetupDialog({ open, onOpenChange, onPinSet }: PinSetu
                                             onChange={(e) => setPassword(e.target.value)}
                                             onKeyDown={(e) => e.key === "Enter" && handlePasswordSubmit()}
                                             placeholder="Enter your password"
-                                            className={`border-2 pr-10 ${errors.password ? "border-red-500" : "border-black"
-                                                } focus-visible:ring-black`}
+                                            className={`h-12 border-2 pr-10 ${errors.password ? "border-red-500 bg-red-50" : "border-zinc-200 focus:border-black"
+                                                } rounded-xl text-lg focus-visible:ring-black`}
                                             autoFocus
                                         />
                                         <Button
@@ -283,7 +296,7 @@ export default function PinSetupDialog({ open, onOpenChange, onPinSet }: PinSetu
 
                                 <Button
                                     onClick={handlePasswordSubmit}
-                                    className="w-full bg-black hover:bg-black/90 text-white font-semibold"
+                                    className="w-full h-12 bg-black hover:bg-black/80 text-white font-bold rounded-xl shadow-[0px_4px_0px_0px_rgba(0,0,0,0.15)] active:shadow-none active:translate-y-[2px] transition-all"
                                     size="lg"
                                 >
                                     Continue
@@ -298,7 +311,7 @@ export default function PinSetupDialog({ open, onOpenChange, onPinSet }: PinSetu
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0, x: -20 }}
                                 transition={{ duration: 0.3 }}
-                                className="space-y-6 py-2"
+                                className="p-4 sm:p-6 space-y-5"
                             >
                                 <div className="space-y-3">
                                     <Label htmlFor="pin" className="font-semibold">
@@ -315,7 +328,7 @@ export default function PinSetupDialog({ open, onOpenChange, onPinSet }: PinSetu
                                         onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
                                         onKeyDown={(e) => e.key === "Enter" && handlePinSubmit()}
                                         placeholder="••••"
-                                        className={`border-2 text-center text-3xl font-bold tracking-[0.5em] ${errors.pin ? "border-red-500" : "border-black"
+                                        className={`h-16 rounded-xl border-2 text-center text-3xl font-bold tracking-[0.5em] ${errors.pin ? "border-red-500 bg-red-50" : "border-zinc-200 focus:border-black"
                                             } focus-visible:ring-black`}
                                         autoFocus
                                     />
@@ -351,14 +364,14 @@ export default function PinSetupDialog({ open, onOpenChange, onPinSet }: PinSetu
                                     <Button
                                         onClick={handleBack}
                                         variant="outline"
-                                        className="flex-1 border-2 border-black hover:bg-gray-100"
+                                        className="flex-1 h-12 border-2 border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50 text-zinc-700 font-bold rounded-xl"
                                     >
                                         <ArrowLeft className="w-4 h-4 mr-2" />
                                         Back
                                     </Button>
                                     <Button
                                         onClick={handlePinSubmit}
-                                        className="flex-1 bg-black hover:bg-black/90 text-white font-semibold"
+                                        className="flex-1 h-12 bg-black hover:bg-black/80 text-white font-bold rounded-xl shadow-[0px_4px_0px_0px_rgba(0,0,0,0.15)] active:shadow-none active:translate-y-[2px] transition-all"
                                     >
                                         Continue
                                     </Button>
@@ -373,7 +386,7 @@ export default function PinSetupDialog({ open, onOpenChange, onPinSet }: PinSetu
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0, x: -20 }}
                                 transition={{ duration: 0.3 }}
-                                className="space-y-6 py-2"
+                                className="p-4 sm:p-6 space-y-5"
                             >
                                 <div className="space-y-3">
                                     <Label htmlFor="confirmPin" className="font-semibold">
@@ -390,7 +403,7 @@ export default function PinSetupDialog({ open, onOpenChange, onPinSet }: PinSetu
                                         onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ""))}
                                         onKeyDown={(e) => e.key === "Enter" && handleConfirmPinSubmit()}
                                         placeholder="••••"
-                                        className={`border-2 text-center text-3xl font-bold tracking-[0.5em] ${errors.confirmPin ? "border-red-500" : "border-black"
+                                        className={`h-16 rounded-xl border-2 text-center text-3xl font-bold tracking-[0.5em] ${errors.confirmPin ? "border-red-500 bg-red-50" : "border-zinc-200 focus:border-black"
                                             } focus-visible:ring-black`}
                                         autoFocus
                                     />
@@ -427,7 +440,7 @@ export default function PinSetupDialog({ open, onOpenChange, onPinSet }: PinSetu
                                         onClick={handleBack}
                                         variant="outline"
                                         disabled={isSubmitting}
-                                        className="flex-1 border-2 border-black hover:bg-gray-100"
+                                        className="flex-1 h-12 border-2 border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50 text-zinc-700 font-bold rounded-xl"
                                     >
                                         <ArrowLeft className="w-4 h-4 mr-2" />
                                         Back
@@ -435,7 +448,7 @@ export default function PinSetupDialog({ open, onOpenChange, onPinSet }: PinSetu
                                     <Button
                                         onClick={handleConfirmPinSubmit}
                                         disabled={isSubmitting}
-                                        className="flex-1 bg-black hover:bg-black/90 text-white font-semibold"
+                                        className="flex-1 h-12 bg-black hover:bg-black/80 text-white font-bold rounded-xl shadow-[0px_4px_0px_0px_rgba(0,0,0,0.15)] active:shadow-none active:translate-y-[2px] transition-all"
                                     >
                                         {isSubmitting ? (
                                             <>

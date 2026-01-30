@@ -64,6 +64,7 @@ export interface LoginResponse {
       id: number;
       first_name: string;
       last_name: string;
+      username: string;
       email: string;
       is_verified: boolean;
       created_at: string;
@@ -78,6 +79,8 @@ export interface LoginResponse {
       kyc_submitted_at?: string | null;
       kyc_verified_at?: string | null;
       wallet_balance?: string;
+      referral_balance?: string;
+      is_pin_set?: boolean;
     };
   };
 }
@@ -123,6 +126,7 @@ export interface User {
   id: number;
   first_name: string;
   last_name: string;
+  username?: string;
   email: string;
   phone?: string;
   is_verified: boolean;
@@ -173,6 +177,16 @@ export interface AvatarUploadResponse {
     uploadUrl: string;
     key: string;
   };
+}
+
+export interface SetPinPayload {
+  pin: string;
+  password: string;
+}
+
+export interface SetPinResponse {
+  status: boolean;
+  message: string;
 }
 
 export const authApi = {
@@ -278,6 +292,11 @@ export const authApi = {
 
   requestAvatarUpload: async (data: AvatarUploadRequest): Promise<AvatarUploadResponse> => {
     const response = await api.post("/auth/request-avatar-upload", data);
+    return response.data;
+  },
+
+  setUserPin: async (data: SetPinPayload): Promise<SetPinResponse> => {
+    const response = await api.post("/user/set-pin", data);
     return response.data;
   },
 };

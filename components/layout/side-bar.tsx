@@ -26,7 +26,7 @@ import {
   Settings,
   Users,
   CreditCard,
-  Wallet,
+  Wallet, ShoppingBag, Banknote, Coins
 } from "lucide-react";
 
 export const AdminBaseRoute = "/internal-portal-Trx13";
@@ -81,10 +81,10 @@ const Sidebar = ({
       href: "/sell-giftcards",
     },
     {
-      id: "transactions",
-      label: "Transactions",
-      icon: Receipt,
-      href: "/transactions",
+      id: "orders",
+      label: "Orders",
+      icon: ShoppingBag,
+      href: "/orders",
     },
     { id: "settings", label: "Settings", icon: Settings, href: "/settings" },
   ];
@@ -109,6 +109,18 @@ const Sidebar = ({
       icon: Receipt,
       href: `${AdminBaseRoute}/orders`,
     },
+    {
+      id: "transactions",
+      label: "Transactions",
+      icon: Banknote,
+      href: `${AdminBaseRoute}/transactions`,
+    },
+    {
+      id: "currency",
+      label: "Currency",
+      icon: Coins,
+      href: `${AdminBaseRoute}/currency`,
+    },
     // {
     //   id: "users",
     //   label: "Users",
@@ -121,6 +133,7 @@ const Sidebar = ({
     //   icon: Settings,
     //   href: `${AdminBaseRoute}/settings`,
     // },
+
   ];
 
   const navItems = userType === "admin" ? adminNavItems : userNavItems;
@@ -135,7 +148,7 @@ const Sidebar = ({
     const isActive =
       item.href === "/buy-giftcards" ||
         item.href === "/sell-giftcards" ||
-        item.href === "/transactions" ||
+        item.href === "/orders" ||
         item.href.includes(`${AdminBaseRoute}/`)
         ? pathname.startsWith(item.href)
         : pathname === item.href;

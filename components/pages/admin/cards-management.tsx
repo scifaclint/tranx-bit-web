@@ -12,14 +12,7 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table"
+
 import Image from "next/image"
 import {
     DropdownMenu,
@@ -129,7 +122,7 @@ const ViewCardItem = ({ card, onEdit, onToggleStatus, onDelete }: ViewCardItemPr
                     {(card.type === 'sell' || card.type === 'both') && (
                         <div className="flex items-center gap-1.5">
                             <div className="text-[10px] font-black text-green-600 bg-green-500/10 px-2 py-0.5 rounded-lg border border-green-500/5">
-                                {card.sellRate}/$
+                                {card.sellRate}
                             </div>
                             <span className="text-[7px] font-bold text-muted-foreground uppercase">Rate</span>
                         </div>
@@ -137,7 +130,7 @@ const ViewCardItem = ({ card, onEdit, onToggleStatus, onDelete }: ViewCardItemPr
                     {(card.type === 'buy' || card.type === 'both') && (
                         <div className="flex items-center gap-1.5">
                             <div className="text-[10px] font-black text-blue-600 bg-blue-500/10 px-2 py-0.5 rounded-lg border border-blue-500/5">
-                                ${card.buyRate || card.prices?.[0]?.price || '0'}
+                                {card.buyRate || '0.00'}
                             </div>
                             <span className="text-[7px] font-bold text-muted-foreground uppercase">Price</span>
                         </div>
@@ -146,13 +139,13 @@ const ViewCardItem = ({ card, onEdit, onToggleStatus, onDelete }: ViewCardItemPr
 
                 <div className="flex items-center justify-center gap-1.5">
                     <div className="text-[9px] font-black text-muted-foreground/70 bg-muted/60 px-1.5 py-0.5 rounded-lg uppercase">
-                        {card.currency || card.fixedCurrency || 'USD'}
+                        {card.fixedCurrency || 'USD'}
                     </div>
                 </div>
 
                 <div className="pt-2 border-t border-dashed border-borderColorPrimary/50 flex items-center justify-between">
                     <span className="text-[8px] font-bold text-muted-foreground/30 uppercase">
-                        {card.prices?.length || 0} LVLS
+                        {card.denominations?.length || 0} LVLS
                     </span>
                     <button
                         className="text-[8px] font-black uppercase tracking-tighter text-blue-600 hover:underline"
@@ -185,23 +178,17 @@ export default function CardsManageMentPage() {
             id: card._id,
             name: card.name,
             brand: card.brand,
-            category: card.category,
             type: card.type === "both" ? "both" : (card.type as "buy" | "sell"),
             description: card.description,
             image: card.imageUrl,
-            currency: card.currency,
-            buyRate: card.buyRate,
-            sellRate: card.sellRate,
-            stockQuantity: card.stockQuantity,
+            fixedCurrency: card.fixedCurrency,
+            buyRate: card.buyRate || 0,
+            sellRate: card.sellRate || 0,
             minQuantity: card.minQuantity,
             maxQuantity: card.maxQuantity,
-            discount: card.discount,
             status: card.status === "active" ? "active" : "disabled",
             instructions: card.instructions,
-            prices: card.prices?.map(p => ({
-                denomination: p.denomination,
-                price: p.price
-            })) || [],
+            denominations: card.denominations,
         })
         setIsAddModalOpen(true)
     }

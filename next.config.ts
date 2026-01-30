@@ -33,6 +33,14 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  async rewrites() {
+    return [
+      {
+        source: "/register",
+        destination: "/auth?mode=register",
+      },
+    ];
+  },
 };
 
 export default nextConfig;

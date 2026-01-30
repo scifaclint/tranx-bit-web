@@ -52,18 +52,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { MoreVertical, Star, CheckCircle2 } from "lucide-react";
 import { PAYMENT_LOGOS, NETWORK_LABELS } from "@/lib/payment-constants";
 import { validateImageSizeAndType } from "@/lib/upload-utils";
+import PinSetupDialog from "@/components/modals/pin-set-up";
 
 
 type TabType = "general" | "personal" | "kyc" | "payment" | "security";
@@ -169,6 +163,9 @@ export default function SettingsPage() {
   // Payment Modal State
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [editingMethod, setEditingMethod] = useState<any>(null);
+
+  // Pin Modal State
+  const [showPinModal, setShowPinModal] = useState(false);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -699,6 +696,30 @@ export default function SettingsPage() {
                 </h2>
 
                 <div className="space-y-6 max-w-2xl">
+                  {/* Change PIN */}
+                  <Card className="p-6 dark:bg-background border-borderColorPrimary">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Lock className="w-5 h-5 text-zinc-900 dark:text-zinc-100" />
+                          <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">
+                            Transaction PIN
+                          </h3>
+                        </div>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                          Set or change your 4-6 digit PIN for secure withdrawals and transactions.
+                        </p>
+                        <Button
+                          variant="outline"
+                          className="border-zinc-200 text-zinc-900 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                          onClick={() => setShowPinModal(true)}
+                        >
+                          Change PIN
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+
                   {/* Delete Account */}
                   <Card className="p-6 dark:bg-background border-red-500/20 bg-red-500/5">
                     <div className="flex items-start justify-between">
@@ -785,6 +806,18 @@ export default function SettingsPage() {
           setEditingMethod(null);
         }}
         editingMethod={editingMethod}
+      />
+
+      {/* PIN Setup Modal */}
+      <PinSetupDialog
+        open={showPinModal}
+        onOpenChange={setShowPinModal}
+        onPinSet={() => {
+          if (user) {
+            setAuth({ ...user, is_pin_set: true } as any, useAuthStore.getState().token || "");
+          }
+        }}
+        mode="client"
       />
     </div>
   );

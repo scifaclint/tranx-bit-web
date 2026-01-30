@@ -21,10 +21,26 @@ export const queryKeys = {
       all: ["admin", "cards"] as const,
       list: () => ["admin", "cards", "list"] as const,
     },
+    transactions: {
+      all: ["admin", "transactions"] as const,
+      list: (params?: { page?: number; limit?: number; type?: string; status?: string }) =>
+        ["admin", "transactions", "list", params] as const,
+    },
+    withdrawals: {
+      all: ["admin", "withdrawals"] as const,
+      list: (params?: { page?: number; limit?: number; status?: string }) =>
+        ["admin", "withdrawals", "list", params] as const,
+    },
   },
   payments: {
     all: ["payments"] as const,
     list: () => ["payments", "list"] as const,
     supported: () => ["payments", "supported"] as const,
+  },
+  transactions: {
+    all: ["transactions"] as const,
+    user: (params?: { page?: number; limit?: number; type?: string; status?: string }) =>
+      ["transactions", "user", params] as const,
+    detail: (id: string) => ["transactions", "detail", id] as const,
   },
 };

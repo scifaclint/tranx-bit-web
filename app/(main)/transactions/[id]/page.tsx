@@ -1,452 +1,270 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useRouter, useParams } from "next/navigation";
+import Image from "next/image";
+import { format } from "date-fns";
+import {
+    ArrowLeft,
+    Calendar,
+    CreditCard,
+    CheckCircle2,
+    XCircle,
+    Clock,
+    ArrowUpRight,
+    Copy,
+    Hash,
+    AlertCircle
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  ArrowLeft,
-  Copy,
-  Check,
-  Loader,
-  Eye,
-  EyeOff,
-  Lock,
-  Image as ImageIcon,
-} from "lucide-react";
-import { toast } from "sonner";
-import { ordersApi, OrderDetailsResponse } from "@/lib/api/orders";
-import { PAYMENT_LOGOS, CARD_CURRENCIES } from "@/lib/payment-constants";
-import Image from "next/image";
-import "flag-icons/css/flag-icons.min.css";
+import { useTransactionDetails } from "@/hooks/useTransactions";
 
 export default function TransactionDetailsPage() {
-  const params = useParams();
-  const router = useRouter();
-  const transactionId = params.id as string;
+    const router = useRouter();
+    const params = useParams();
+    const id = params?.id as string;
 
-  const [copiedOrderId, setCopiedOrderId] = useState(false);
-  const [orderData, setOrderData] = useState<OrderDetailsResponse["data"] | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [showCodes, setShowCodes] = useState(false);
-  const [loadingImages, setLoadingImages] = useState(false);
-  const [imageUrls, setImageUrls] = useState<string[]>([]);
-  const [imagesFetched, setImagesFetched] = useState(false);
+    const { data, isLoading, error } = useTransactionDetails(id);
+    const transaction = data?.data;
 
-  useEffect(() => {
-    const fetchTransaction = async () => {
-      try {
-        const response = await ordersApi.getOrderDetails(transactionId);
-        if (response.status && response.data) {
-          setOrderData(response.data);
-        } else {
-          toast.error("Transaction not found");
-          router.push("/transactions");
+    // Loading Skeleton
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-zinc-50/50 dark:bg-zinc-950/50 pb-20 sm:pb-0">
+                <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b px-4 h-14 flex items-center justify-between sm:h-16 sm:px-6">
+                    <div className="flex items-center gap-2">
+                        <Skeleton className="w-8 h-8 rounded-full" />
+                        <Skeleton className="h-4 w-32" />
+                    </div>
+                </header>
+
+                <main className="container max-w-lg mx-auto p-4 sm:p-8 space-y-6">
+                    <div className="text-center space-y-4 py-6">
+                        <Skeleton className="w-16 h-16 mx-auto rounded-2xl" />
+                        <div className="space-y-2 flex flex-col items-center">
+                            <Skeleton className="h-4 w-24" />
+                            <Skeleton className="h-10 w-48" />
+                            <Skeleton className="h-6 w-24" />
+                        </div>
+                    </div>
+
+                    <Card className="border-zinc-200 dark:border-zinc-800 shadow-sm bg-white dark:bg-zinc-900">
+                        <CardHeader className="pb-2">
+                            <Skeleton className="h-3 w-24" />
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {[1, 2, 3].map((i) => (
+                                <div key={i}>
+                                    <div className="flex items-center justify-between py-2">
+                                        <Skeleton className="h-4 w-20" />
+                                        <Skeleton className="h-4 w-32" />
+                                    </div>
+                                    {i < 3 && <Separator className="mt-2" />}
+                                </div>
+                            ))}
+                        </CardContent>
+                    </Card>
+                </main>
+            </div>
+        );
+    }
+
+    // Error State
+    if (error || !transaction) {
+        return (
+            <div className="min-h-screen bg-zinc-50/50 dark:bg-zinc-950/50 flex flex-col items-center justify-center p-4 text-center">
+                <div className="w-16 h-16 bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-full flex items-center justify-center mb-4">
+                    <AlertCircle className="w-8 h-8" />
+                </div>
+                <h2 className="text-xl font-bold mb-2">Transaction not found</h2>
+                <p className="text-zinc-500 mb-6 max-w-xs">
+                    We couldn&apos;t find the transaction details you&apos;re looking for.
+                </p>
+                <Button onClick={() => router.push("/dashboard")}>
+                    Go to Dashboard
+                </Button>
+            </div>
+        );
+    }
+
+    const getStatusConfig = (status: string) => {
+        switch (status) {
+            case "success":
+            case "completed":
+                return {
+                    color: "text-green-600 dark:text-green-400",
+                    bg: "bg-green-100 dark:bg-green-900/20",
+                    navBg: "bg-green-500",
+                    icon: CheckCircle2,
+                    label: "Successful"
+                };
+            case "failed":
+            case "rejected":
+                return {
+                    color: "text-red-600 dark:text-red-400",
+                    bg: "bg-red-100 dark:bg-red-900/20",
+                    navBg: "bg-red-500",
+                    icon: XCircle,
+                    label: "Failed"
+                };
+            default:
+                return {
+                    color: "text-amber-600 dark:text-amber-400",
+                    bg: "bg-amber-100 dark:bg-amber-900/20",
+                    navBg: "bg-amber-500",
+                    icon: Clock,
+                    label: "Processing"
+                };
         }
-      } catch (error: any) {
-        const errorMessage = error?.response?.data?.message || "Failed to load transaction";
-        toast.error(errorMessage);
-        router.push("/transactions");
-      } finally {
-        setIsLoading(false);
-      }
     };
 
-    fetchTransaction();
-  }, [transactionId, router]);
+    const getPaymentMethodImage = (method: any) => {
+        if (!method) return null;
+        if (method.type === "btc") return "/payments/bitcoin.svg";
+        if (method.type === "mobile_money") {
+            switch (method.mobileNetwork) {
+                case "mtn": return "/payments/mtn-seeklogo.svg";
+                case "telecel": return "/payments/telecel_logo.svg";
+                case "airteltigo": return "/payments/airtel-tigo.svg";
+                default: return null;
+            }
+        }
+        return null;
+    };
 
-  const handleViewImages = async () => {
-    setLoadingImages(true);
-    try {
-      const response = await ordersApi.getOrderImages(transactionId);
-      if (response.status && response.data.images) {
-        setImageUrls(response.data.images);
-        setImagesFetched(true);
-        toast.success("Images loaded successfully");
-      }
-    } catch (error: any) {
-      const errorMessage = error?.response?.data?.message || "Failed to load images";
-      toast.error(errorMessage);
-    } finally {
-      setLoadingImages(false);
-    }
-  };
+    const statusConfig = getStatusConfig(transaction.status);
+    const StatusIcon = statusConfig.icon;
+    const paymentImage = getPaymentMethodImage(transaction.paymentMethodId);
 
-  const handleCopyOrderId = () => {
-    navigator.clipboard.writeText(orderData?.orderNumber || transactionId);
-    setCopiedOrderId(true);
-    toast.success("Order ID copied to clipboard!");
-    setTimeout(() => setCopiedOrderId(false), 2000);
-  };
-
-  const getCurrencyInfo = (currencyId?: string) => {
-    if (!currencyId) return { symbol: "$", flag: "us", name: "US Dollar" };
-    const currency = CARD_CURRENCIES.find(c => c.id.toUpperCase() === currencyId.toUpperCase());
-    return currency || { symbol: currencyId.toUpperCase(), flag: "us", name: currencyId };
-  };
-
-  const TransactionSkeleton = () => (
-    <div className="max-w-3xl space-y-4 pb-8">
-      <Skeleton className="h-10 w-48 rounded-xl" />
-      <div className="space-y-1">
-        <Skeleton className="h-8 w-64" />
-        <Skeleton className="h-5 w-80" />
-      </div>
-      <Card className="border-borderColorPrimary rounded-2xl overflow-hidden">
-        <div className="p-6 space-y-6">
-          <div className="flex items-center justify-between">
-            <Skeleton className="h-8 w-48" />
-            <Skeleton className="h-6 w-24 rounded-full" />
-          </div>
-          <Separator className="bg-borderColorPrimary/50" />
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-            <Skeleton className="h-16 w-full" />
-            <Skeleton className="h-16 w-full" />
-            <Skeleton className="h-16 w-full" />
-          </div>
-          <Separator className="bg-borderColorPrimary/50" />
-          <Skeleton className="h-32 w-full rounded-2xl" />
-          <Separator className="bg-borderColorPrimary/50" />
-          <Skeleton className="h-24 w-full rounded-2xl" />
-        </div>
-      </Card>
-    </div>
-  );
-
-  if (isLoading) {
-    return <TransactionSkeleton />;
-  }
-
-  if (!orderData) {
-    return null;
-  }
-
-  const firstItem = orderData.items?.[0];
-  const cardName = firstItem?.cardName || firstItem?.cardBrand || "Gift Card";
-  const cardValue = orderData.cardValue || 0;
-  const amountToReceive = orderData.amountToReceive || 0;
-  const paymentMethod = orderData.paymentMethodId;
-  const cardCurrencyInfo = getCurrencyInfo(orderData.cardCurrency);
-  const payoutCurrencyInfo = getCurrencyInfo(orderData.payoutCurrency);
-
-  const paymentMethodDisplay = paymentMethod?.type === "mobile_money"
-    ? `${paymentMethod.mobileNetwork?.toUpperCase()} - ${paymentMethod.accountName} (${paymentMethod.mobileNumber})`
-    : `BTC - ${paymentMethod?.btcAddress}`;
-
-  const rateValue = orderData.orderType === "sell" ? orderData.sellRate : orderData.buyRate;
-  const rateLabel = orderData.orderType === "sell" ? "Sell Rate" : "Buy Rate";
-
-  return (
-    <div className="max-w-3xl space-y-4 pb-8">
-      {/* Back Button */}
-      <Button
-        variant="ghost"
-        onClick={() => router.push("/transactions")}
-        className="flex items-center gap-2 bg-backgroundSecondary border border-borderColorPrimary dark:border-white/10 rounded-xl"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Back to Transactions
-      </Button>
-
-      {/* Page Title */}
-      <div className="space-y-1">
-        <h1 className="text-2xl font-bold">Transaction Details</h1>
-        <div className="flex items-center gap-2">
-          <p className="text-sm text-zinc-500">Order ID: <span className="font-mono text-zinc-900 dark:text-zinc-100">{orderData.orderNumber}</span></p>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleCopyOrderId}
-            className="h-6 w-6 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-          >
-            {copiedOrderId ? (
-              <Check className="h-4 w-4 text-green-600" />
-            ) : (
-              <Copy className="h-4 w-4" />
-            )}
-          </Button>
-        </div>
-      </div>
-
-      {/* Status Badge & Label */}
-      <Card className="bg-zinc-50 dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-800 shadow-none rounded-2xl overflow-hidden">
-        <div className="p-4 flex gap-3">
-          <div className="w-10 h-10 bg-zinc-900 dark:bg-zinc-100 rounded-full flex items-center justify-center flex-shrink-0">
-            <Lock className="h-5 w-5 text-white dark:text-zinc-900" />
-          </div>
-          <div>
-            <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 capitalize">
-              {orderData.status.replace(/_/g, " ")}
-            </h3>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
-              {orderData.status === "completed"
-                ? "This transaction has been successfully processed and funds released."
-                : orderData.status === "pending" || orderData.status === "processing"
-                  ? "This transaction is currently under review by our agents."
-                  : "There was an issue processing this transaction."}
-            </p>
-          </div>
-        </div>
-      </Card>
-
-      {/* Rejection Reason (if failed) */}
-      {orderData.status === "failed" && orderData.rejectionReason && (
-        <Card className="bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800 shadow-none rounded-2xl overflow-hidden">
-          <div className="p-4">
-            <h3 className="font-semibold text-red-900 dark:text-red-100 text-sm">Rejection Reason</h3>
-            <p className="text-sm text-red-800 dark:text-red-200 mt-1">{orderData.rejectionReason}</p>
-          </div>
-        </Card>
-      )}
-
-      {/* Admin Notes */}
-      {orderData.notes && (
-        <Card className="bg-zinc-50 dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-800 shadow-none rounded-2xl overflow-hidden">
-          <div className="p-4">
-            <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 text-sm">Admin Notes</h3>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">{orderData.notes}</p>
-          </div>
-        </Card>
-      )}
-
-      {/* Order Summary */}
-      <Card className="dark:bg-zinc-900/50 border-borderColorPrimary rounded-2xl overflow-hidden">
-        <div className="p-6 space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className={`fi fi-${cardCurrencyInfo.flag} text-2xl rounded-sm`}></span>
-              <h2 className="text-xl font-bold">{cardName}</h2>
-            </div>
-            <Badge variant="outline" className="bg-zinc-100 dark:bg-zinc-800 border-none px-3 py-1 font-semibold uppercase tracking-wider text-[10px]">
-              {orderData.status.replace(/_/g, " ")}
-            </Badge>
-          </div>
-
-          <Separator className="bg-borderColorPrimary/50" />
-
-          {/* Details Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-            <div className="space-y-1">
-              <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Card Value</p>
-              <p className="text-lg font-bold">{cardCurrencyInfo.symbol}{cardValue.toLocaleString()}</p>
-            </div>
-            {rateValue !== undefined && (
-              <div className="space-y-1">
-                <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">{rateLabel}</p>
-                <p className="text-lg font-bold">{rateValue}</p>
-              </div>
-            )}
-            <div className="space-y-1">
-              <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Date</p>
-              <p className="text-lg font-bold">{new Date(orderData.createdAt).toLocaleDateString()}</p>
-            </div>
-            {orderData.exchangeRate !== undefined && (
-              <div className="space-y-1">
-                <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Exchange</p>
-                <p className="text-lg font-bold">{orderData.exchangeRate}</p>
-              </div>
-            )}
-          </div>
-
-          <Separator className="bg-borderColorPrimary/50" />
-
-          {/* Proof of Submission */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
-                {orderData.hasImages ? "Card Images" : "Gift Card Codes"}
-              </p>
-              {firstItem?.giftCardCodes && firstItem.giftCardCodes.length > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowCodes(!showCodes)}
-                  className="h-7 px-2 text-[10px] font-bold uppercase tracking-wider text-zinc-500 hover:text-black dark:hover:text-white"
-                >
-                  {showCodes ? (
-                    <><EyeOff className="w-3.5 h-3.5 mr-1.5" /> Hide Codes</>
-                  ) : (
-                    <><Eye className="w-3.5 h-3.5 mr-1.5" /> View Codes</>
-                  )}
-                </Button>
-              )}
-            </div>
-
-            {/* Gift Card Codes */}
-            {firstItem?.giftCardCodes && firstItem.giftCardCodes.length > 0 ? (
-              <div className="space-y-2">
-                {firstItem.giftCardCodes.map((code, i) => (
-                  <div key={i} className="bg-zinc-50 dark:bg-zinc-800/50 p-4 rounded-2xl border border-borderColorPrimary flex items-center justify-between group">
-                    <code className="text-sm font-mono font-black text-zinc-800 dark:text-zinc-200">
-                      {showCodes ? code : "•".repeat(Math.min(code.length, 12))}
-                    </code>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
-                      onClick={() => {
-                        navigator.clipboard.writeText(code);
-                        toast.success("Code copied to clipboard!");
-                      }}
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            ) : orderData.hasImages ? (
-              <div className="space-y-3">
-                {!imagesFetched ? (
-                  <div className="bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6">
-                    <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 bg-zinc-900 dark:bg-zinc-100 rounded-full flex items-center justify-center flex-shrink-0">
-                        <ImageIcon className="w-6 h-6 text-white dark:text-zinc-900" />
-                      </div>
-                      <div className="flex-1 space-y-3">
-                        <div>
-                          <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-                            Secure Image Access
-                          </p>
-                          <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1">
-                            Your card images are encrypted and stored securely. Click below to generate temporary access links.
-                          </p>
-                        </div>
-                        <Button
-                          onClick={handleViewImages}
-                          disabled={loadingImages}
-                          className="w-full h-11 bg-black dark:bg-white text-white dark:text-black hover:opacity-90 font-semibold rounded-xl"
-                        >
-                          {loadingImages ? (
-                            <><Loader className="w-4 h-4 animate-spin mr-2" /> Loading Images...</>
-                          ) : (
-                            <><Lock className="w-4 h-4 mr-2" /> View Secure Images</>
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                ) : loadingImages ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Skeleton className="h-48 rounded-2xl" />
-                    <Skeleton className="h-48 rounded-2xl" />
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {imageUrls.map((img, i) => (
-                        <div key={i} className="relative group rounded-2xl overflow-hidden border border-borderColorPrimary bg-zinc-100 dark:bg-zinc-800">
-                          <img
-                            src={img}
-                            alt={`Card ${i + 1}`}
-                            className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-110"
-                          />
-                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              className="rounded-full font-bold text-xs"
-                              onClick={() => window.open(img, '_blank')}
-                            >
-                              View Full Image
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-xl">
-                      <p className="text-xs text-amber-800 dark:text-amber-200 font-medium">
-                        ⚠️ Links expire in 1 hour for security
-                      </p>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleViewImages}
-                        className="h-7 text-xs font-semibold"
-                      >
-                        Refresh
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <p className="text-sm text-zinc-500 font-medium">Data details submitted securely.</p>
-            )}
-          </div>
-
-          <Separator className="bg-borderColorPrimary/50" />
-
-          {/* Payment Method */}
-          <div className="space-y-3">
-            <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Payment Method</p>
-            <div className="flex items-center gap-3 p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border border-borderColorPrimary">
-              <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center p-2 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
-                {(() => {
-                  const logoKey = paymentMethod?.type === "mobile_money" ? paymentMethod.mobileNetwork : "btc";
-                  return logoKey && PAYMENT_LOGOS[logoKey] ? (
-                    <Image
-                      src={PAYMENT_LOGOS[logoKey]}
-                      alt={paymentMethod?.type || "payment"}
-                      width={32}
-                      height={32}
-                      className="w-full h-full object-contain"
-                    />
-                  ) : (
-                    <Lock className="w-5 h-5 text-zinc-400" />
-                  );
-                })()}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">
-                  {paymentMethodDisplay}
-                </p>
-                <p className="text-xs text-zinc-500">
-                  {paymentMethod?.type === "mobile_money" ? "Mobile Money" : "Cryptocurrency"}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <Separator className="bg-borderColorPrimary/50" />
-
-          {/* Final Payout */}
-          <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl p-6 border border-borderColorPrimary">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div className="space-y-1">
-                <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
-                  {orderData.orderType === "sell" ? "Amount To Receive" : "Amount To Pay"}
-                </p>
+    return (
+        <div className="min-h-screen bg-zinc-50/50 dark:bg-zinc-950/50 pb-20 sm:pb-0">
+            {/* Header */}
+            <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b px-4 h-14 flex items-center justify-between sm:h-16 sm:px-6">
                 <div className="flex items-center gap-2">
-                  <p className="text-3xl font-black text-zinc-900 dark:text-zinc-50">
-                    {payoutCurrencyInfo.symbol}{amountToReceive.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </p>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="-ml-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full"
+                        onClick={() => router.push("/dashboard")}
+                    >
+                        <ArrowLeft className="w-5 h-5" />
+                    </Button>
+                    <h1 className="font-semibold text-base sm:text-lg">Transaction Details</h1>
                 </div>
-              </div>
-            </div>
-          </div>
+                {/* Share button removed as requested */}
+            </header>
 
-          {/* Additional Comments */}
-          {orderData.additionalComments && (
-            <>
-              <Separator className="bg-borderColorPrimary/50" />
-              <div className="space-y-2">
-                <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Your Comments</p>
-                <p className="text-sm text-zinc-600 dark:text-zinc-400">{orderData.additionalComments}</p>
-              </div>
-            </>
-          )}
+            <main className="container max-w-lg mx-auto p-4 sm:p-8 space-y-6">
+
+                {/* Status Card */}
+                <div className="text-center space-y-2 py-6">
+                    <div className={`
+                        w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4
+                        ${statusConfig.bg} ${statusConfig.color}
+                    `}>
+                        <StatusIcon className="w-8 h-8" />
+                    </div>
+                    <div className="space-y-1">
+                        <p className="text-zinc-500 dark:text-zinc-400 text-sm font-medium uppercase tracking-wide">
+                            {transaction.type}
+                        </p>
+                        <h2 className="text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+                            {transaction.currency} {transaction.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </h2>
+                        <Badge variant="outline" className={`mt-2 border-zinc-200 dark:border-zinc-800 ${statusConfig.color} bg-background`}>
+                            {statusConfig.label}
+                        </Badge>
+                    </div>
+                </div>
+
+                <Card className="border-zinc-200 dark:border-zinc-800 shadow-sm bg-white dark:bg-zinc-900">
+                    <CardHeader className="pb-2">
+                        <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Transaction Info</h3>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        {/* Reference */}
+                        <div className="flex items-center justify-between py-2">
+                            <div className="flex items-center gap-2 text-zinc-500">
+                                <Hash className="w-4 h-4" />
+                                <span className="text-sm">Reference</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium font-mono">{transaction.reference}</span>
+                                <Copy className="w-3 h-3 text-zinc-400 cursor-pointer hover:text-zinc-600" />
+                            </div>
+                        </div>
+
+                        <Separator />
+
+                        {/* Date */}
+                        <div className="flex items-center justify-between py-2">
+                            <div className="flex items-center gap-2 text-zinc-500">
+                                <Calendar className="w-4 h-4" />
+                                <span className="text-sm">Date & Time</span>
+                            </div>
+                            <span className="text-sm font-medium">
+                                {format(new Date(transaction.createdAt), "MMM d, yyyy • h:mm a")}
+                            </span>
+                        </div>
+
+                        <Separator />
+
+                        {/* Source */}
+                        <div className="flex items-center justify-between py-2">
+                            <div className="flex items-center gap-2 text-zinc-500">
+                                <ArrowUpRight className="w-4 h-4" />
+                                <span className="text-sm">Source</span>
+                            </div>
+                            <span className="text-sm font-medium capitalize">
+                                {transaction.balanceSource} Wallet
+                            </span>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Payment Method Section */}
+                {transaction.paymentMethodId && (
+                    <Card className="border-zinc-200 dark:border-zinc-800 shadow-sm bg-white dark:bg-zinc-900">
+                        <CardHeader className="pb-2">
+                            <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Payment Method</h3>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="flex items-center gap-4 p-3 rounded-lg bg-zinc-50 dark:bg-zinc-950/50 border border-zinc-100 dark:border-zinc-800">
+                                <div className="w-12 h-12 shrink-0 bg-white rounded-lg border border-zinc-100 flex items-center justify-center p-2">
+                                    {paymentImage ? (
+                                        <Image
+                                            src={paymentImage}
+                                            alt="Provider"
+                                            width={32}
+                                            height={32}
+                                            className="w-full h-full object-contain"
+                                        />
+                                    ) : (
+                                        <CreditCard className="w-6 h-6 text-zinc-400" />
+                                    )}
+                                </div>
+                                <div className="space-y-1 overflow-hidden">
+                                    <p className="text-sm font-bold truncate">
+                                        {transaction.paymentMethodId.accountName || "Unknown Account"}
+                                    </p>
+                                    <p className="text-xs text-zinc-500 font-mono">
+                                        {transaction.paymentMethodId.mobileNumber || transaction.paymentMethodId.accountNumber}
+                                    </p>
+                                </div>
+                                {transaction.paymentMethodId.mobileNetwork && (
+                                    <div className="ml-auto text-xs font-medium px-2 py-1 rounded bg-zinc-200 dark:bg-zinc-800 capitalize">
+                                        {transaction.paymentMethodId.mobileNetwork?.toUpperCase()}
+                                    </div>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+
+            </main>
         </div>
-      </Card>
-
-      {/* Footer Support */}
-      <div className="py-8 text-center bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl border border-borderColorPrimary">
-        <p className="text-sm text-zinc-500 font-medium px-6">
-          Need help? Our team is available 24/7. Chat with our support team using the widget below.
-        </p>
-      </div>
-    </div>
-  );
+    );
 }

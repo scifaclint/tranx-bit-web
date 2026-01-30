@@ -23,6 +23,10 @@ export const useCurrencies = () => {
     return useQuery({
         queryKey: queryKeys.cards.currencies,
         queryFn: () => cardsApi.getCurrencies(),
-        staleTime: 30 * 60 * 1000, // 30 minutes
+        staleTime: Infinity, // Data remains fresh indefinitely
+        gcTime: 60 * 60 * 1000, // Cache for 1 hour
+        refetchOnWindowFocus: false,
+        refetchOnMount: false,
+        refetchOnReconnect: false,
     });
 };
