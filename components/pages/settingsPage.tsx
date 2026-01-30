@@ -64,7 +64,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { MoreVertical, Star, CheckCircle2 } from "lucide-react";
 import { PAYMENT_LOGOS, NETWORK_LABELS } from "@/lib/payment-constants";
 import { validateImageSizeAndType } from "@/lib/upload-utils";
-import { useIsMobile } from "@/hooks/use-mobile";
+
 
 type TabType = "general" | "personal" | "kyc" | "payment" | "security";
 
@@ -78,7 +78,17 @@ type PaymentMethod = {
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<TabType>("personal");
-  const isMobile = useIsMobile();
+  // Custom mobile check for this page to prefer mobile layout up to lg breakpoint (1024px)
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
   const { theme = "system", setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(null);
