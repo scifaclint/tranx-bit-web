@@ -77,7 +77,7 @@ type PaymentMethod = {
 };
 
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<TabType>("general");
+  const [activeTab, setActiveTab] = useState<TabType>("personal");
   const isMobile = useIsMobile();
   const { theme = "system", setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -274,11 +274,7 @@ export default function SettingsPage() {
 
 
   const menuItems = [
-    {
-      id: "general" as TabType,
-      label: "General",
-      icon: Settings,
-    },
+
     {
       id: "personal" as TabType,
       label: "Personal Information",
@@ -344,14 +340,14 @@ export default function SettingsPage() {
                         }`
                         : `w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all
                            ${isActive
-                          ? "bg-primary/10 text-primary font-medium"
+                          ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium"
                           : "hover:bg-muted"
                         }`
                       }
                     `}
                   >
                     <Icon
-                      className={`${isMobile ? "h-3.5 w-3.5 inline-block mr-1.5" : "h-5 w-5"} ${isActive ? (isMobile ? "" : "text-blue-700") : ""}`}
+                      className={`${isMobile ? "h-3.5 w-3.5 inline-block mr-1.5" : "h-5 w-5"} ${isActive ? (isMobile ? "" : "text-zinc-900 dark:text-zinc-100") : ""}`}
                       strokeWidth={isActive ? 2.5 : 1.5}
                     />
                     <span className={isMobile ? "" : "text-sm"}>{item.label}</span>
@@ -365,177 +361,6 @@ export default function SettingsPage() {
         {/* Right Content Area */}
         <div className="flex-1">
           <div className={`${isMobile ? "p-0" : "p-6 bg-white dark:bg-background border border-borderColorPrimary rounded-xl shadow-sm"} min-h-[500px]`}>
-            {activeTab === "general" && (
-              <div className="animate-in fade-in-0 slide-in-from-bottom-2 duration-300">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-6">
-                  General Settings
-                </h2>
-
-                <div className="space-y-6 max-w-2xl">
-                  {/* Appearance */}
-                  <Card className="p-6 dark:bg-background border-borderColorPrimary">
-                    <div className="mb-4">
-                      <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                        Appearance
-                      </h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Customize how TranxBit looks on your device
-                      </p>
-                    </div>
-
-                    <div className="space-y-3">
-                      <Label
-                        htmlFor="theme"
-                        className="text-sm font-medium text-gray-700 dark:text-gray-300"
-                      >
-                        Theme
-                      </Label>
-                      {mounted && (
-                        <Select value={theme} onValueChange={setTheme}>
-                          <SelectTrigger
-                            id="theme"
-                            className="w-full bg-backgroundSecondary border-borderColorPrimary dark:border-white/10"
-                          >
-                            <SelectValue placeholder="Select theme" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="light">Light</SelectItem>
-                            <SelectItem value="dark">Dark</SelectItem>
-                            <SelectItem value="system">System</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      )}
-                    </div>
-                  </Card>
-
-                  {/* Language */}
-                  <Card className="p-6 dark:bg-background border-borderColorPrimary">
-                    <div className="mb-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Globe className="w-5 h-5 text-gray-700 dark:text-gray-300" />
-                        <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-                          Language
-                        </h3>
-                      </div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Select your preferred language
-                      </p>
-                    </div>
-
-                    <div className="space-y-3">
-                      <Label
-                        htmlFor="language"
-                        className="text-sm font-medium text-gray-700 dark:text-gray-300"
-                      >
-                        Preferred Language
-                      </Label>
-                      <Select value={language} onValueChange={setLanguage}>
-                        <SelectTrigger
-                          id="language"
-                          className="w-full bg-backgroundSecondary border-borderColorPrimary dark:border-white/10"
-                        >
-                          <SelectValue placeholder="Select language" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {languages.map((lang) => (
-                            <SelectItem key={lang.code} value={lang.code}>
-                              {lang.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </Card>
-
-                  {/* Notifications */}
-                  <Card className="p-6 dark:bg-background border-borderColorPrimary">
-                    <div className="mb-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Bell className="w-5 h-5 text-gray-700 dark:text-gray-300" />
-                        <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-                          Notifications
-                        </h3>
-                      </div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Manage how you receive notifications
-                      </p>
-                    </div>
-
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <Mail className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-                          <div>
-                            <p className="font-medium text-gray-900 dark:text-gray-100">
-                              Email Notifications
-                            </p>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                              Receive updates via email
-                            </p>
-                          </div>
-                        </div>
-                        <Switch
-                          checked={notifications.email}
-                          onCheckedChange={(checked) =>
-                            setNotifications({
-                              ...notifications,
-                              email: checked,
-                            })
-                          }
-                        />
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <Bell className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-                          <div>
-                            <p className="font-medium text-gray-900 dark:text-gray-100">
-                              Push Notifications
-                            </p>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                              Get notified about your transactions
-                            </p>
-                          </div>
-                        </div>
-                        <Switch
-                          checked={notifications.push}
-                          onCheckedChange={(checked) =>
-                            setNotifications({
-                              ...notifications,
-                              push: checked,
-                            })
-                          }
-                        />
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <Mail className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-                          <div>
-                            <p className="font-medium text-gray-900 dark:text-gray-100">
-                              Marketing Emails
-                            </p>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                              Receive news and promotional content
-                            </p>
-                          </div>
-                        </div>
-                        <Switch
-                          checked={notifications.marketing}
-                          onCheckedChange={(checked) =>
-                            setNotifications({
-                              ...notifications,
-                              marketing: checked,
-                            })
-                          }
-                        />
-                      </div>
-                    </div>
-                  </Card>
-                </div>
-              </div>
-            )}
-
             {activeTab === "personal" && (
               <div className="animate-in fade-in-0 slide-in-from-bottom-2 duration-300">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-6">
@@ -563,7 +388,7 @@ export default function SettingsPage() {
                     </div>
                     <label
                       htmlFor="profile-upload"
-                      className="absolute bottom-0 right-0 bg-blue-600 hover:bg-blue-700 text-white rounded-full p-2.5 cursor-pointer shadow-lg transition-all active:scale-90"
+                      className="absolute bottom-0 right-0 bg-black dark:bg-zinc-800 text-white rounded-full p-2.5 cursor-pointer shadow-lg transition-all active:scale-90"
                     >
                       <Camera className="w-4 h-4" />
                       <input
@@ -596,7 +421,7 @@ export default function SettingsPage() {
                         name="firstName"
                         value={formData.firstName}
                         onChange={handleInputChange}
-                        className="focus:ring-2 focus:ring-blue-500"
+                        className="focus:ring-2 focus:ring-zinc-500"
                       />
                     </div>
                     <div className="space-y-2">
@@ -606,7 +431,7 @@ export default function SettingsPage() {
                         name="lastName"
                         value={formData.lastName}
                         onChange={handleInputChange}
-                        className="focus:ring-2 focus:ring-blue-500"
+                        className="focus:ring-2 focus:ring-zinc-500"
                       />
                     </div>
                   </div>
@@ -639,7 +464,7 @@ export default function SettingsPage() {
                       />
                       <Button
                         variant="outline"
-                        className="border-blue-600 text-blue-600 hover:bg-blue-50"
+                        className="border-zinc-200 text-zinc-900 hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-900"
                         onClick={() => {
                           toast.info(
                             "Phone number change feature coming soon",
@@ -662,7 +487,7 @@ export default function SettingsPage() {
                     <Button
                       onClick={handleSave}
                       disabled={isSaving || !hasChanges}
-                      className="bg-blue-600 hover:bg-blue-700 text-white min-w-[140px]"
+                      className="bg-black dark:bg-zinc-50 dark:text-black hover:bg-zinc-900 dark:hover:bg-zinc-200 text-white min-w-[140px]"
                     >
                       {isSaving ? (
                         <>
@@ -704,7 +529,7 @@ export default function SettingsPage() {
                           on TranxBit.
                         </p>
                         <Button
-                          className="bg-blue-600 hover:bg-blue-700 text-white"
+                          className="bg-black dark:bg-zinc-50 dark:text-black hover:bg-zinc-900 dark:hover:bg-zinc-200 text-white"
                           onClick={() => {
                             toast.info("KYC verification feature coming soon", {
                               description:
@@ -729,7 +554,7 @@ export default function SettingsPage() {
                   </h2>
                   <Button
                     onClick={handleAddPayment}
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                    className="bg-black dark:bg-zinc-50 dark:text-black hover:bg-zinc-900 dark:hover:bg-zinc-200 text-white"
                   >
                     <Plus className="w-4 h-4 mr-2" />
                     Add New Payment
@@ -740,7 +565,7 @@ export default function SettingsPage() {
                 <div className="space-y-4 max-w-3xl">
                   {isLoadingPayments ? (
                     <div className="flex flex-col items-center justify-center py-12 space-y-4">
-                      <Loader className="h-8 w-8 animate-spin text-blue-600" />
+                      <Loader className="h-8 w-8 animate-spin text-zinc-900 dark:text-zinc-100" />
                       <p className="text-sm text-muted-foreground">
                         Loading your payment methods...
                       </p>
@@ -750,12 +575,12 @@ export default function SettingsPage() {
                       {paymentMethods.map((method) => (
                         <Card
                           key={method._id}
-                          className={`p-4 transition-all hover:shadow-md border border-borderColorPrimary dark:bg-background ${method.isDefault ? "border-blue-500/50 bg-blue-500/5" : ""}`}
+                          className={`p-4 transition-all hover:shadow-md border border-borderColorPrimary dark:bg-background ${method.isDefault ? "border-zinc-900 dark:border-zinc-100 bg-zinc-50/50 dark:bg-zinc-900/50" : ""}`}
                         >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
                               <div
-                                className={`w-12 h-12 rounded-full flex items-center justify-center p-2.5 ${method.type === "btc" ? "bg-orange-100 dark:bg-orange-950/30" : "bg-blue-100 dark:bg-blue-950/30"}`}
+                                className={`w-12 h-12 rounded-full flex items-center justify-center p-2.5 ${method.type === "btc" ? "bg-orange-100 dark:bg-orange-950/30" : "bg-zinc-100 dark:bg-zinc-800"}`}
                               >
                                 {method.type === "btc" || (method.type === "mobile_money" && PAYMENT_LOGOS[method.mobileNetwork]) ? (
                                   <Image
@@ -766,7 +591,7 @@ export default function SettingsPage() {
                                     className="w-full h-full object-contain"
                                   />
                                 ) : (
-                                  <Smartphone className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                                  <Smartphone className="w-6 h-6 text-zinc-600 dark:text-zinc-400" />
                                 )}
                               </div>
                               <div className="flex-1 space-y-1">
@@ -779,7 +604,7 @@ export default function SettingsPage() {
                                   {method.isDefault && (
                                     <Badge
                                       variant="secondary"
-                                      className="bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 text-[10px] h-5"
+                                      className="bg-black text-white dark:bg-zinc-100 dark:text-black text-[10px] h-5"
                                     >
                                       Default
                                     </Badge>
@@ -844,7 +669,7 @@ export default function SettingsPage() {
                           </p>
                           <Button
                             onClick={handleAddPayment}
-                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                            className="bg-black dark:bg-zinc-50 dark:text-black hover:bg-zinc-900 dark:hover:bg-zinc-200 text-white"
                           >
                             <Plus className="w-4 h-4 mr-2" />
                             Add Your First Method
@@ -864,60 +689,6 @@ export default function SettingsPage() {
                 </h2>
 
                 <div className="space-y-6 max-w-2xl">
-                  {/* Two-Factor Authentication */}
-                  <Card className="p-6 dark:bg-background border-borderColorPrimary">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Lock className="w-5 h-5 text-gray-700 dark:text-gray-300" />
-                          <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-                            Two-Factor Authentication (2FA)
-                          </h3>
-                        </div>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                          {twoFactorEnabled
-                            ? "2FA is enabled. You'll need to enter a verification code when logging in and performing sensitive operations."
-                            : "Add an extra layer of security to your account. When enabled, you'll need to enter a verification code during login and for sensitive transactions."}
-                        </p>
-                      </div>
-                      <Switch
-                        checked={twoFactorEnabled}
-                        onCheckedChange={setTwoFactorEnabled}
-                        className="ml-4"
-                      />
-                    </div>
-                  </Card>
-
-                  {/* Change Password */}
-                  <Card className="p-6 dark:bg-background border-borderColorPrimary">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <KeyRound className="w-5 h-5 text-gray-700 dark:text-gray-300" />
-                          <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-                            Change Password
-                          </h3>
-                        </div>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                          Update your password regularly to keep your account
-                          secure
-                        </p>
-                        <Button
-                          variant="outline"
-                          className="border-blue-600 text-blue-600 hover:bg-blue-50"
-                          onClick={() => {
-                            toast.info("Password change feature coming soon", {
-                              description:
-                                "You'll be able to update your password here.",
-                            });
-                          }}
-                        >
-                          Change Password
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-
                   {/* Delete Account */}
                   <Card className="p-6 dark:bg-background border-red-500/20 bg-red-500/5">
                     <div className="flex items-start justify-between">
@@ -952,7 +723,8 @@ export default function SettingsPage() {
       {/* Delete Payment Method Confirmation */}
       <ConfirmationModal
         isOpen={deleteDialogOpen}
-        onClose={() => setDeleteDialogOpen(false)}
+        onClose={() => setDeleteDialogOpen(false)
+        }
         onConfirm={confirmDelete}
         title="Delete Payment Method"
         description="Are you sure you want to delete this payment method? This action cannot be undone."

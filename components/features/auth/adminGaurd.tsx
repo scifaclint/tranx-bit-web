@@ -1,11 +1,11 @@
 "use client";
-
 import { useEffect, useState, useRef } from "react";
 import { useAuthStore } from "@/stores";
 import { useRouter, usePathname } from "next/navigation";
 import LoadingAnimation from "@/components/features/LoadingAnimation";
 import { authApi } from "@/lib/api/auth";
 import { toast } from "sonner";
+import PinSetupDialog from "@/components/modals/pin-set-up";
 
 interface AdminGuardProps {
   children: React.ReactNode;
@@ -18,6 +18,7 @@ export default function AdminGuard({ children }: AdminGuardProps) {
 
   const [isVerified, setIsVerified] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
+  const [showPinModal, setShowPinModal] = useState(false);
   const hasCheckedRef = useRef(false);
   const previousPathRef = useRef<string>("/dashboard");
 
@@ -48,9 +49,15 @@ export default function AdminGuard({ children }: AdminGuardProps) {
         const response = await authApi.verifyAdmin();
 
         if (response.status && response.data?.role === "admin") {
-          // User is verified admin
-          setIsVerified(true);
-          setIsChecking(false);
+          // User is admin, now check if PIN is set
+          if (response.data.isPinSet) {
+            setIsVerified(true);
+            setIsChecking(false);
+          } else {
+            // Admin but PIN not set - show modal
+            setShowPinModal(true);
+            setIsChecking(false);
+          }
         } else {
           // Not an admin
           toast.error(
@@ -72,6 +79,29 @@ export default function AdminGuard({ children }: AdminGuardProps) {
 
   if (isChecking) {
     return <LoadingAnimation />;
+  }
+
+  // If PIN is not set, show the modal and prevent dashboard access
+  if (!isVerified && showPinModal) {
+    return (
+      <>
+        <LoadingAnimation />
+        <PinSetupDialog
+          open={showPinModal}
+          onOpenChange={(open) => {
+            if (!open) {
+              // If they close the modal without setting PIN, redirect them away
+              router.replace(previousPathRef.current);
+            }
+          }}
+          onPinSet={() => {
+            setIsVerified(true);
+            setShowPinModal(false);
+            toast.success("PIN configured successfully");
+          }}
+        />
+      </>
+    );
   }
 
   if (!isVerified) {

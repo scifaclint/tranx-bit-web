@@ -6,6 +6,7 @@ import {
     ApproveOrderPayload,
     RejectOrderPayload,
     AddCardPayload,
+    SetPinPayload,
 } from "@/lib/api/admin";
 import { queryKeys } from "@/lib/query/queryKeys";
 

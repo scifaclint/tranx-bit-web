@@ -104,7 +104,7 @@ const useFormValidation = () => {
       setValidation({
         firstName: formData.firstName.trim().length >= 2,
         lastName: formData.lastName.trim().length >= 2,
-        username: formData.username.length >= 3,
+        username: /^[a-zA-Z0-9._-]{3,}$/.test(formData.username),
         email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email),
         phone: /^\d{9,10}$/.test(formData.phone),
         password: {
@@ -502,7 +502,10 @@ export const RegisterForm = ({
               </div>
             </div>
             {formData.username && !validation.username && (
-              <ValidationItem isValid={false} text="At least 3 characters" />
+              <ValidationItem
+                isValid={false}
+                text="Min 3 chars, text, numbers, . _ - only"
+              />
             )}
             {validation.username && usernameAvailable === false && (
               <ValidationItem isValid={false} text="Username is taken" />

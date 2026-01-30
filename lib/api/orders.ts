@@ -14,7 +14,7 @@ export interface SellOrderPayload {
   cardValue: number;
   paymentMethodId: string;
   card_currency: string;
-  payoutCurrency?: string;
+  payoutCurrency: string;
   expectedPayout?: number;
   calculatedAt?: string;
   additionalComments?: string;
@@ -116,23 +116,35 @@ export interface OrderDetailsResponse {
   data: {
     _id: string;
     orderNumber: string;
+    userId: string;
     orderType: "buy" | "sell";
-    status: string;
+    status: "pending" | "processing" | "completed" | "failed" | string;
     totalAmount: number;
     totalItems: number;
-    userId: string;
-    paymentMethodId: PaymentMethodDetails;
-    items: OrderItem[];
     cardCurrency: string;
     cardValue: number;
     amountToReceive: number;
-    payoutCurrency: string;
-    cardImages: string[];
-    additionalComments?: string;
-    sellRate: number;
-    buyRate: number | null;
-    exchangeRate: number;
+    sellRate?: number;
+    buyRate?: number;
+    exchangeRate?: number;
+    payoutCurrency?: string;
     calculatedAt: string;
+    paymentMethodId: {
+      type: string;
+      accountName?: string;
+      accountNumber?: string;
+      mobileNumber?: string;
+      mobileNetwork?: string;
+      btcAddress?: string;
+      btcNetwork?: string;
+    };
+    items: OrderItem[];
+    hasImages: boolean;
+    imagesCount: number;
+    cardImages: string[];
+    rejectionReason?: string;
+    notes?: string;
+    additionalComments?: string;
     createdAt: string;
     updatedAt: string;
   };
@@ -148,7 +160,9 @@ interface OrderSummary {
   type: "buy" | "sell";
   amount: number;
   date: string;
-  status: string;
+  status: "pending" | "processing" | "completed" | "failed" | string;
+  hasImages: boolean;
+  imagesCount: number;
 }
 
 interface OrderPagination {
@@ -181,6 +195,16 @@ export interface ClaimPaymentResponse {
   };
 }
 
+// ============= ORDER IMAGES RESPONSE =============
+
+export interface GetOrderImagesResponse {
+  status: boolean;
+  data: {
+    images: string[];
+    expiresIn: number;
+  };
+}
+
 // ============= API METHODS =============
 
 export const ordersApi = {
@@ -201,9 +225,7 @@ export const ordersApi = {
       formData.append("cardValue", payload.cardValue.toString());
       formData.append("paymentMethodId", payload.paymentMethodId);
       formData.append("card_currency", payload.card_currency);
-      if (payload.payoutCurrency) {
-        formData.append("payoutCurrency", payload.payoutCurrency);
-      }
+      formData.append("payoutCurrency", payload.payoutCurrency);
       if (payload.expectedPayout) {
         formData.append("expectedPayout", payload.expectedPayout.toString());
       }
@@ -256,6 +278,11 @@ export const ordersApi = {
     payload: CalculateOrderPayload
   ): Promise<CalculateOrderResponse> => {
     const response = await api.post("/orders/calculate", payload);
+    return response.data;
+  },
+
+  getOrderImages: async (orderId: string): Promise<GetOrderImagesResponse> => {
+    const response = await api.post(`/orders/${orderId}/images`);
     return response.data;
   },
 };

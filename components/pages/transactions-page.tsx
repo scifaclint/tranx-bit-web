@@ -36,23 +36,11 @@ import { useAuthStore } from "@/stores";
 
 type FilterStatus =
   | "all"
-  | "pending_payment"
-  | "under_review"
+  | "pending"
+  | "processing"
   | "completed"
-  | "cancelled"
-  | "refunded"
-  | "payment_claimed";
+  | "failed";
 type FilterType = "all" | "buy" | "sell";
-
-interface Transaction {
-  id: string;
-  brand: string;
-  brandLogo: string;
-  type: "buy" | "sell";
-  date: string;
-  amount: number;
-  status: "pending" | "completed" | "failed";
-}
 
 export default function TransactionPage() {
   const router = useRouter();
@@ -92,12 +80,10 @@ export default function TransactionPage() {
 
     const validStatuses = [
       "all",
-      "pending_payment",
-      "under_review",
+      "pending",
+      "processing",
       "completed",
-      "cancelled",
-      "refunded",
-      "payment_claimed",
+      "failed",
     ];
 
     if (statusParam && validStatuses.includes(statusParam)) {
@@ -115,12 +101,10 @@ export default function TransactionPage() {
     icon: React.ElementType;
   }[] = [
       { label: "All Status", value: "all", icon: Filter },
-      { label: "Pending Payment", value: "pending_payment", icon: Clock },
-      { label: "Under Review", value: "under_review", icon: TrendingUp },
+      { label: "Pending", value: "pending", icon: Clock },
+      { label: "Processing", value: "processing", icon: TrendingUp },
       { label: "Completed", value: "completed", icon: CheckCircle2 },
-      { label: "Cancelled", value: "cancelled", icon: XCircle },
-      { label: "Refunded", value: "refunded", icon: DollarSign },
-      { label: "Payment Claimed", value: "payment_claimed", icon: Wallet },
+      { label: "Failed", value: "failed", icon: XCircle },
     ];
 
   const typeFilters: {
@@ -147,7 +131,7 @@ export default function TransactionPage() {
 
   // Filter transactions based on active filters (client-side for now, could be server-side later)
   const filteredTransactions = transactions.filter((t) => {
-    const statusMatch = statusFilter === "all" || t.status.toLowerCase().includes(statusFilter.toLowerCase());
+    const statusMatch = statusFilter === "all" || t.status.toLowerCase() === statusFilter.toLowerCase();
     const typeMatch = typeFilter === "all" || t.type.toLowerCase() === typeFilter.toLowerCase();
     return statusMatch && typeMatch;
   });
@@ -300,14 +284,14 @@ export default function TransactionPage() {
                         </div>
                         <Badge
                           variant="outline"
-                          className={`text-[10px] py-0 h-5 font-semibold ${transaction.status.toLowerCase().includes("completed")
+                          className={`text-[10px] py-0 h-5 font-semibold ${transaction.status.toLowerCase() === "completed"
                             ? "bg-green-500/10 text-green-500 border-green-500/20"
-                            : transaction.status.toLowerCase().includes("pending")
+                            : (transaction.status.toLowerCase() === "pending" || transaction.status.toLowerCase() === "processing")
                               ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
                               : "bg-red-500/10 text-red-500 border-red-500/20"
                             }`}
                         >
-                          {transaction.status.toLowerCase().includes("completed") ? "Completed" : transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1).toLowerCase()}
+                          {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1).toLowerCase()}
                         </Badge>
                       </div>
 
@@ -369,16 +353,16 @@ export default function TransactionPage() {
                     <div>
                       <Badge
                         variant="outline"
-                        className={`w-fit text-xs font-medium flex items-center gap-1.5 ${transaction.status.toLowerCase().includes("completed")
+                        className={`w-fit text-xs font-medium flex items-center gap-1.5 ${transaction.status.toLowerCase() === "completed"
                           ? "border-green-300 bg-green-50 text-green-700 dark:border-green-700 dark:bg-green-950/30 dark:text-green-400"
-                          : transaction.status.toLowerCase().includes("pending")
+                          : (transaction.status.toLowerCase() === "pending" || transaction.status.toLowerCase() === "processing")
                             ? "border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-400"
                             : "border-red-300 bg-red-50 text-red-700 dark:border-red-700 dark:bg-red-950/30 dark:text-red-400"
                           }`}
                       >
-                        {transaction.status.toLowerCase().includes("completed") && <CheckCircle2 className="h-3 w-3" />}
-                        {transaction.status.toLowerCase().includes("pending") && <Clock className="h-3 w-3" />}
-                        {!transaction.status.toLowerCase().includes("completed") && !transaction.status.toLowerCase().includes("pending") && <XCircle className="h-3 w-3" />}
+                        {transaction.status.toLowerCase() === "completed" && <CheckCircle2 className="h-3 w-3" />}
+                        {(transaction.status.toLowerCase() === "pending" || transaction.status.toLowerCase() === "processing") && <Clock className="h-3 w-3" />}
+                        {transaction.status.toLowerCase() === "failed" && <XCircle className="h-3 w-3" />}
                         {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1).toLowerCase()}
                       </Badge>
                     </div>

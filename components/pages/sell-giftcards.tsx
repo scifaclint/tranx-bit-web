@@ -65,7 +65,7 @@ export default function SellGiftCards() {
   return (
     <Suspense fallback={
       <div className="w-full h-screen flex items-center justify-center">
-        <Loader className="h-8 w-8 animate-spin text-blue-600" />
+        <Loader className="h-8 w-8 animate-spin text-zinc-900 dark:text-zinc-100" />
       </div>
     }>
       <SellGiftCardsContent />
@@ -87,6 +87,12 @@ function SellGiftCardsContent() {
   const [currencyOpen, setCurrencyOpen] = useState(false);
   const [paymentMethodOpen, setPaymentMethodOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Form State
   const [selectedBrand, setSelectedBrand] = useState("");
@@ -200,6 +206,13 @@ function SellGiftCardsContent() {
     return () => clearTimeout(debounceTimer);
   }, [selectedBrand, amount, cardCurrency, payoutCurrency]);
 
+  // Auto-select payment method
+  useEffect(() => {
+    if (paymentMethods.length > 0 && !selectedPaymentMethod) {
+      setSelectedPaymentMethod(paymentMethods[0]._id);
+    }
+  }, [paymentMethods, selectedPaymentMethod]);
+
   // Handlers
   const handleImageUpload = (
     e: React.ChangeEvent<HTMLInputElement>
@@ -217,6 +230,7 @@ function SellGiftCardsContent() {
   };
 
   const handleSubmit = async () => {
+    // Validation
     if (!selectedBrand) {
       toast.error("Please select a card brand");
       return;
@@ -242,6 +256,12 @@ function SellGiftCardsContent() {
       return;
     }
 
+    // Show confirmation modal instead of submitting directly
+    setIsConfirmationOpen(true);
+  };
+
+  const handleConfirmSubmit = async () => {
+    setIsConfirmationOpen(false);
     setIsSubmitting(true);
 
     try {
@@ -267,15 +287,21 @@ function SellGiftCardsContent() {
 
       const response = await ordersApi.createSellOrder(payload);
 
-      if (response.status) {
+      console.log("Create Order Response:", response);
+
+      // Safely extract orderId from data object or root response
+      const orderId = response.data?.orderId || (response as any).orderId;
+
+      if (response.status && orderId) {
         toast.success("Order created successfully!");
         // Silently refresh user data in the background
         refreshUser();
-        router.push(`/sell-giftcards/${response.data.orderId}`);
+        router.push(`/sell-giftcards/${orderId}`);
       } else {
         toast.error(response.message || "Failed to create order");
       }
     } catch (error: any) {
+      console.error("Order creation error:", error);
       const errorMessage = error?.response?.data?.message || error?.message || "Failed to submit order. Please try again.";
       toast.error(errorMessage);
     } finally {
@@ -283,6 +309,88 @@ function SellGiftCardsContent() {
     }
   };
 
+
+  const ConfirmationModal = () => (
+    <AnimatePresence>
+      {isConfirmationOpen && (
+        <>
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsConfirmationOpen(false)}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+          />
+
+          {/* Modal */}
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ type: "spring", duration: 0.5 }}
+              className="w-full max-w-md bg-white dark:bg-background border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl overflow-hidden"
+            >
+              {/* Header */}
+              <div className="px-6 py-5 border-b border-zinc-200 dark:border-zinc-800">
+                <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">
+                  Confirm Your Sale
+                </h3>
+              </div>
+
+              {/* Content */}
+              <div className="px-6 py-6 space-y-4">
+                {/* Security Badge */}
+                <div className="flex items-center gap-3 p-4 bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl">
+                  <div className="w-10 h-10 bg-zinc-900 dark:bg-zinc-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <svg className="w-5 h-5 text-white dark:text-zinc-900" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                      Confirm Submission
+                    </p>
+                  </div>
+                </div>
+
+                {/* Message */}
+                <div className="space-y-3 text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed">
+                  <p>
+                    Your gift card information is ready for processing. By proceeding, your data will be fully encrypted and transmitted through our secure gateway for instant review.
+                  </p>
+                  <p>
+                    We use <span className="font-semibold text-zinc-900 dark:text-zinc-50">industry-standard encryption</span> to ensure your codes are handled with 100% privacy. Once the automated check is complete, your payment will be released.
+                  </p>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 pt-2 border-t border-zinc-200 dark:border-zinc-800">
+                    Click proceed to finalize your sale.
+                  </p>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="px-6 py-4 bg-zinc-50 dark:bg-zinc-900/30 border-t border-zinc-200 dark:border-zinc-800 flex gap-3">
+                <Button
+                  onClick={() => setIsConfirmationOpen(false)}
+                  variant="outline"
+                  className="flex-1 h-11 rounded-xl border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleConfirmSubmit}
+                  className="flex-1 h-11 rounded-xl bg-black dark:bg-white text-white dark:text-black hover:opacity-90 font-semibold"
+                >
+                  Proceed
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        </>
+      )}
+    </AnimatePresence>
+  );
 
   const BrandList = ({ onSelect }: { onSelect: (brandId: string) => void }) => (
     <Command className="flex flex-col h-full bg-transparent">
@@ -303,24 +411,21 @@ function SellGiftCardsContent() {
                 key={brand._id}
                 value={brand.name}
                 onSelect={() => onSelect(brand._id)}
-                className="flex items-center justify-between p-4 cursor-pointer hover:bg-white/10 dark:hover:bg-white/5 rounded-2xl border border-transparent data-[selected=true]:border-blue-500/50 data-[selected=true]:bg-blue-500/10 transition-all duration-200"
+                className="flex items-center justify-between p-4 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800/50 rounded-2xl border border-transparent data-[selected=true]:border-zinc-500/50 data-[selected=true]:bg-zinc-100 dark:data-[selected=true]:bg-zinc-800 transition-all duration-200"
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 bg-blue-50 dark:bg-blue-900/20 rounded-2xl flex items-center justify-center border border-blue-100 dark:border-blue-800/30">
-                    <Gift className="w-7 h-7 text-blue-600 dark:text-blue-400" />
+                  <div className="w-14 h-14 bg-zinc-100 dark:bg-zinc-800 rounded-2xl flex items-center justify-center border border-zinc-200 dark:border-zinc-700">
+                    <Gift className="w-7 h-7 text-zinc-900 dark:text-zinc-100" />
                   </div>
                   <div className="flex flex-col">
                     <span className="font-semibold text-base">
                       {brand.name}
                     </span>
-                    {/* <span className="text-xs text-muted-foreground">
-                      Sell gift card
-                    </span> */}
                   </div>
                 </div>
                 {selectedBrand === brand._id && (
-                  <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                    <Check className="h-4 w-4 text-white" />
+                  <div className="w-6 h-6 bg-zinc-900 dark:bg-zinc-100 rounded-full flex items-center justify-center">
+                    <Check className="h-4 w-4 text-white dark:text-zinc-900" />
                   </div>
                 )}
               </CommandItem>
@@ -331,51 +436,18 @@ function SellGiftCardsContent() {
     </Command>
   );
 
-  const renderBrandPicker = () => (
-    <div className="space-y-2">
-      <Label>Select Card Brand</Label>
-      {isMobile ? (
-        <>
-          <Button
-            variant="outline"
-            onClick={() => setOpen(true)}
-            disabled={isLoadingCards}
-            className="w-full justify-between h-12 focus:ring-2 focus:ring-black/5 transition-all font-normal bg-white dark:bg-background border-zinc-200 dark:border-borderColorPrimary"
-          >
-            {isLoadingCards ? (
-              <div className="flex items-center gap-2">
-                <Loader className="h-4 w-4 animate-spin text-muted-foreground" />
-                <span>Loading brands...</span>
-              </div>
-            ) : selectedBrandData ? (
-              <div className="flex items-center gap-2">
-                <Gift className="w-4 h-4 text-zinc-500" />
-                <span className="font-medium">{selectedBrandData.name}</span>
-              </div>
-            ) : (
-              <span className="text-muted-foreground">Select card brand</span>
-            )}
-            <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
+  const renderBrandPicker = () => {
+    if (!mounted) return null;
 
-          <MobilePicker
-            isOpen={open}
-            onClose={() => setOpen(false)}
-            title="Select Card Brand"
-          >
-            <BrandList onSelect={(id) => {
-              setSelectedBrand(id);
-              setOpen(false);
-            }} />
-          </MobilePicker>
-        </>
-      ) : (
-        <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger asChild disabled={isLoadingCards}>
+    return (
+      <div className="space-y-2">
+        <Label>Select Card Brand</Label>
+        {isMobile ? (
+          <>
             <Button
               variant="outline"
-              role="combobox"
-              aria-expanded={open}
+              onClick={() => setOpen(true)}
+              disabled={isLoadingCards}
               className="w-full justify-between h-12 focus:ring-2 focus:ring-black/5 transition-all font-normal bg-white dark:bg-background border-zinc-200 dark:border-borderColorPrimary"
             >
               {isLoadingCards ? (
@@ -389,23 +461,68 @@ function SellGiftCardsContent() {
                   <span className="font-medium">{selectedBrandData.name}</span>
                 </div>
               ) : (
-                <span className="text-muted-foreground">
-                  {brands.length === 0 ? "No cards available" : "Select card brand"}
-                </span>
+                <span className="text-muted-foreground">Select card brand</span>
               )}
               <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-[var(--radix-popover-trigger-width)] dark:bg-backgroundSecondary p-0" align="start">
-            <BrandList onSelect={(id) => {
-              setSelectedBrand(id);
-              setOpen(false);
-            }} />
-          </PopoverContent>
-        </Popover>
-      )}
-    </div>
-  );
+
+            <MobilePicker
+              isOpen={open}
+              onClose={() => setOpen(false)}
+              title="Select Card Brand"
+            >
+              <BrandList onSelect={(id) => {
+                setSelectedBrand(id);
+                setOpen(false);
+              }} />
+            </MobilePicker>
+          </>
+        ) : (
+          <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild disabled={isLoadingCards}>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={open}
+                className="w-full justify-between h-12 focus:ring-2 focus:ring-black/5 transition-all font-normal bg-white dark:bg-background border-zinc-200 dark:border-borderColorPrimary"
+              >
+                {isLoadingCards ? (
+                  <div className="flex items-center gap-2">
+                    <Loader className="h-4 w-4 animate-spin text-muted-foreground" />
+                    <span>Loading brands...</span>
+                  </div>
+                ) : selectedBrandData ? (
+                  <div className="flex items-center gap-2">
+                    <Gift className="w-4 h-4 text-zinc-500" />
+                    <span className="font-medium">{selectedBrandData.name}</span>
+                  </div>
+                ) : (
+                  <span className="text-muted-foreground">
+                    {brands.length === 0 ? "No cards available" : "Select card brand"}
+                  </span>
+                )}
+                <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent
+              className="w-[var(--radix-popover-trigger-width)] dark:bg-backgroundSecondary p-0"
+              align="start"
+              sideOffset={4}
+            >
+              <div className="max-h-[300px] flex flex-col">
+                <BrandList
+                  onSelect={(id) => {
+                    setSelectedBrand(id);
+                    setOpen(false);
+                  }}
+                />
+              </div>
+            </PopoverContent>
+          </Popover>
+        )}
+      </div>
+    );
+  };
 
   const renderCurrencyPicker = () => {
     const selected = currencies.find((c) => c.id.toLowerCase() === cardCurrency.toLowerCase()) || currencies[0];
@@ -827,32 +944,35 @@ function SellGiftCardsContent() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <AnimatePresence mode="popLayout">
-                    {cardImages.map((file, index) => (
-                      <motion.div
-                        key={`${file.name}-${index}`}
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.9 }}
-                        className="relative h-32 border border-zinc-200 dark:border-borderColorPrimary rounded-2xl overflow-hidden group bg-zinc-50 dark:bg-zinc-900/50"
-                      >
-                        <div className="absolute top-2 right-2 z-20">
-                          <button
-                            onClick={() => removeImage(index)}
-                            className="w-8 h-8 bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/30 rounded-full flex items-center justify-center text-white transition-all transform active:scale-90"
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
-                        </div>
-                        <div className="absolute inset-0 flex flex-col items-center justify-center p-3 text-center">
-                          <div className="w-8 h-8 bg-blue-500/10 rounded-full flex items-center justify-center mb-2">
-                            <Check className="h-4 w-4 text-blue-500" />
+                    {cardImages.map((file, index) => {
+                      if (!file) return null;
+                      return (
+                        <motion.div
+                          key={`${file.name}-${index}`}
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.9 }}
+                          className="relative h-32 border border-zinc-200 dark:border-borderColorPrimary rounded-2xl overflow-hidden group bg-zinc-50 dark:bg-zinc-900/50"
+                        >
+                          <div className="absolute top-2 right-2 z-20">
+                            <button
+                              onClick={() => removeImage(index)}
+                              className="w-8 h-8 bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/30 rounded-full flex items-center justify-center text-white transition-all transform active:scale-90"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
                           </div>
-                          <span className="text-[10px] text-zinc-500 font-medium truncate w-full px-2">
-                            {file.name}
-                          </span>
-                        </div>
-                      </motion.div>
-                    ))}
+                          <div className="absolute inset-0 flex flex-col items-center justify-center p-3 text-center">
+                            <div className="w-8 h-8 bg-blue-500/10 rounded-full flex items-center justify-center mb-2">
+                              <Check className="h-4 w-4 text-blue-500" />
+                            </div>
+                            <span className="text-[10px] text-zinc-500 font-medium truncate w-full px-2">
+                              {file.name}
+                            </span>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
 
                     {cardImages.length < 2 && (
                       <motion.div
@@ -918,6 +1038,7 @@ function SellGiftCardsContent() {
         isOpen={isPaymentModalOpen}
         onClose={() => setIsPaymentModalOpen(false)}
       />
+      <ConfirmationModal />
     </div>
   );
 }

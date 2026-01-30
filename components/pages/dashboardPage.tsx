@@ -51,7 +51,7 @@ export default function DashboardPage() {
               position: "bottom-right",
             });
           }}
-          className="bg-background rounded-2xl p-5 border-0 hover:shadow-md transition-all duration-200 cursor-pointer"
+          className="bg-background  rounded-2xl p-5 border-0 hover:shadow-md transition-all duration-200 cursor-pointer"
         >
           <div className="flex flex-col items-center text-center space-y-3">
             <div className="w-12 h-12 bg-cyan-500 dark:bg-cyan-600 rounded-full flex items-center justify-center">

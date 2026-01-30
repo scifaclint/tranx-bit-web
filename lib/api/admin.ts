@@ -13,6 +13,11 @@ export interface RejectOrderPayload {
   rejectionReason: string;
 }
 
+export interface SetPinPayload {
+  currentPassword: string;
+  newPin: string;
+}
+
 export interface AddCardPayload {
   name: string;
   brand: string;
@@ -194,6 +199,11 @@ export const adminApi = {
     const response = await api.get(`/admin/orders/status/${status}`, {
       params,
     });
+    return response.data;
+  },
+
+  setPin: async (payload: SetPinPayload): Promise<{ status: boolean; message: string }> => {
+    const response = await api.post("/admin/set-pin", payload);
     return response.data;
   },
 };

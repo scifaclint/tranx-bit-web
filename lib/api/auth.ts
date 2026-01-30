@@ -105,9 +105,10 @@ export interface VerifyAdminResponse {
   message?: string;
   error?: string;
   data?: {
-    userId: number;
+    userId: string;
     email: string;
     role: string;
+    isPinSet: boolean;
   };
 }
 
