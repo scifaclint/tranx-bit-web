@@ -137,8 +137,9 @@ export interface AdminPaymentMethod {
   accountName?: string | null;
   accountNumber?: string | null;
   mobileNetwork?: string | null;
-  btcAddress?: string | null;
-  btcNetwork?: string | null;
+  walletAddress?: string | null;
+  network?: string | null;
+  cryptoAsset?: string | null;
   bankName?: string | null;
 }
 

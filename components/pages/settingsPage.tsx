@@ -587,11 +587,11 @@ export default function SettingsPage() {
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
                               <div
-                                className={`w-12 h-12 rounded-full flex items-center justify-center p-2.5 ${method.type === "btc" ? "bg-orange-100 dark:bg-orange-950/30" : "bg-zinc-100 dark:bg-zinc-800"}`}
+                                className={`w-12 h-12 rounded-full flex items-center justify-center p-2.5 ${method.type === "crypto" ? (method.cryptoAsset === "bitcoin" ? "bg-orange-100 dark:bg-orange-950/30" : "bg-blue-100 dark:bg-blue-950/30") : "bg-zinc-100 dark:bg-zinc-800"}`}
                               >
-                                {method.type === "btc" || (method.type === "mobile_money" && PAYMENT_LOGOS[method.mobileNetwork]) ? (
+                                {method.type === "crypto" || (method.type === "mobile_money" && PAYMENT_LOGOS[method.mobileNetwork]) ? (
                                   <Image
-                                    src={PAYMENT_LOGOS[method.type === "btc" ? "btc" : method.mobileNetwork]}
+                                    src={PAYMENT_LOGOS[method.type === "crypto" ? (method.cryptoAsset === "bitcoin" ? "btc" : "usdt") : method.mobileNetwork]}
                                     alt={method.type}
                                     width={24}
                                     height={24}
@@ -606,7 +606,7 @@ export default function SettingsPage() {
                                   <h3 className="font-semibold text-gray-900 dark:text-gray-100 capitalize">
                                     {method.type === "mobile_money"
                                       ? NETWORK_LABELS[method.mobileNetwork] || method.mobileNetwork
-                                      : NETWORK_LABELS.btc}
+                                      : NETWORK_LABELS[method.cryptoAsset] || method.cryptoAsset}
                                   </h3>
                                   {method.isDefault && (
                                     <Badge
@@ -628,7 +628,7 @@ export default function SettingsPage() {
                                 <p className="text-sm text-gray-500 dark:text-gray-400 font-mono break-all">
                                   {method.type === "mobile_money"
                                     ? method.accountName
-                                    : method.btcAddress}
+                                    : method.walletAddress}
                                 </p>
                               </div>
                             </div>

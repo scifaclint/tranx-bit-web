@@ -187,7 +187,7 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
                         {/* Payment Info */}
                         <div className="border rounded-lg overflow-hidden">
                             <div className="bg-muted/50 px-4 py-2 border-b text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                                Customer's Payout Info ({order.paymentMethod || order.paymentMethodId.type.replace('_', ' ')})
+                                Customer's Payout Info ({order.paymentMethod || (order.paymentMethodId.type === "crypto" ? (order.paymentMethodId.cryptoAsset === "bitcoin" ? "Bitcoin" : "USDT") : order.paymentMethodId.type.replace('_', ' '))})
                             </div>
                             <div className="grid grid-cols-2 gap-y-2 text-sm p-4">
                                 {order.paymentMethodId.type === 'bank' ? (
@@ -218,10 +218,10 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
                                     </>
                                 ) : (
                                     <>
-                                        <span className="text-muted-foreground">BTC Address:</span>
+                                        <span className="text-muted-foreground uppercase">{order.paymentMethodId.cryptoAsset || "Crypto"} Address:</span>
                                         <div className="flex flex-col items-end gap-1">
-                                            <span className="font-medium font-mono text-[10px] break-all text-right">{order.paymentMethodId.btcAddress}</span>
-                                            <Button variant="outline" size="sm" className="h-7 mt-1" onClick={() => handleCopyCode(order.paymentMethodId.btcAddress!)}>
+                                            <span className="font-medium font-mono text-[10px] break-all text-right">{order.paymentMethodId.walletAddress}</span>
+                                            <Button variant="outline" size="sm" className="h-7 mt-1" onClick={() => handleCopyCode(order.paymentMethodId.walletAddress!)}>
                                                 <Copy className="mr-1 h-3 w-3" /> Copy
                                             </Button>
                                         </div>

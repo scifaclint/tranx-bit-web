@@ -160,7 +160,7 @@ export default function WithdrawalModal({
     };
 
     const getPaymentMethodImage = (method: PaymentMethodResponse) => {
-        if (method.type === "btc") return "/payments/bitcoin.svg";
+        if (method.type === "crypto") return method.cryptoAsset === "bitcoin" ? "/payments/bitcoin.svg" : "/payments/tether-usdt.svg";
         if (method.type === "mobile_money") {
             switch (method.mobileNetwork) {
                 case "mtn": return "/payments/mtn-seeklogo.svg";
@@ -175,8 +175,8 @@ export default function WithdrawalModal({
     const getPaymentMethodDetails = (method: PaymentMethodResponse) => {
         if (method.type === "mobile_money") {
             return `${method.name} - ${method.mobileNumber}`;
-        } else if (method.type === "btc") {
-            return `${method.name} - ${method.btcAddress.slice(0, 10)}...`;
+        } else if (method.type === "crypto") {
+            return `${method.name} - ${method.walletAddress.slice(0, 10)}...`;
         }
         return (method as PaymentMethodResponse).name;
     };

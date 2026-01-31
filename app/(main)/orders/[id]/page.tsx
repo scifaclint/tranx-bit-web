@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { ordersApi, OrderDetailsResponse } from "@/lib/api/orders";
-import { PAYMENT_LOGOS, CARD_CURRENCIES } from "@/lib/payment-constants";
+import { PAYMENT_LOGOS, NETWORK_LABELS, CARD_CURRENCIES } from "@/lib/payment-constants";
 import Image from "next/image";
 import "flag-icons/css/flag-icons.min.css";
 
@@ -134,7 +134,7 @@ export default function TransactionDetailsPage() {
 
   const paymentMethodDisplay = paymentMethod?.type === "mobile_money"
     ? `${paymentMethod.mobileNetwork?.toUpperCase()} - ${paymentMethod.accountName} (${paymentMethod.mobileNumber})`
-    : `BTC - ${paymentMethod?.btcAddress}`;
+    : `${NETWORK_LABELS[paymentMethod?.cryptoAsset || ""] || (paymentMethod?.cryptoAsset === "bitcoin" ? "BTC" : "USDT")} - ${paymentMethod?.walletAddress}`;
 
   const rateValue = orderData.orderType === "sell" ? orderData.sellRate : orderData.buyRate;
   const rateLabel = orderData.orderType === "sell" ? "Sell Rate" : "Buy Rate";
@@ -385,7 +385,7 @@ export default function TransactionDetailsPage() {
             <div className="flex items-center gap-3 p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border border-borderColorPrimary">
               <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center p-2 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
                 {(() => {
-                  const logoKey = paymentMethod?.type === "mobile_money" ? paymentMethod.mobileNetwork : "btc";
+                  const logoKey = paymentMethod?.type === "mobile_money" ? paymentMethod.mobileNetwork : (paymentMethod?.cryptoAsset === "bitcoin" ? "btc" : "usdt");
                   return logoKey && PAYMENT_LOGOS[logoKey] ? (
                     <Image
                       src={PAYMENT_LOGOS[logoKey]}

@@ -41,14 +41,15 @@ export default function PaymentMethodModal({
     onClose,
     editingMethod,
 }: PaymentMethodModalProps) {
-    const [addMethodType, setAddMethodType] = useState<"mobile_money" | "btc">("mobile_money");
+    const [addMethodType, setAddMethodType] = useState<"mobile_money" | "crypto">("mobile_money");
     const [paymentForm, setPaymentForm] = useState({
         name: "",
         mobileNetwork: "",
         accountName: "",
         mobileNumber: "",
-        btcAddress: "",
-        btcNetwork: "",
+        cryptoAsset: "bitcoin" as "bitcoin" | "usdt",
+        walletAddress: "",
+        network: "bitcoin" as "bitcoin" | "tron_trc20",
     });
 
     const { data: supportedData } = useSupportedPaymentMethods();
@@ -63,8 +64,9 @@ export default function PaymentMethodModal({
                 mobileNetwork: editingMethod.mobileNetwork || "",
                 accountName: editingMethod.accountName || "",
                 mobileNumber: editingMethod.mobileNumber || "",
-                btcAddress: editingMethod.btcAddress || "",
-                btcNetwork: editingMethod.btcNetwork || "",
+                cryptoAsset: editingMethod.cryptoAsset || "bitcoin",
+                walletAddress: editingMethod.walletAddress || editingMethod.btcAddress || "",
+                network: editingMethod.network || editingMethod.btcNetwork || "bitcoin",
             });
         } else {
             setAddMethodType("mobile_money");
@@ -73,14 +75,15 @@ export default function PaymentMethodModal({
                 mobileNetwork: "",
                 accountName: "",
                 mobileNumber: "",
-                btcAddress: "",
-                btcNetwork: "",
+                cryptoAsset: "bitcoin",
+                walletAddress: "",
+                network: "bitcoin",
             });
         }
     }, [editingMethod, isOpen]);
 
     const isFormValid = useMemo(() => {
-        const { name, mobileNetwork, accountName, mobileNumber, btcAddress, btcNetwork } = paymentForm;
+        const { name, mobileNetwork, accountName, mobileNumber, walletAddress, network } = paymentForm;
 
         // Common required field
         if (!name.trim()) return false;
@@ -93,9 +96,11 @@ export default function PaymentMethodModal({
                 /^\d{10,15}$/.test(num)
             );
         } else {
+            const { walletAddress, network, cryptoAsset } = paymentForm;
             return (
-                btcAddress.trim() !== "" &&
-                btcNetwork.trim() !== ""
+                walletAddress.trim().length >= 10 &&
+                network.trim() !== "" &&
+                cryptoAsset.trim() !== ""
             );
         }
     }, [paymentForm, addMethodType]);
@@ -103,12 +108,18 @@ export default function PaymentMethodModal({
     const handleSubmit = async () => {
         try {
             if (editingMethod) {
+                const payload = {
+                    ...paymentForm,
+                    type: addMethodType,
+                };
+
+                // If update, clean up old btcAddress field if present in payload
+                if ('btcAddress' in payload) delete (payload as any).btcAddress;
+                if ('btcNetwork' in payload) delete (payload as any).btcNetwork;
+
                 await updatePaymentMutation.mutateAsync({
                     id: editingMethod._id,
-                    payload: {
-                        ...paymentForm,
-                        type: addMethodType,
-                    } as any,
+                    payload: payload as any,
                 });
                 toast.success("Payment method updated successfully");
             } else {
@@ -155,8 +166,8 @@ export default function PaymentMethodModal({
                             <Label
                                 htmlFor="mm-modal"
                                 className={`flex flex-col items-center justify-between rounded-xl border-2 border-borderColorPrimary bg-backgroundSecondary/50 p-3 sm:p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-blue-600 [&:has([data-state=checked])]:border-blue-600 cursor-pointer text-xs sm:text-sm transition-all ${!!editingMethod && editingMethod.type !== "mobile_money"
-                                        ? "opacity-40 cursor-not-allowed grayscale-[0.5]"
-                                        : ""
+                                    ? "opacity-40 cursor-not-allowed grayscale-[0.5]"
+                                    : ""
                                     }`}
                             >
                                 <Smartphone className="mb-2 sm:mb-3 h-5 w-5 sm:h-6 sm:w-6" />
@@ -165,20 +176,20 @@ export default function PaymentMethodModal({
                         </div>
                         <div>
                             <RadioGroupItem
-                                value="btc"
-                                id="btc-modal"
+                                value="crypto"
+                                id="crypto-modal"
                                 className="peer sr-only"
-                                disabled={!!editingMethod && editingMethod.type !== "btc"}
+                                disabled={!!editingMethod && editingMethod.type !== "crypto"}
                             />
                             <Label
-                                htmlFor="btc-modal"
-                                className={`flex flex-col items-center justify-between rounded-xl border-2 border-borderColorPrimary bg-backgroundSecondary/50 p-3 sm:p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-orange-500 [&:has([data-state=checked])]:border-orange-500 cursor-pointer text-xs sm:text-sm transition-all ${!!editingMethod && editingMethod.type !== "btc"
-                                        ? "opacity-40 cursor-not-allowed grayscale-[0.5]"
-                                        : ""
+                                htmlFor="crypto-modal"
+                                className={`flex flex-col items-center justify-between rounded-xl border-2 border-borderColorPrimary bg-backgroundSecondary/50 p-3 sm:p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-orange-500 [&:has([data-state=checked])]:border-orange-500 cursor-pointer text-xs sm:text-sm transition-all ${!!editingMethod && editingMethod.type !== "crypto"
+                                    ? "opacity-40 cursor-not-allowed grayscale-[0.5]"
+                                    : ""
                                     }`}
                             >
                                 <Wallet className="mb-2 sm:mb-3 h-5 w-5 sm:h-6 sm:w-6" />
-                                Bitcoin (BTC)
+                                Crypto Assets
                             </Label>
                         </div>
                     </RadioGroup>
@@ -288,50 +299,74 @@ export default function PaymentMethodModal({
                             </>
                         ) : (
                             <>
-                                <div className="space-y-2">
-                                    <Label htmlFor="btc-address">BTC Wallet Address</Label>
-                                    <Input
-                                        id="btc-address"
-                                        placeholder="Paste your BTC address here"
-                                        value={paymentForm.btcAddress}
-                                        onChange={(e) =>
-                                            setPaymentForm({
-                                                ...paymentForm,
-                                                btcAddress: e.target.value,
-                                            })
-                                        }
-                                    />
-                                    {supportedData?.data.supportedMethods.btc.fields.validation
-                                        .btcAddress && (
-                                            <p className="text-[10px] text-muted-foreground ml-1">
-                                                {
-                                                    supportedData.data.supportedMethods.btc.fields
-                                                        .validation.btcAddress
-                                                }
-                                            </p>
-                                        )}
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="btc-network">Network</Label>
-                                    <Select
-                                        value={paymentForm.btcNetwork}
-                                        onValueChange={(val) =>
-                                            setPaymentForm({ ...paymentForm, btcNetwork: val })
-                                        }
-                                    >
-                                        <SelectTrigger id="btc-network">
-                                            <SelectValue placeholder="Select network" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {supportedData?.data.supportedMethods.btc.networks.map(
-                                                (net) => (
-                                                    <SelectItem key={net.id} value={net.id}>
-                                                        {net.name}
-                                                    </SelectItem>
-                                                )
-                                            )}
-                                        </SelectContent>
-                                    </Select>
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="crypto-asset">Select Asset</Label>
+                                        <Select
+                                            value={paymentForm.cryptoAsset}
+                                            onValueChange={(val: any) => {
+                                                const newNetwork = val === 'bitcoin' ? 'bitcoin' : 'tron_trc20';
+                                                setPaymentForm({ ...paymentForm, cryptoAsset: val, network: newNetwork });
+                                            }}
+                                        >
+                                            <SelectTrigger id="crypto-asset">
+                                                <SelectValue placeholder="Select asset" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="bitcoin">
+                                                    <div className="flex items-center gap-2">
+                                                        <Image src={PAYMENT_LOGOS.btc} alt="BTC" width={20} height={20} className="w-5 h-5" />
+                                                        <span>Bitcoin (BTC)</span>
+                                                    </div>
+                                                </SelectItem>
+                                                <SelectItem value="usdt">
+                                                    <div className="flex items-center gap-2">
+                                                        <Image src={PAYMENT_LOGOS.usdt} alt="USDT" width={20} height={20} className="w-5 h-5" />
+                                                        <span>Tether (USDT)</span>
+                                                    </div>
+                                                </SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="wallet-address">Wallet Address</Label>
+                                        <Input
+                                            id="wallet-address"
+                                            placeholder={`Paste your ${paymentForm.cryptoAsset === 'bitcoin' ? 'BTC' : 'USDT'} address here`}
+                                            value={paymentForm.walletAddress}
+                                            onChange={(e) =>
+                                                setPaymentForm({
+                                                    ...paymentForm,
+                                                    walletAddress: e.target.value,
+                                                })
+                                            }
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="network">Network</Label>
+                                        <Select
+                                            value={paymentForm.network}
+                                            onValueChange={(val: any) =>
+                                                setPaymentForm({ ...paymentForm, network: val })
+                                            }
+                                        >
+                                            <SelectTrigger id="network">
+                                                <SelectValue placeholder="Select network" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {paymentForm.cryptoAsset === 'bitcoin' ? (
+                                                    <SelectItem value="bitcoin">Bitcoin Network</SelectItem>
+                                                ) : (
+                                                    <SelectItem value="tron_trc20">Tron (TRC20)</SelectItem>
+                                                )}
+                                            </SelectContent>
+                                        </Select>
+                                        <p className="text-[10px] text-orange-500 font-medium ml-1">
+                                            Important: Ensure you select the correct network.
+                                        </p>
+                                    </div>
                                 </div>
                             </>
                         )}
@@ -349,11 +384,9 @@ export default function PaymentMethodModal({
                     <Button
                         onClick={handleSubmit}
                         disabled={addPaymentMutation.isPending || updatePaymentMutation.isPending || !isFormValid}
-                        className={`w-full sm:w-auto order-1 sm:order-2 rounded-xl transition-all duration-200 ${!isFormValid
-                            ? "bg-gray-200 dark:bg-gray-800 text-gray-400 cursor-not-allowed opacity-50"
-                            : addMethodType === "btc"
-                                ? "bg-orange-500 hover:bg-orange-600 text-white shadow-orange-500/20 shadow-lg"
-                                : "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-600/20 shadow-lg"
+                        className={`w-full sm:w-auto order-1 sm:order-2 rounded-xl transition-all duration-200 ${addMethodType === "crypto"
+                            ? "bg-orange-500 hover:bg-orange-600 text-white shadow-orange-500/20 shadow-lg disabled:bg-orange-300 disabled:opacity-70"
+                            : "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-600/20 shadow-lg disabled:bg-blue-400 disabled:opacity-70"
                             }`}
                     >
                         {addPaymentMutation.isPending || updatePaymentMutation.isPending ? (

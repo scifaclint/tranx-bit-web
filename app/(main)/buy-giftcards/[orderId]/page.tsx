@@ -30,7 +30,7 @@ import { toast } from "sonner";
 import { ordersApi, OrderDetailsResponse } from "@/lib/api/orders";
 import { PAYMENT_LOGOS, NETWORK_LABELS } from "@/lib/payment-constants";
 
-type PaymentMethod = "mobile_money" | "bitcoin" | "";
+type PaymentMethod = "mobile_money" | "crypto" | "";
 type PaymentMode = "manual" | "automated";
 
 export default function OrderDetailsPage() {
@@ -309,10 +309,10 @@ export default function OrderDetailsPage() {
                           <span>Mobile Money</span>
                         </div>
                       </SelectItem>
-                      <SelectItem value="bitcoin">
+                      <SelectItem value="crypto">
                         <div className="flex items-center gap-2">
                           <Bitcoin className="w-4 h-4" />
-                          <span>Bitcoin (BTC)</span>
+                          <span>Crypto Assets (BTC/USDT)</span>
                         </div>
                       </SelectItem>
                     </SelectContent>
@@ -428,21 +428,21 @@ export default function OrderDetailsPage() {
                   </Card>
                 )}
 
-                {/* Bitcoin Payment Details */}
-                {paymentMethod === "bitcoin" && (
+                {/* Crypto Payment Details */}
+                {paymentMethod === "crypto" && (
                   <Card className="p-4 border-2 border-orange-200 dark:border-orange-800 bg-orange-50/50 dark:bg-orange-950/20">
                     <div className="flex items-center gap-3 mb-4">
                       <div className="w-8 h-8 flex items-center justify-center p-1 bg-white dark:bg-gray-900 rounded-md border border-gray-200 dark:border-gray-800">
                         <Image
                           src={PAYMENT_LOGOS.btc}
-                          alt="Bitcoin"
+                          alt="Crypto"
                           width={24}
                           height={24}
                           className="w-full h-full object-contain"
                         />
                       </div>
                       <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-                        Bitcoin (BTC) Payment
+                        Cryptocurrency Payment
                       </h3>
                     </div>
 

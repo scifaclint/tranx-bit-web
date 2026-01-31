@@ -3,6 +3,7 @@ export const PAYMENT_LOGOS: Record<string, string> = {
     telecel: "/payments/telecel_logo.svg",
     airteltigo: "/payments/airtel-tigo.svg",
     btc: "/payments/bitcoin.svg",
+    usdt: "/payments/tether-usdt.svg",
 };
 
 export const NETWORK_LABELS: Record<string, string> = {
@@ -10,6 +11,9 @@ export const NETWORK_LABELS: Record<string, string> = {
     telecel: "Telecel Cash",
     airteltigo: "AirtelTigo Money",
     btc: "Bitcoin (BTC)",
+    usdt: "Tether (USDT)",
+    bitcoin: "Bitcoin Network",
+    tron_trc20: "Tron (TRC20)",
 };
 
 export const CARD_CURRENCIES = [

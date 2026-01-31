@@ -101,13 +101,14 @@ interface OrderItem {
 
 interface PaymentMethodDetails {
   _id: string;
-  type: "mobile_money" | "btc" | string;
+  type: "mobile_money" | "crypto" | string;
   accountName?: string | null;
   mobileNumber?: string | null;
   mobileNetwork?: string | null;
   accountNumber?: string | null;
-  btcAddress?: string | null;
-  btcNetwork?: string | null;
+  walletAddress?: string | null;
+  network?: string | null;
+  cryptoAsset?: string | null;
 }
 
 export interface OrderDetailsResponse {
@@ -135,8 +136,9 @@ export interface OrderDetailsResponse {
       accountNumber?: string;
       mobileNumber?: string;
       mobileNetwork?: string;
-      btcAddress?: string;
-      btcNetwork?: string;
+      walletAddress?: string;
+      network?: string;
+      cryptoAsset?: string;
     };
     items: OrderItem[];
     hasImages: boolean;

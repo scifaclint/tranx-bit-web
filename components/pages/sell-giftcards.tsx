@@ -601,7 +601,7 @@ function SellGiftCardsContent() {
                 {(() => {
                   const method = paymentMethods.find((m) => m._id === selectedPaymentMethod);
                   if (!method) return <Wallet className="h-4 w-4 text-zinc-500" />;
-                  const logoKey = method.type === "mobile_money" ? method.mobileNetwork : "btc";
+                  const logoKey = method.type === "mobile_money" ? method.mobileNetwork : (method.cryptoAsset === "bitcoin" ? "btc" : "usdt");
                   return PAYMENT_LOGOS[logoKey] ? (
                     <div className="w-5 h-5 flex-shrink-0">
                       <Image
@@ -622,7 +622,7 @@ function SellGiftCardsContent() {
                     if (!method) return "Select account";
                     return method.type === "mobile_money"
                       ? `${NETWORK_LABELS[method.mobileNetwork] || method.mobileNetwork} - ${method.accountName}`
-                      : `${NETWORK_LABELS.btc} - ${method.btcAddress}`;
+                      : `${NETWORK_LABELS[method.cryptoAsset] || method.cryptoAsset} - ${method.walletAddress}`;
                   })()}
                 </span>
               </div>
@@ -654,7 +654,7 @@ function SellGiftCardsContent() {
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 flex-shrink-0 flex items-center justify-center p-1 bg-zinc-50 dark:bg-zinc-900 rounded-md border border-zinc-200 dark:border-zinc-800">
                         {(() => {
-                          const logoKey = method.type === "mobile_money" ? method.mobileNetwork : "btc";
+                          const logoKey = method.type === "mobile_money" ? method.mobileNetwork : (method.cryptoAsset === "bitcoin" ? "btc" : "usdt");
                           return PAYMENT_LOGOS[logoKey] ? (
                             <Image
                               src={PAYMENT_LOGOS[logoKey]}
@@ -672,10 +672,10 @@ function SellGiftCardsContent() {
                         <span className="font-semibold text-sm">
                           {method.type === "mobile_money"
                             ? (NETWORK_LABELS[method.mobileNetwork] || method.mobileNetwork)
-                            : NETWORK_LABELS.btc}
+                            : (NETWORK_LABELS[method.cryptoAsset] || method.cryptoAsset)}
                         </span>
                         <span className="text-xs text-muted-foreground truncate max-w-[200px]">
-                          {method.type === "mobile_money" ? method.accountName : method.btcAddress}
+                          {method.type === "mobile_money" ? method.accountName : method.walletAddress}
                         </span>
                       </div>
                     </div>

@@ -13,16 +13,17 @@ export interface MobileMoneyPaymentMethod {
   accountName: string;
 }
 
-export interface BtcPaymentMethod {
-  type: "btc";
+export interface CryptoPaymentMethod {
+  type: "crypto";
   name: string;
-  btcAddress: string;
-  btcNetwork: string;
+  cryptoAsset: "bitcoin" | "usdt";
+  walletAddress: string;
+  network: "bitcoin" | "tron_trc20";
 }
 
 export type AddPaymentMethodPayload =
   | MobileMoneyPaymentMethod
-  | BtcPaymentMethod;
+  | CryptoPaymentMethod;
 
 // Base interface for common payment method fields
 interface BasePaymentMethodResponse {
@@ -44,11 +45,12 @@ interface BasePaymentMethodResponse {
   __v: number;
 }
 
-// BTC payment method response
-export interface BtcPaymentMethodResponse extends BasePaymentMethodResponse {
-  type: "btc";
-  btcAddress: string;
-  btcNetwork: string;
+// Crypto payment method response
+export interface CryptoPaymentMethodResponse extends BasePaymentMethodResponse {
+  type: "crypto";
+  cryptoAsset: "bitcoin" | "usdt";
+  walletAddress: string;
+  network: "bitcoin" | "tron_trc20";
 }
 
 // Mobile Money payment method response
@@ -61,7 +63,7 @@ export interface MobileMoneyPaymentMethodResponse
 }
 
 export type PaymentMethodResponse =
-  | BtcPaymentMethodResponse
+  | CryptoPaymentMethodResponse
   | MobileMoneyPaymentMethodResponse;
 
 export interface AddPaymentMethodResponse {
@@ -98,7 +100,7 @@ export interface GetSupportedPaymentMethodsResponse {
   data: {
     supportedMethods: {
       mobile_money: SupportedMethodDetails;
-      btc: SupportedMethodDetails;
+      crypto: SupportedMethodDetails;
     };
     instructions: Record<string, string>;
   };
@@ -117,9 +119,10 @@ export type UpdatePaymentMethodPayload = {
       accountName?: string;
     }
     | {
-      type?: "btc";
-      btcAddress?: string;
-      btcNetwork?: string;
+      type?: "crypto";
+      cryptoAsset?: "bitcoin" | "usdt";
+      walletAddress?: string;
+      network?: "bitcoin" | "tron_trc20";
     }
   );
 
