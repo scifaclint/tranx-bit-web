@@ -158,7 +158,11 @@ export interface AdminOrder {
   amountToReceive: number;
   payoutCurrency: string;
   cardCurrency: string;
-  cardImages: string[];
+  cardValue: number;
+  hasImages?: boolean;
+  imagesCount?: number;
+  cardImages?: string[];
+  recipientEmail?: string | null;
   paymentMethod: string;
   paymentMethodId: AdminPaymentMethod;
   notes?: string;

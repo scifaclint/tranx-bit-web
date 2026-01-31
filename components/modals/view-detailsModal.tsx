@@ -20,6 +20,7 @@ import { Loader } from "lucide-react"
 import { AdminOrder } from "@/lib/api/admin"
 import Image from "next/image"
 import PinVerificationModal from "./pin-verification-modal"
+import { ordersApi } from "@/lib/api/orders"
 
 interface OrderDetailsModalProps {
     isOpen: boolean
@@ -33,12 +34,30 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
     const [isPinModalOpen, setIsPinModalOpen] = useState(false)
     const [pendingAction, setPendingAction] = useState<"approve" | "reject" | null>(null)
     const [rejectionReason, setRejectionReason] = useState("")
+    const [fetchedImages, setFetchedImages] = useState<string[]>([])
+    const [isFetchingImages, setIsFetchingImages] = useState(false)
 
     const approveMutation = useApproveOrder()
     const rejectMutation = useRejectOrder()
     const isLoading = approveMutation.isPending || rejectMutation.isPending
 
     if (!order) return null;
+
+    const handleFetchImages = async () => {
+        setIsFetchingImages(true)
+        try {
+            const response = await ordersApi.getOrderImages(order._id)
+            if (response.status) {
+                setFetchedImages(response.data.images)
+            } else {
+                toast.error("Failed to fetch images")
+            }
+        } catch (error) {
+            toast.error("Error fetching images")
+        } finally {
+            setIsFetchingImages(false)
+        }
+    }
 
     const handleApprove = () => {
         setPendingAction("approve")
@@ -153,32 +172,51 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
                         </div>
 
                         {/* Card Images */}
-                        {order.cardImages && order.cardImages.length > 0 && (
+                        {((order.cardImages && order.cardImages.length > 0) || fetchedImages.length > 0 || order.hasImages) && (
                             <div className="border rounded-lg overflow-hidden">
                                 <div className="bg-muted/50 px-4 py-2 border-b text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                                     Card Images (Customer uploaded)
                                 </div>
-                                <div className="p-4 flex gap-4 overflow-x-auto">
-                                    {order.cardImages.map((img, idx) => (
-                                        <div
-                                            key={idx}
-                                            className="relative h-24 w-40 bg-muted border rounded-md overflow-hidden group cursor-pointer shrink-0"
-                                            onClick={() => setSelectedImage(img)}
-                                        >
-                                            <Image
-                                                src={img}
-                                                alt={`Card ${idx + 1}`}
-                                                fill
-                                                className="object-cover transition-transform group-hover:scale-105"
-                                            />
-                                            <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                                <span className="text-white text-[10px] font-bold bg-black/40 px-2 py-1 rounded">CLICK TO ZOOM</span>
-                                            </div>
+                                <div className="p-4">
+                                    {((order.cardImages && order.cardImages.length > 0) || fetchedImages.length > 0) ? (
+                                        <div className="flex gap-4 overflow-x-auto">
+                                            {[...(order.cardImages || []), ...fetchedImages].map((img, idx) => (
+                                                <div
+                                                    key={idx}
+                                                    className="relative h-24 w-40 bg-muted border rounded-md overflow-hidden group cursor-pointer shrink-0"
+                                                    onClick={() => setSelectedImage(img)}
+                                                >
+                                                    <Image
+                                                        src={img}
+                                                        alt={`Card ${idx + 1}`}
+                                                        fill
+                                                        className="object-cover transition-transform group-hover:scale-105"
+                                                    />
+                                                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                        <span className="text-white text-[10px] font-bold bg-black/40 px-2 py-1 rounded">CLICK TO ZOOM</span>
+                                                    </div>
+                                                </div>
+                                            ))}
                                         </div>
-                                    ))}
+                                    ) : order.hasImages ? (
+                                        <div className="flex flex-col items-center justify-center py-2 gap-2">
+                                            <p className="text-sm text-muted-foreground">This order has {order.imagesCount || ""} images</p>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={handleFetchImages}
+                                                disabled={isFetchingImages}
+                                                className="bg-blue-600 text-white hover:bg-blue-700 hover:text-white"
+                                            >
+                                                {isFetchingImages ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                                View Images
+                                            </Button>
+                                        </div>
+                                    ) : null}
                                 </div>
                             </div>
                         )}
+
 
                         {/* Additional Comments */}
                         {(order.additionalComments || order.notes) && (
@@ -246,32 +284,51 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
                 )}
 
                 {/* Card Images (For both types, if available) */}
-                {isBuying && order.cardImages && order.cardImages.length > 0 && (
+                {isBuying && (order.cardImages?.length || fetchedImages.length || order.hasImages) && (
                     <div className="border rounded-lg overflow-hidden mt-2">
                         <div className="bg-muted/50 px-4 py-2 border-b text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                             Proof of Payment / Receipts
                         </div>
-                        <div className="p-4 flex gap-4 overflow-x-auto">
-                            {order.cardImages.map((img, idx) => (
-                                <div
-                                    key={idx}
-                                    className="relative h-24 w-40 bg-muted border rounded-md overflow-hidden group cursor-pointer shrink-0"
-                                    onClick={() => setSelectedImage(img)}
-                                >
-                                    <Image
-                                        src={img}
-                                        alt={`Receipt ${idx + 1}`}
-                                        fill
-                                        className="object-cover transition-transform group-hover:scale-105"
-                                    />
-                                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                        <span className="text-white text-[10px] font-bold bg-black/40 px-2 py-1 rounded">CLICK TO ZOOM</span>
-                                    </div>
+                        <div className="p-4">
+                            {(order.cardImages?.length || fetchedImages.length) ? (
+                                <div className="flex gap-4 overflow-x-auto">
+                                    {[...(order.cardImages || []), ...fetchedImages].map((img, idx) => (
+                                        <div
+                                            key={idx}
+                                            className="relative h-24 w-40 bg-muted border rounded-md overflow-hidden group cursor-pointer shrink-0"
+                                            onClick={() => setSelectedImage(img)}
+                                        >
+                                            <Image
+                                                src={img}
+                                                alt={`Receipt ${idx + 1}`}
+                                                fill
+                                                className="object-cover transition-transform group-hover:scale-105"
+                                            />
+                                            <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                <span className="text-white text-[10px] font-bold bg-black/40 px-2 py-1 rounded">CLICK TO ZOOM</span>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
-                            ))}
+                            ) : order.hasImages ? (
+                                <div className="flex flex-col items-center justify-center py-2 gap-2">
+                                    <p className="text-sm text-muted-foreground">This order has {order.imagesCount || ""} images</p>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleFetchImages}
+                                        disabled={isFetchingImages}
+                                        className="bg-blue-600 text-white hover:bg-blue-700 hover:text-white"
+                                    >
+                                        {isFetchingImages ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                        View Images
+                                    </Button>
+                                </div>
+                            ) : null}
                         </div>
                     </div>
                 )}
+
 
                 {/* BUYING LAYOUT */}
                 {isBuying && (
