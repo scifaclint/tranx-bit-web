@@ -18,6 +18,11 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "pub-a2e4dd4a05b049fb98bafe7c2f3a1083.r2.dev",
       },
+      {
+        protocol: "https",
+        hostname:
+          "tranxbit-private.84faabb69e96a5a11297b8259eb73867.r2.cloudflarestorage.com",
+      },
     ],
   },
   async headers() {
