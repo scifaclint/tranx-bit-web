@@ -145,7 +145,7 @@ export default function TransactionPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px]">
         <Loader className="h-8 w-8 text-black animate-spin" />
-        <p className="mt-2 text-sm text-muted-foreground font-medium">Loading transactions...</p>
+        <p className="mt-2 text-sm text-muted-foreground font-medium">Loading your Orders...</p>
       </div>
     );
   }
@@ -155,7 +155,7 @@ export default function TransactionPage() {
       {/* Header with Filter Dropdowns */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-2">
-          <h1 className="text-xl sm:text-2xl font-bold">Transactions</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">Orders</h1>
           {isFetching && <Loader className="h-4 w-4 text-muted-foreground animate-spin" />}
         </div>
 
@@ -238,9 +238,9 @@ export default function TransactionPage() {
           <div className="bg-muted/20 p-4 rounded-full mb-4">
             <History className="h-10 w-10 text-muted-foreground/60" strokeWidth={1.5} />
           </div>
-          <h3 className="text-lg font-semibold text-foreground/80">No Transactions Found</h3>
+          <h3 className="text-lg font-semibold text-foreground/80">No Orders Found</h3>
           <p className="text-muted-foreground text-sm max-w-[250px] text-center mt-2">
-            Your gift card transactions will appear here once they are processed.
+            Your gift card Orders will appear here once they are processed.
           </p>
         </motion.div>
       ) : (
