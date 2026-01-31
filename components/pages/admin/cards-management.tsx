@@ -42,6 +42,7 @@ import { useCards } from "@/hooks/useCards"
 import { useDeleteCard, useUpdateCard } from "@/hooks/useAdmin"
 import { Card as BackendCard } from "@/lib/api/cards"
 import { ChevronLeft, ChevronRight, Eye } from "lucide-react"
+import PinVerificationModal from "@/components/modals/pin-verification-modal"
 
 interface ViewCardItemProps {
     card: BackendCard;
@@ -170,6 +171,8 @@ export default function CardsManageMentPage() {
     const { data: cardsResponse, isLoading } = useCards({ limit: 1000 })
     const deleteCardMutation = useDeleteCard()
     const updateCardMutation = useUpdateCard()
+    const [isPinModalOpen, setIsPinModalOpen] = useState(false)
+    const [pendingToggleData, setPendingToggleData] = useState<{ cardId: string; newStatus: string } | null>(null)
 
     const cards = cardsResponse?.data?.cards || []
 
@@ -218,15 +221,25 @@ export default function CardsManageMentPage() {
 
     const handleToggleStatus = async (card: BackendCard) => {
         const newStatus = card.status === "active" ? "inactive" : "active"
+        setPendingToggleData({ cardId: card._id, newStatus })
+        setIsPinModalOpen(true)
+    }
+
+    const handleConfirmToggle = async (pin: string) => {
+        if (!pendingToggleData) return
+
         const data = new FormData()
-        data.append("status", newStatus)
+        data.append("status", pendingToggleData.newStatus)
+        data.append("adminPin", pin)
 
         try {
             await updateCardMutation.mutateAsync({
-                cardId: card._id,
+                cardId: pendingToggleData.cardId,
                 payload: data
             })
-            toast.success(`Card ${newStatus === 'active' ? 'activated' : 'disabled'} successfully`)
+            toast.success(`Card ${pendingToggleData.newStatus === 'active' ? 'activated' : 'disabled'} successfully`)
+            setIsPinModalOpen(false)
+            setPendingToggleData(null)
         } catch (error) {
             toast.error("Failed to update card status")
         }
@@ -338,6 +351,12 @@ export default function CardsManageMentPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+            <PinVerificationModal
+                isOpen={isPinModalOpen}
+                onClose={() => setIsPinModalOpen(false)}
+                onConfirm={handleConfirmToggle}
+                isPending={updateCardMutation.isPending}
+            />
         </Card>
     )
 }

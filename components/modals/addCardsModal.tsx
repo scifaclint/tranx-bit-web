@@ -27,6 +27,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { useAddCard, useUpdateCard } from "@/hooks/useAdmin"
 import { toast } from "sonner"
 import { Loader } from "lucide-react"
+import PinVerificationModal from "./pin-verification-modal"
 
 export interface CardData {
     id?: string
@@ -72,6 +73,9 @@ export default function AddCardsModal({ isOpen, onClose, initialData }: AddCards
 
     const addCardMutation = useAddCard()
     const updateCardMutation = useUpdateCard()
+    const [isPinModalOpen, setIsPinModalOpen] = useState(false)
+    const [pendingFormData, setPendingFormData] = useState<FormData | null>(null)
+
     const isLoading = addCardMutation.isPending || updateCardMutation.isPending
 
     useEffect(() => {
@@ -172,20 +176,37 @@ export default function AddCardsModal({ isOpen, onClose, initialData }: AddCards
             data.append('image', selectedFile)
         }
 
+        if (initialData?.id) {
+            setPendingFormData(data)
+            setIsPinModalOpen(true)
+            return
+        }
+
         try {
-            if (initialData?.id) {
-                await updateCardMutation.mutateAsync({
-                    cardId: initialData.id,
-                    payload: data
-                })
-                toast.success("Card updated successfully")
-            } else {
-                await addCardMutation.mutateAsync(data)
-                toast.success("Card added successfully")
-            }
+            await addCardMutation.mutateAsync(data)
+            toast.success("Card added successfully")
             onClose()
         } catch (error) {
             toast.error("Failed to save card")
+        }
+    }
+
+    const handleConfirmUpdate = async (pin: string) => {
+        if (!pendingFormData || !initialData?.id) return
+
+        pendingFormData.append('adminPin', pin)
+
+        try {
+            await updateCardMutation.mutateAsync({
+                cardId: initialData.id,
+                payload: pendingFormData
+            })
+            toast.success("Card updated successfully")
+            setIsPinModalOpen(false)
+            setPendingFormData(null)
+            onClose()
+        } catch (error) {
+            toast.error("Failed to update card")
         }
     }
 
@@ -424,6 +445,12 @@ export default function AddCardsModal({ isOpen, onClose, initialData }: AddCards
                     </DialogFooter>
                 </form>
             </DialogContent>
+            <PinVerificationModal
+                isOpen={isPinModalOpen}
+                onClose={() => setIsPinModalOpen(false)}
+                onConfirm={handleConfirmUpdate}
+                isPending={updateCardMutation.isPending}
+            />
         </Dialog>
     )
 }

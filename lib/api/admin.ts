@@ -12,6 +12,7 @@ export interface ApproveOrderPayload {
 export interface RejectOrderPayload {
   orderId: string;
   rejectionReason: string;
+  adminPin: string;
 }
 
 export interface SetPinPayload {
@@ -44,6 +45,7 @@ export interface AddCardPayload {
   instructions?: string;
   minQuantity?: number;
   maxQuantity?: number;
+  adminPin?: string;
 }
 
 export interface UpdateCardPayload extends Partial<AddCardPayload> {
@@ -136,6 +138,7 @@ export interface AdminPaymentMethod {
   type: string;
   accountName?: string | null;
   accountNumber?: string | null;
+  mobileNumber?: string | null;
   mobileNetwork?: string | null;
   walletAddress?: string | null;
   network?: string | null;

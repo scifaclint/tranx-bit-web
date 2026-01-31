@@ -19,6 +19,7 @@ import { Loader } from "lucide-react"
 
 import { AdminOrder } from "@/lib/api/admin"
 import Image from "next/image"
+import PinVerificationModal from "./pin-verification-modal"
 
 interface OrderDetailsModalProps {
     isOpen: boolean
@@ -28,8 +29,10 @@ interface OrderDetailsModalProps {
 
 export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetailsModalProps) {
     const [inputCode, setInputCode] = useState("")
-    const [adminPin, setAdminPin] = useState("")
     const [selectedImage, setSelectedImage] = useState<string | null>(null)
+    const [isPinModalOpen, setIsPinModalOpen] = useState(false)
+    const [pendingAction, setPendingAction] = useState<"approve" | "reject" | null>(null)
+    const [rejectionReason, setRejectionReason] = useState("")
 
     const approveMutation = useApproveOrder()
     const rejectMutation = useRejectOrder()
@@ -37,37 +40,43 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
 
     if (!order) return null;
 
-    const handleApprove = async () => {
-        if (!adminPin.trim()) {
-            toast.error("Please enter your admin PIN")
-            return
-        }
-        try {
-            await approveMutation.mutateAsync({
-                orderId: order._id,
-                giftCardCodes: inputCode ? [inputCode] : [],
-                adminPin: adminPin
-            })
-            toast.success("Order approved successfully")
-            setAdminPin("") // Clear PIN after use
-            onClose()
-        } catch (error) {
-            toast.error("Failed to approve order")
-        }
+    const handleApprove = () => {
+        setPendingAction("approve")
+        setIsPinModalOpen(true)
     }
 
-    const handleReject = async () => {
+    const handleReject = () => {
         const reason = prompt("Please enter a reason for rejection:")
         if (!reason) return
+        setRejectionReason(reason)
+        setPendingAction("reject")
+        setIsPinModalOpen(true)
+    }
+
+    const handleConfirmAction = async (pin: string) => {
+        if (!pendingAction) return
+
         try {
-            await rejectMutation.mutateAsync({
-                orderId: order._id,
-                rejectionReason: reason
-            })
-            toast.success("Order rejected successfully")
+            if (pendingAction === "approve") {
+                await approveMutation.mutateAsync({
+                    orderId: order._id,
+                    giftCardCodes: inputCode ? [inputCode] : [],
+                    adminPin: pin
+                })
+                toast.success("Order approved successfully")
+            } else {
+                await rejectMutation.mutateAsync({
+                    orderId: order._id,
+                    rejectionReason: rejectionReason,
+                    adminPin: pin
+                })
+                toast.success("Order rejected successfully")
+            }
+            setIsPinModalOpen(false)
+            setPendingAction(null)
             onClose()
         } catch (error) {
-            toast.error("Failed to reject order")
+            toast.error(`Failed to ${pendingAction} order`)
         }
     }
 
@@ -208,10 +217,10 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
                                         <span className="font-medium text-right uppercase">{order.paymentMethodId.mobileNetwork}</span>
                                         <span className="text-muted-foreground">Account Name:</span>
                                         <span className="font-medium text-right">{order.paymentMethodId.accountName}</span>
-                                        <span className="text-muted-foreground">Account Number:</span>
+                                        <span className="text-muted-foreground">Mobile Number:</span>
                                         <div className="flex items-center justify-end gap-2">
-                                            <span className="font-medium font-mono">{order.paymentMethodId.accountNumber}</span>
-                                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => handleCopyCode(order.paymentMethodId.accountNumber!)}>
+                                            <span className="font-medium font-mono">{order.paymentMethodId.mobileNumber || order.paymentMethodId.accountNumber}</span>
+                                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => handleCopyCode((order.paymentMethodId.mobileNumber || order.paymentMethodId.accountNumber)!)}>
                                                 <Copy className="h-3 w-3" />
                                             </Button>
                                         </div>
@@ -339,22 +348,6 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
                 )}
 
                 <DialogFooter className="gap-2 sm:gap-0 border-t pt-4">
-                    {/* Admin PIN Input (always shown for pending/processing orders) */}
-                    {(order.status === 'pending' || order.status === 'processing') && (
-                        <div className="w-full mb-3">
-                            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">
-                                Admin PIN (Required)
-                            </label>
-                            <input
-                                type="password"
-                                value={adminPin}
-                                onChange={(e) => setAdminPin(e.target.value)}
-                                placeholder="Enter your 4-digit PIN"
-                                maxLength={4}
-                                className="w-full px-3 py-2.5 text-sm rounded-md border-2 border-zinc-200 bg-background font-mono tracking-widest focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
-                            />
-                        </div>
-                    )}
                     <Button
                         variant="outline"
                         className="w-full sm:w-auto border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
@@ -370,7 +363,7 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
                                 !isBuying ? "bg-blue-600 hover:bg-blue-700" : "bg-green-600 hover:bg-green-700"
                             )}
                             onClick={handleApprove}
-                            disabled={(isBuying && !inputCode.trim()) || !adminPin.trim() || isLoading}
+                            disabled={(isBuying && !inputCode.trim()) || isLoading}
                         >
                             {approveMutation.isPending ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
                             {!isBuying ? "Mark as Paid" : "Approve & Send Code"}
@@ -403,6 +396,12 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
                     )}
                 </DialogContent>
             </Dialog>
+            <PinVerificationModal
+                isOpen={isPinModalOpen}
+                onClose={() => setIsPinModalOpen(false)}
+                onConfirm={handleConfirmAction}
+                isPending={isLoading}
+            />
         </Dialog>
     )
 }
