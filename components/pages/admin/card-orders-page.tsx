@@ -24,16 +24,6 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
 import { Loader } from "lucide-react"
 import { toast } from "sonner"
 
@@ -41,14 +31,14 @@ import { useAdminOrders, useApproveOrder, useRejectOrder } from "@/hooks/useAdmi
 import { AdminOrder, AdminOrderStatus } from "@/lib/api/admin"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 
-type OrderStatus = "all" | "pending" | "completed" | "rejected" | "payment_claimed"
+type OrderStatus = "all" | "pending" | "processing" | "completed" | "failed"
 
 const STATUS_MAP: Record<string, string | undefined> = {
     all: undefined,
-    pending: "under_review",
+    pending: "pending",
+    processing: "processing",
     completed: "completed",
-    rejected: "cancelled",
-    payment_claimed: "payment_claimed",
+    failed: "failed",
 }
 
 interface Order {
@@ -74,8 +64,6 @@ export default function CardOrderPage() {
     const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null)
     const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
     const [isRejectionModalOpen, setIsRejectionModalOpen] = useState(false)
-    const [isApproveDialogOpen, setIsApproveDialogOpen] = useState(false)
-    const [orderToApprove, setOrderToApprove] = useState<string | null>(null)
     const [searchQuery, setSearchQuery] = useState("")
 
     // Map OrderStatus to AdminOrderStatus or undefined for 'all'
@@ -107,35 +95,14 @@ export default function CardOrderPage() {
     const handleViewDetails = (id: string) => {
         setSelectedOrderId(id)
         const order = orders.find(o => o._id === id)
-        if (order?.status === 'rejected') {
+        if (order?.status === 'failed') {
             setIsRejectionModalOpen(true)
         } else {
             setIsDetailsModalOpen(true)
         }
     }
 
-    const handleApprove = (id: string) => {
-        setOrderToApprove(id)
-        setIsApproveDialogOpen(true)
-    }
 
-    const confirmApprove = async () => {
-        if (!orderToApprove) return
-        try {
-            // For now, approving from list sends empty codes array
-            // Real usage should probably happen in the details modal
-            await approveOrderMutation.mutateAsync({
-                orderId: orderToApprove,
-                giftCardCodes: []
-            })
-            toast.success("Order approved successfully")
-        } catch (error) {
-            toast.error("Failed to approve order")
-        } finally {
-            setIsApproveDialogOpen(false)
-            setOrderToApprove(null)
-        }
-    }
 
     const selectedOrder = orders.find(o => o._id === selectedOrderId)
 
@@ -145,10 +112,10 @@ export default function CardOrderPage() {
 
     const tabs = [
         { id: "all", label: "Total", count: globalTotal, color: "text-foreground" },
-        { id: "pending", label: "Pending", count: activeTab === "pending" ? currentTotal : 0, color: "text-yellow-600" },
-        { id: "payment_claimed", label: "Claims", count: activeTab === "payment_claimed" ? currentTotal : 0, color: "text-blue-600" },
+        { id: "pending", label: "Pending", count: activeTab === "pending" ? currentTotal : 0, color: "text-orange-600" },
+        { id: "processing", label: "Processing", count: activeTab === "processing" ? currentTotal : 0, color: "text-blue-600" },
         { id: "completed", label: "Completed", count: activeTab === "completed" ? currentTotal : 0, color: "text-green-600" },
-        { id: "rejected", label: "Rejected", count: activeTab === "rejected" ? currentTotal : 0, color: "text-red-600" },
+        { id: "failed", label: "Failed", count: activeTab === "failed" ? currentTotal : 0, color: "text-red-600" },
     ]
 
     return (
@@ -263,8 +230,8 @@ export default function CardOrderPage() {
                                             <TableCell className="py-1">
                                                 <Badge variant="outline" className={`text-[9px] px-1.5 h-4 capitalize font-bold tracking-tight
                                                     ${order.status === 'completed' ? "text-green-600 border-green-600 bg-green-50/50" :
-                                                        order.status === 'under_review' ? "text-yellow-600 border-yellow-600 bg-yellow-50/50" :
-                                                            order.status === 'payment_claimed' ? "text-blue-600 border-blue-600 bg-blue-50/50" :
+                                                        order.status === 'pending' ? "text-orange-600 border-orange-600 bg-orange-50/50" :
+                                                            order.status === 'processing' ? "text-blue-600 border-blue-600 bg-blue-50/50" :
                                                                 "text-red-500 border-red-500 bg-red-50/50"}`}>
                                                     {order.status.replace('_', ' ')}
                                                 </Badge>
@@ -284,17 +251,6 @@ export default function CardOrderPage() {
                                                         <DropdownMenuItem onClick={() => handleViewDetails(order._id)}>
                                                             <Eye className="mr-2 h-4 w-4" /> View Details
                                                         </DropdownMenuItem>
-                                                        {order.status === 'under_review' && (
-                                                            <>
-                                                                <DropdownMenuSeparator />
-                                                                <DropdownMenuItem
-                                                                    onClick={() => handleApprove(order._id)}
-                                                                    className="text-green-600"
-                                                                >
-                                                                    Approve Order
-                                                                </DropdownMenuItem>
-                                                            </>
-                                                        )}
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
                                             </TableCell>
@@ -308,8 +264,8 @@ export default function CardOrderPage() {
                         <div className="lg:hidden space-y-3 pb-10">
                             {orders.map((order) => {
                                 const statusColors = order.status === 'completed' ? "text-green-600 bg-green-50 border-green-200" :
-                                    order.status === 'under_review' ? "text-yellow-600 bg-yellow-50 border-yellow-200" :
-                                        order.status === 'payment_claimed' ? "text-blue-600 bg-blue-50 border-blue-200" :
+                                    order.status === 'pending' ? "text-orange-600 bg-orange-50 border-orange-200" :
+                                        order.status === 'processing' ? "text-blue-600 bg-blue-50 border-blue-200" :
                                             "text-red-500 bg-red-50 border-red-200";
 
                                 return (
@@ -401,25 +357,7 @@ export default function CardOrderPage() {
                 </div>
             </CardContent>
 
-            <AlertDialog open={isApproveDialogOpen} onOpenChange={setIsApproveDialogOpen}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Approve Order</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Are you sure you want to approve this order? This action will mark the order as completed.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={confirmApprove}
-                            className="bg-green-600 hover:bg-green-700"
-                        >
-                            Approve
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+
         </Card>
     )
 }

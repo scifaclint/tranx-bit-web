@@ -175,12 +175,10 @@ export interface AdminPagination {
 }
 
 export type AdminOrderStatus =
+  | "pending"
+  | "processing"
   | "completed"
-  | "pending_payment"
-  | "under_review"
-  | "cancelled"
-  | "refunded"
-  | "payment_claimed";
+  | "failed";
 
 export interface GetAllOrdersResponse {
   status: boolean;

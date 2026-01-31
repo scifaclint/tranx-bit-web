@@ -26,9 +26,10 @@ interface PinSetupDialogProps {
     onOpenChange: (open: boolean) => void;
     onPinSet?: (pin: string) => void;
     mode?: 'admin' | 'client'; // Determines which API to use
+    isChanging?: boolean; // True if changing existing PIN, false if setting up for first time
 }
 
-export default function PinSetupDialog({ open, onOpenChange, onPinSet, mode = 'admin' }: PinSetupDialogProps) {
+export default function PinSetupDialog({ open, onOpenChange, onPinSet, mode = 'admin', isChanging = false }: PinSetupDialogProps) {
     const [step, setStep] = useState<Step>("initial");
     const [password, setPassword] = useState("");
     const [pin, setPin] = useState("");
@@ -168,15 +169,17 @@ export default function PinSetupDialog({ open, onOpenChange, onPinSet, mode = 'a
                         </motion.div>
 
                         <DialogTitle className="text-2xl font-bold">
-                            {step === "success" ? "PIN Set Successfully!" : "Set Your PIN"}
+                            {step === "success"
+                                ? (isChanging ? "PIN Changed Successfully!" : "PIN Set Successfully!")
+                                : (isChanging ? "Change Your PIN" : "Set Your PIN")}
                         </DialogTitle>
 
                         <DialogDescription className="text-base">
-                            {step === "initial" && "You haven't set up a PIN yet. Secure your account now."}
+                            {step === "initial" && (isChanging ? "Update your PIN to keep your account secure" : "You haven't set up a PIN yet. Secure your account now.")}
                             {step === "password" && "Verify your identity with your password"}
-                            {step === "pin" && "Choose a secure 4-6 digit PIN"}
+                            {step === "pin" && (isChanging ? "Enter your new 4-6 digit PIN" : "Choose a secure 4-6 digit PIN")}
                             {step === "confirmPin" && "Re-enter your PIN to confirm"}
-                            {step === "success" && "Your account is now protected with a PIN"}
+                            {step === "success" && (isChanging ? "Your PIN has been successfully updated" : "Your account is now protected with a PIN")}
                         </DialogDescription>
 
                         {/* Progress Bar */}
@@ -223,10 +226,11 @@ export default function PinSetupDialog({ open, onOpenChange, onPinSet, mode = 'a
                                     </motion.div>
 
                                     <div className="space-y-2">
-                                        <h3 className="text-xl font-bold">No PIN Set</h3>
+                                        <h3 className="text-xl font-bold">{isChanging ? "Update Your PIN" : "No PIN Set"}</h3>
                                         <p className="text-sm text-muted-foreground max-w-sm">
-                                            Protect your account with a PIN for quick and secure access.
-                                            It only takes a minute to set up.
+                                            {isChanging
+                                                ? "Change your PIN to keep your account secure. It only takes a minute."
+                                                : "Protect your account with a PIN for quick and secure access. It only takes a minute to set up."}
                                         </p>
                                     </div>
                                 </div>
@@ -236,7 +240,7 @@ export default function PinSetupDialog({ open, onOpenChange, onPinSet, mode = 'a
                                     className="w-full h-12 bg-black hover:bg-black/80 text-white font-bold rounded-xl shadow-[0px_4px_0px_0px_rgba(0,0,0,0.15)] active:shadow-none active:translate-y-[2px] transition-all"
                                     size="lg"
                                 >
-                                    Set PIN Now
+                                    {isChanging ? "Change PIN Now" : "Set PIN Now"}
                                 </Button>
                             </motion.div>
                         )}
@@ -453,10 +457,10 @@ export default function PinSetupDialog({ open, onOpenChange, onPinSet, mode = 'a
                                         {isSubmitting ? (
                                             <>
                                                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                                Setting Up...
+                                                {isChanging ? "Changing..." : "Setting Up..."}
                                             </>
                                         ) : (
-                                            "Set PIN"
+                                            isChanging ? "Change PIN" : "Set PIN"
                                         )}
                                     </Button>
                                 </div>

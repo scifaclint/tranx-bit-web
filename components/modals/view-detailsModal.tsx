@@ -28,6 +28,7 @@ interface OrderDetailsModalProps {
 
 export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetailsModalProps) {
     const [inputCode, setInputCode] = useState("")
+    const [adminPin, setAdminPin] = useState("")
     const [selectedImage, setSelectedImage] = useState<string | null>(null)
 
     const approveMutation = useApproveOrder()
@@ -37,12 +38,18 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
     if (!order) return null;
 
     const handleApprove = async () => {
+        if (!adminPin.trim()) {
+            toast.error("Please enter your admin PIN")
+            return
+        }
         try {
             await approveMutation.mutateAsync({
                 orderId: order._id,
-                giftCardCodes: inputCode ? [inputCode] : []
+                giftCardCodes: inputCode ? [inputCode] : [],
+                adminPin: adminPin
             })
             toast.success("Order approved successfully")
+            setAdminPin("") // Clear PIN after use
             onClose()
         } catch (error) {
             toast.error("Failed to approve order")
@@ -75,7 +82,7 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
 
     const isBuying = order.orderType === 'buy'
     const statusColor = order.status === 'completed' ? "text-green-600 border-green-600 bg-green-50" :
-        order.status === 'under_review' ? "text-yellow-600 border-yellow-600 bg-yellow-50" :
+        (order.status === 'pending' || order.status === 'processing') ? "text-blue-600 border-blue-600 bg-blue-50" :
             "text-red-500 border-red-500 bg-red-50";
 
     return (
@@ -292,8 +299,8 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
                             </div>
                         </div>
 
-                        {/* Card Code Section */}
-                        {order.status === 'under_review' && (
+                        {/* Card Code Section (for BUY orders) */}
+                        {(order.status === 'pending' || order.status === 'processing') && (
                             <div className="space-y-3 p-4 border-2 border-blue-100 rounded-xl bg-blue-50/30">
                                 <h3 className="font-bold text-sm text-blue-700 uppercase tracking-wider">Approve with Gift Card Code</h3>
                                 <div className="grid gap-2">
@@ -332,6 +339,22 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
                 )}
 
                 <DialogFooter className="gap-2 sm:gap-0 border-t pt-4">
+                    {/* Admin PIN Input (always shown for pending/processing orders) */}
+                    {(order.status === 'pending' || order.status === 'processing') && (
+                        <div className="w-full mb-3">
+                            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">
+                                Admin PIN (Required)
+                            </label>
+                            <input
+                                type="password"
+                                value={adminPin}
+                                onChange={(e) => setAdminPin(e.target.value)}
+                                placeholder="Enter your 4-digit PIN"
+                                maxLength={4}
+                                className="w-full px-3 py-2.5 text-sm rounded-md border-2 border-zinc-200 bg-background font-mono tracking-widest focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
+                            />
+                        </div>
+                    )}
                     <Button
                         variant="outline"
                         className="w-full sm:w-auto border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
@@ -341,13 +364,13 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
                         {rejectMutation.isPending ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <XCircle className="mr-2 h-4 w-4" />}
                         Reject
                     </Button>
-                    {order.status === 'under_review' && (
+                    {(order.status === 'pending' || order.status === 'processing') && (
                         <Button
                             className={cn("w-full sm:w-auto",
                                 !isBuying ? "bg-blue-600 hover:bg-blue-700" : "bg-green-600 hover:bg-green-700"
                             )}
                             onClick={handleApprove}
-                            disabled={(isBuying && !inputCode.trim()) || isLoading}
+                            disabled={(isBuying && !inputCode.trim()) || !adminPin.trim() || isLoading}
                         >
                             {approveMutation.isPending ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
                             {!isBuying ? "Mark as Paid" : "Approve & Send Code"}

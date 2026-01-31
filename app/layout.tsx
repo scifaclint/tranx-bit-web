@@ -35,36 +35,36 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ThemeProvider
+        {/* <ThemeProvider
           attribute="class"
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
-        >
-          <RouteGuard>
-            <QueryProvider>
-              <UserProvider>
-                {children}
-                <ConnectionStatus />
-              </UserProvider>
-            </QueryProvider>
-          </RouteGuard>
-          <TawkToWidgetWrapper />
-          <Toaster
-            position="bottom-right"
-            visibleToasts={3}
-            richColors
-            theme="light"
-            toastOptions={{
-              style: {
-                background: "var(--toastBackgroundColor)",
-                color: "var(--bodyColor)",
-                border: "1px solid var(--borderColorPrimary)",
-              },
-              className: "dark:bg-toastBackgroundColor dark:text-bodyColor dark:border-borderColorPrimary",
-            }}
-          />
-        </ThemeProvider>
+        > */}
+        <RouteGuard>
+          <QueryProvider>
+            <UserProvider>
+              {children}
+              <ConnectionStatus />
+            </UserProvider>
+          </QueryProvider>
+        </RouteGuard>
+        <TawkToWidgetWrapper />
+        <Toaster
+          position="bottom-right"
+          visibleToasts={3}
+          richColors
+          theme="light"
+          toastOptions={{
+            style: {
+              background: "var(--toastBackgroundColor)",
+              color: "var(--bodyColor)",
+              border: "1px solid var(--borderColorPrimary)",
+            },
+            className: "dark:bg-toastBackgroundColor dark:text-bodyColor dark:border-borderColorPrimary",
+          }}
+        />
+        {/* </ThemeProvider> */}
       </body>
     </html>
   );

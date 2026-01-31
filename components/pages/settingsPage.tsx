@@ -808,16 +808,12 @@ export default function SettingsPage() {
         editingMethod={editingMethod}
       />
 
-      {/* PIN Setup Modal */}
+      {/* Pin Setup/Change Modal */}
       <PinSetupDialog
         open={showPinModal}
         onOpenChange={setShowPinModal}
-        onPinSet={() => {
-          if (user) {
-            setAuth({ ...user, is_pin_set: true } as any, useAuthStore.getState().token || "");
-          }
-        }}
         mode="client"
+        isChanging={true}
       />
     </div>
   );
