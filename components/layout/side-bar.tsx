@@ -127,13 +127,12 @@ const Sidebar = ({
     //   icon: Users,
     //   href: `${AdminBaseRoute}/users`,
     // },
-    // {
-    //   id: "settings",
-    //   label: "Settings",
-    //   icon: Settings,
-    //   href: `${AdminBaseRoute}/settings`,
-    // },
-
+    {
+      id: "settings",
+      label: "Settings",
+      icon: Settings,
+      href: `${AdminBaseRoute}/settings`,
+    },
   ];
 
   const navItems = userType === "admin" ? adminNavItems : userNavItems;

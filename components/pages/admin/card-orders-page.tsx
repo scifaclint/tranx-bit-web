@@ -1,7 +1,7 @@
 "use client"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Download, Search, MoreHorizontal, Eye, Trash } from "lucide-react"
+import { Download, Search, MoreHorizontal, Eye, Trash, RefreshCw } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
@@ -70,17 +70,26 @@ export default function CardOrderPage() {
     const statusFilter = STATUS_MAP[activeTab]
 
     // Query for the filtered orders (active tab)
-    const { data: ordersResponse, isLoading } = useAdminOrders({
+    const { data: ordersResponse, isLoading, refetch: refetchOrders, isFetching: isFetchingOrders } = useAdminOrders({
         status: statusFilter,
         page: currentPage,
         limit: 20
     })
 
     // Separate query for the global total count (always 'all')
-    const { data: allOrdersResponse } = useAdminOrders({
+    const { data: allOrdersResponse, refetch: refetchTotals, isFetching: isFetchingTotals } = useAdminOrders({
         status: undefined,
         limit: 1 // We only need the pagination total
     })
+
+    const handleManualRefresh = async () => {
+        try {
+            await Promise.all([refetchOrders(), refetchTotals()]);
+            toast.success("Orders refreshed");
+        } catch (error) {
+            toast.error("Failed to refresh orders");
+        }
+    };
 
     const handleTabChange = (tabId: OrderStatus) => {
         setActiveTab(tabId)
@@ -123,12 +132,24 @@ export default function CardOrderPage() {
             <CardHeader className="flex flex-row items-center justify-between px-0 pt-0">
                 <div className="flex items-center gap-4">
                     <CardTitle className="text-2xl font-bold">Orders Management</CardTitle>
-                    {isLoading && <Loader className="h-5 w-5 animate-spin text-muted-foreground" />}
+                    {(isLoading || isFetchingOrders || isFetchingTotals) && <Loader className="h-5 w-5 animate-spin text-muted-foreground" />}
                 </div>
-                <Button variant="outline">
-                    <Download className="mr-2 h-4 w-4" />
-                    Export
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleManualRefresh}
+                        disabled={isFetchingOrders || isFetchingTotals}
+                        className="rounded-xl"
+                    >
+                        <RefreshCw className={cn("mr-2 h-4 w-4", (isFetchingOrders || isFetchingTotals) && "animate-spin")} />
+                        Refresh
+                    </Button>
+                    <Button variant="outline" size="sm" className="rounded-xl">
+                        <Download className="mr-2 h-4 w-4" />
+                        Export
+                    </Button>
+                </div>
             </CardHeader>
             <OrderDetailsModal
                 isOpen={isDetailsModalOpen}

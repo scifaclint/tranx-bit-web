@@ -263,6 +263,33 @@ export interface GetAllWithdrawalsResponse {
   };
 }
 
+// ============= SETTINGS TYPES =============
+
+export interface SystemSettings {
+  referralPercentage: number;
+  exchangeRateMargin: number;
+  isMaintenanceMode: boolean;
+  allowSignups: boolean;
+  allowWithdrawals: boolean;
+  maxDailyTransactionAmount: number;
+  orderImageExpirationMinutes: number;
+}
+
+export interface GetSystemSettingsResponse {
+  status: boolean;
+  message: string;
+  data: SystemSettings;
+}
+
+export interface UpdateSystemSettingsResponse {
+  status: boolean;
+  message: string;
+}
+
+export interface UpdateSystemSettingsPayload extends Partial<SystemSettings> {
+  adminPin: string;
+}
+
 // ============= API METHODS =============
 
 export const adminApi = {
@@ -352,6 +379,18 @@ export const adminApi = {
     payload: RejectWithdrawalPayload
   ): Promise<RejectWithdrawalResponse> => {
     const response = await api.post("/admin/withdrawals/reject", payload);
+    return response.data;
+  },
+
+  getSystemSettings: async (): Promise<GetSystemSettingsResponse> => {
+    const response = await api.get("/admin/settings");
+    return response.data;
+  },
+
+  updateSystemSettings: async (
+    payload: UpdateSystemSettingsPayload
+  ): Promise<UpdateSystemSettingsResponse> => {
+    const response = await api.patch("/admin/settings", payload);
     return response.data;
   },
 };

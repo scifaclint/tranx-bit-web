@@ -31,6 +31,9 @@ export const queryKeys = {
       list: (params?: { page?: number; limit?: number; status?: string }) =>
         ["admin", "withdrawals", "list", params] as const,
     },
+    settings: {
+      all: ["admin", "settings"] as const,
+    },
   },
   payments: {
     all: ["payments"] as const,

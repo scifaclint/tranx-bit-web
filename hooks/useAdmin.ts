@@ -7,6 +7,8 @@ import {
     RejectOrderPayload,
     AddCardPayload,
     SetPinPayload,
+    SystemSettings,
+    UpdateSystemSettingsPayload,
 } from "@/lib/api/admin";
 import { queryKeys } from "@/lib/query/queryKeys";
 
@@ -18,6 +20,8 @@ export const useAdminOrders = (params?: {
     return useQuery({
         queryKey: queryKeys.admin.orders.list(params),
         queryFn: () => adminApi.getAllOrders(params),
+        staleTime: Infinity,
+        refetchOnWindowFocus: false,
     });
 };
 
@@ -28,6 +32,8 @@ export const useAdminOrdersByStatus = (
     return useQuery({
         queryKey: queryKeys.admin.orders.byStatus(status, params?.page),
         queryFn: () => adminApi.getOrdersByStatus(status, params),
+        staleTime: Infinity,
+        refetchOnWindowFocus: false,
     });
 };
 
@@ -59,6 +65,14 @@ export const useAdminWithdrawals = (params?: {
     return useQuery({
         queryKey: queryKeys.admin.withdrawals.list(params),
         queryFn: () => adminApi.getAllWithdrawals(params),
+        staleTime: Infinity,
+    });
+};
+
+export const useSystemSettings = () => {
+    return useQuery({
+        queryKey: queryKeys.admin.settings.all,
+        queryFn: () => adminApi.getSystemSettings(),
         staleTime: Infinity,
     });
 };
@@ -123,6 +137,16 @@ export const useDeleteCard = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: queryKeys.cards.all });
             queryClient.invalidateQueries({ queryKey: queryKeys.admin.cards.all });
+        },
+    });
+};
+export const useUpdateSystemSettings = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (payload: UpdateSystemSettingsPayload) =>
+            adminApi.updateSystemSettings(payload),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.admin.settings.all });
         },
     });
 };
