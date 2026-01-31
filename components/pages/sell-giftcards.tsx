@@ -214,8 +214,8 @@ function SellGiftCardsContent() {
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
     const files = e.target.files;
-    if (files && files[0] && cardImages.length < 2) {
-      setCardImages(prev => [...prev, files[0]]);
+    if (files && files[0] && cardImages.length < 1) {
+      setCardImages([files[0]]);
     }
     // Reset input so the same file can be uploaded again if removed
     e.target.value = "";
@@ -620,9 +620,12 @@ function SellGiftCardsContent() {
                   {(() => {
                     const method = paymentMethods.find((m) => m._id === selectedPaymentMethod);
                     if (!method) return "Select account";
-                    return method.type === "mobile_money"
-                      ? `${NETWORK_LABELS[method.mobileNetwork] || method.mobileNetwork} - ${method.accountName}`
-                      : `${NETWORK_LABELS[method.cryptoAsset] || method.cryptoAsset} - ${method.walletAddress}`;
+                    const m = method as any;
+                    return m.type === "mobile_money"
+                      ? `${NETWORK_LABELS[m.mobileNetwork] || m.mobileNetwork} - ${m.accountName}`
+                      : `${NETWORK_LABELS[m.cryptoAsset] || m.cryptoAsset} - ${m.walletAddress && m.walletAddress.length > 12
+                        ? `${m.walletAddress.slice(0, 6)}...${m.walletAddress.slice(-4)}`
+                        : m.walletAddress}`;
                   })()}
                 </span>
               </div>
@@ -675,7 +678,11 @@ function SellGiftCardsContent() {
                             : (NETWORK_LABELS[method.cryptoAsset] || method.cryptoAsset)}
                         </span>
                         <span className="text-xs text-muted-foreground truncate max-w-[200px]">
-                          {method.type === "mobile_money" ? method.accountName : method.walletAddress}
+                          {method.type === "mobile_money"
+                            ? method.accountName
+                            : (method.walletAddress && method.walletAddress.length > 16
+                              ? `${method.walletAddress.slice(0, 8)}...${method.walletAddress.slice(-6)}`
+                              : method.walletAddress)}
                         </span>
                       </div>
                     </div>
@@ -932,11 +939,16 @@ function SellGiftCardsContent() {
               </div>
 
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label>Attach Card Images (Front/Back)</Label>
-                  <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider">
-                    {cardImages.length}/2 Images
-                  </span>
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center justify-between">
+                    <Label>Attach Card Image</Label>
+                    <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider">
+                      {cardImages.length}/1 Image
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-zinc-500 italic">
+                    Please capture part of the card where the codes/pins are clearly visible.
+                  </p>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <AnimatePresence mode="popLayout">
@@ -970,7 +982,7 @@ function SellGiftCardsContent() {
                       );
                     })}
 
-                    {cardImages.length < 2 && (
+                    {cardImages.length < 1 && (
                       <motion.div
                         key="add-card-image"
                         initial={{ opacity: 0, scale: 0.9 }}

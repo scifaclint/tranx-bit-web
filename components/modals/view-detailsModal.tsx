@@ -218,6 +218,25 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
                         )}
 
 
+                        {/* Card Codes (for selling orders if present) */}
+                        {order.items[0]?.giftCardCodes && order.items[0].giftCardCodes.length > 0 && (
+                            <div className="border rounded-lg overflow-hidden">
+                                <div className="bg-muted/50 px-4 py-2 border-b text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                    Card Codes (Customer provided)
+                                </div>
+                                <div className="p-4 bg-zinc-50 dark:bg-zinc-900/10 space-y-2">
+                                    {order.items[0].giftCardCodes.map((code, idx) => (
+                                        <div key={idx} className="flex items-center justify-between py-1 px-2 border border-dashed rounded-md bg-white dark:bg-zinc-900/50">
+                                            <code className="font-mono font-bold text-sm">{code}</code>
+                                            <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => handleCopyCode(code)}>
+                                                <Copy className="h-3 w-3 mr-1" /> Copy
+                                            </Button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
                         {/* Additional Comments */}
                         {(order.additionalComments || order.notes) && (
                             <div className="border rounded-lg overflow-hidden">
