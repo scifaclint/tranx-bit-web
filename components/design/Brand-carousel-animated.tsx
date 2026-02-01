@@ -76,7 +76,7 @@ export default function BrandCarousel() {
             className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-gray-100 mb-6 max-w-4xl mx-auto"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+            viewport={{ once: false }}
             transition={{ duration: 0.7, ease: "easeOut" }}
           >
             All Your Favorite Gift Cards, One Secure Marketplace.

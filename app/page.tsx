@@ -1,38 +1,5 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import HeroSection from "@/components/design/hero-section";
-import GiftCardFeatures from "@/components/design/feature-section";
-import BrandCarousel from "@/components/design/Brand-carousel-animated";
-import GetStarted from "@/components/design/get-started";
-import Footer from "@/components/design/footer";
-import LandingPageLayout from "@/components/design/landing-layout";
-import TranxbitFAQ from "@/components/design/faq";
-
-export default function Home() {
-  const router = useRouter();
-
-  useEffect(() => {
-    router.push("/auth");
-  }, [router]);
-
-  return (
-    <>
-      {/* <LandingPageLayout />
-
-      <main className="bg-[#f9f9f9] dark:bg-gray-950">
-        <div className="mb-2">
-          <HeroSection />
-        </div>
-        <div className="bg-[#f9f9f9] dark:bg-gray-950">
-          <GiftCardFeatures />
-        </div>
-        <BrandCarousel />
-        <GetStarted />
-        <TranxbitFAQ />
-      </main>
-      <Footer /> */}
-    </>
-  );
+export default function RootPage() {
+  redirect("/home");
 }

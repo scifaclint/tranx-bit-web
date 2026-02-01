@@ -2,11 +2,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
-import QueryProvider from "@/components/providers/queryProvider";
-import { ThemeProvider } from "@/components/providers/themeProvider";
-import { RouteGuard } from "@/components/features/auth/RouteGuard";
 import "./globals.css";
-import { ConnectionStatus } from "@/components/connection-status";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -22,7 +18,6 @@ export const metadata: Metadata = {
   description: "A platform for exchanging gift cards securely and efficiently.",
 };
 
-import { UserProvider } from "@/components/providers/userProvider";
 import TawkToWidgetWrapper from "@/components/services/TawkWrapper";
 
 export default function RootLayout({
@@ -35,20 +30,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {/* <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        > */}
-        <RouteGuard>
-          <QueryProvider>
-            <UserProvider>
-              {children}
-              <ConnectionStatus />
-            </UserProvider>
-          </QueryProvider>
-        </RouteGuard>
+        {children}
         <TawkToWidgetWrapper />
         <Toaster
           position="bottom-right"
@@ -64,7 +46,6 @@ export default function RootLayout({
             className: "dark:bg-toastBackgroundColor dark:text-bodyColor dark:border-borderColorPrimary",
           }}
         />
-        {/* </ThemeProvider> */}
       </body>
     </html>
   );

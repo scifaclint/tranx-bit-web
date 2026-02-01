@@ -54,9 +54,10 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => {
     if (response.data && response.data.status === false) {
-      const error = new Error(
-        response.data.error || response.data.message || "Request failed",
-      );
+      // Prefer 'message' over 'error' if both are present
+      const errorMsg =
+        response.data.message || response.data.error || "Request failed";
+      const error = new Error(errorMsg);
       (error as any).response = response;
       return Promise.reject(error);
     }
