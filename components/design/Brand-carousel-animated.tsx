@@ -93,16 +93,17 @@ export default function BrandCarousel() {
             <motion.div
               className="flex items-center gap-16 py-6"
               animate={{
-                x: [0, -50 * brands.length], // Move from 0 to the negative width of all brands
+                x: [0, -50 * brands.length],
               }}
               transition={{
                 x: {
-                  duration: 35, // Slow, subtle movement
+                  duration: 50, // Increased from 35 for smoother animation
                   repeat: Infinity,
                   ease: "linear",
                   repeatType: "loop",
                 },
               }}
+              style={{ willChange: "transform" }}
             >
               {doubledBrands.map((brand, index) => (
                 <motion.div
@@ -119,6 +120,7 @@ export default function BrandCarousel() {
                     width={brand.width}
                     height={brand.height}
                     className="object-contain"
+                    loading="lazy"
                   />
                 </motion.div>
               ))}
