@@ -26,6 +26,7 @@ import { paymentApi } from "@/lib/api/payment";
 import type { PaymentMethodResponse } from "@/lib/api/payment";
 import { toast } from "sonner";
 import PaymentMethodModal from "./payment-method-modal";
+import { useWithdraw } from "@/hooks/usePayments";
 
 interface WithdrawalModalProps {
     open: boolean;
@@ -50,7 +51,6 @@ export default function WithdrawalModal({
     const [description, setDescription] = useState("");
     const [showPin, setShowPin] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
-    const [isSubmitting, setIsSubmitting] = useState(false);
     const [shake, setShake] = useState(false);
 
     // Payment methods
@@ -59,6 +59,10 @@ export default function WithdrawalModal({
 
     // Add Payment Modal State
     const [showAddPaymentModal, setShowAddPaymentModal] = useState(false);
+
+    // Withdrawal mutation
+    const withdrawMutation = useWithdraw();
+
     useEffect(() => {
         if (open) {
             fetchPaymentMethods();
@@ -117,11 +121,10 @@ export default function WithdrawalModal({
     const handleSubmit = async () => {
         if (!validateForm()) return;
 
-        setIsSubmitting(true);
         setErrors({});
 
         try {
-            const response = await paymentApi.withdraw({
+            const response = await withdrawMutation.mutateAsync({
                 amount: parseFloat(amount),
                 balanceSource,
                 paymentMethodId,
@@ -140,13 +143,11 @@ export default function WithdrawalModal({
             const errorMessage = error?.response?.data?.error || error?.message || "Withdrawal failed";
             setErrors({ submit: errorMessage });
             triggerShake();
-        } finally {
-            setIsSubmitting(false);
         }
     };
 
     const handleClose = () => {
-        if (isSubmitting) return;
+        if (withdrawMutation.isPending) return;
         onOpenChange(false);
         setTimeout(() => {
             setAmount("");
@@ -244,7 +245,7 @@ export default function WithdrawalModal({
                                     placeholder="0.00"
                                     className={`h-12 pl-14 text-lg font-bold border-2 ${errors.amount ? "border-red-500 bg-red-50" : "border-zinc-200 focus:border-black"
                                         } transition-all rounded-xl placeholder:text-zinc-300`}
-                                    disabled={isSubmitting}
+                                    disabled={withdrawMutation.isPending}
                                 />
                             </div>
                             {errors.amount && (
@@ -293,7 +294,7 @@ export default function WithdrawalModal({
                                             setPaymentMethodId(val);
                                         }
                                     }}
-                                    disabled={isSubmitting}
+                                    disabled={withdrawMutation.isPending}
                                 >
                                     <SelectTrigger
                                         className={`h-auto min-h-[3rem] py-2 border-2 ${errors.paymentMethod ? "border-red-500 bg-red-50" : "border-zinc-200 data-[state=open]:border-black hover:border-zinc-300"
@@ -411,7 +412,7 @@ export default function WithdrawalModal({
                                     placeholder="Enter PIN"
                                     className={`h-12 pr-10 border-2 ${errors.pin ? "border-red-500 bg-red-50" : "border-zinc-200 focus:border-black"
                                         } rounded-xl text-lg tracking-widest font-bold placeholder:tracking-normal`}
-                                    disabled={isSubmitting}
+                                    disabled={withdrawMutation.isPending}
                                 />
                                 <Button
                                     type="button"
@@ -454,7 +455,7 @@ export default function WithdrawalModal({
                                 onChange={(e) => setDescription(e.target.value)}
                                 placeholder="What is this for?"
                                 className="h-12 border-2 border-zinc-200 focus:border-black rounded-xl font-medium"
-                                disabled={isSubmitting}
+                                disabled={withdrawMutation.isPending}
                             />
                         </div>
 
@@ -476,17 +477,17 @@ export default function WithdrawalModal({
                             <Button
                                 onClick={handleClose}
                                 variant="outline"
-                                disabled={isSubmitting}
+                                disabled={withdrawMutation.isPending}
                                 className="flex-1 h-12 border-2 border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50 text-zinc-700 font-bold rounded-xl"
                             >
                                 Cancel
                             </Button>
                             <Button
                                 onClick={handleSubmit}
-                                disabled={isSubmitting || paymentMethods.length === 0}
+                                disabled={withdrawMutation.isPending || paymentMethods.length === 0}
                                 className="flex-1 h-12 bg-black hover:bg-black/80 text-white font-bold rounded-xl shadow-[0px_4px_0px_0px_rgba(0,0,0,0.15)] active:shadow-none active:translate-y-[2px] transition-all"
                             >
-                                {isSubmitting ? (
+                                {withdrawMutation.isPending ? (
                                     <>
                                         <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                                         Processing...

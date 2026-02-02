@@ -51,9 +51,7 @@ export function LandingFooter() {
               </span>
             </Link>
             <p className="text-muted-foreground text-sm max-w-sm leading-relaxed mb-8">
-              The most secure way to trade gift cards in West Africa. Get
-              instant value for your assets with PCI-DSS compliant security
-              and lightning-fast payouts.
+              Trade with confidence. Join thousands of users across Nigeria and Ghana who trust us for the best rates and instant  payouts. Secure, transparent, and built for you
             </p>
             <div className="flex items-center gap-4">
               {SOCIALS.map((social, i) => (

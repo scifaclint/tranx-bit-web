@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { paymentApi, AddPaymentMethodPayload, UpdatePaymentMethodPayload } from "@/lib/api/payment";
+import { paymentApi, AddPaymentMethodPayload, UpdatePaymentMethodPayload, WithdrawalPayload } from "@/lib/api/payment";
 import { queryKeys } from "@/lib/query/queryKeys";
 
 // ============= QUERIES =============
@@ -80,6 +80,17 @@ export const useDeletePaymentMethod = () => {
                     data: old.data.filter((m: any) => m._id !== id),
                 };
             });
+        },
+    });
+};
+
+export const useWithdraw = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (payload: WithdrawalPayload) => paymentApi.withdraw(payload),
+        onSuccess: () => {
+            // Invalidate transactions to refetch and show the new withdrawal
+            queryClient.invalidateQueries({ queryKey: queryKeys.transactions.all });
         },
     });
 };

@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import { useAdminTransactions, useAdminWithdrawals } from "@/hooks/useAdmin";
+import { useAdminTransactions, useAdminWithdrawals, useApproveWithdrawal, useRejectWithdrawal } from "@/hooks/useAdmin";
+import { AdminTransaction, AdminWithdrawal } from "@/lib/api/admin";
+import TransactionDetailsModal from "@/components/modals/transaction-details-modal";
 import {
     RefreshCw,
     Eye,
@@ -72,6 +74,8 @@ const LoadingSkeleton = () => (
 export default function TransactionsPage() {
     const [activeTab, setActiveTab] = useState("all");
     const [searchQuery, setSearchQuery] = useState("");
+    const [selectedItem, setSelectedItem] = useState<AdminTransaction | AdminWithdrawal | null>(null);
+    const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
     const {
         data: transactionsResponse,
@@ -106,18 +110,37 @@ export default function TransactionsPage() {
     };
 
     const handleViewDetails = (id: string) => {
-        // TODO: Implement view details modal or navigation
-        toast.info(`Viewing details for transaction: ${id}`);
+        const item = activeTab === "all"
+            ? transactions.find(t => t._id === id)
+            : withdrawals.find(w => w._id === id);
+
+        if (item) {
+            setSelectedItem(item);
+            setIsDetailsModalOpen(true);
+        } else {
+            toast.error("Item details not found");
+        }
     };
 
-    const handleApprove = (id: string) => {
-        // TODO: Implement approve withdrawal
-        toast.info(`Approve withdrawal: ${id}`);
+    const approveWithdrawal = useApproveWithdrawal();
+    const rejectWithdrawal = useRejectWithdrawal();
+
+    const onConfirmApprove = async (id: string, pin: string) => {
+        try {
+            await approveWithdrawal.mutateAsync({ transactionId: id, pin });
+            toast.success("Withdrawal approved successfully");
+        } catch (error) {
+            throw error;
+        }
     };
 
-    const handleReject = (id: string) => {
-        // TODO: Implement reject withdrawal
-        toast.info(`Reject withdrawal: ${id}`);
+    const onConfirmReject = async (id: string, pin: string, notes: string) => {
+        try {
+            await rejectWithdrawal.mutateAsync({ transactionId: id, pin, adminNotes: notes });
+            toast.success("Withdrawal rejected successfully");
+        } catch (error) {
+            throw error;
+        }
     };
 
     const filteredTransactions = transactions.filter(
@@ -138,9 +161,14 @@ export default function TransactionsPage() {
     const isError = activeTab === "all" ? isErrorTransactions : isErrorWithdrawals;
 
     // Calculate stats
-    const pendingWithdrawals = withdrawals.filter((w) => w.status === "pending").length;
-    const completedWithdrawals = withdrawals.filter((w) => w.status === "completed").length;
+    const pendingWithdrawals = withdrawals.filter((w) => w.status.toLowerCase() === "pending").length;
+    const completedWithdrawals = withdrawals.filter((w) => ["completed", "success"].includes(w.status.toLowerCase())).length;
     const totalTransactions = transactions.length;
+
+    // Sum of successful transactions/withdrawals (Proceeds)
+    const totalProceeds = transactions
+        .filter((t) => ["completed", "success"].includes(t.status.toLowerCase()))
+        .reduce((acc, t) => acc + t.amount, 0);
 
     return (
         <div className="space-y-6">
@@ -168,18 +196,20 @@ export default function TransactionsPage() {
             </header>
 
             {/* Stats Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <Card className="bg-background border-borderColorPrimary shadow-none rounded-2xl">
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="text-[10px] font-black uppercase tracking-widest opacity-50">
-                            Total Transactions
+                            Total Proceeds
                         </CardTitle>
-                        <DollarSign className="h-4 w-4 text-muted-foreground" />
+                        <DollarSign className="h-4 w-4 text-green-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-black">{totalTransactions}</div>
+                        <div className="text-2xl font-black">
+                            {totalProceeds.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-sm font-bold">GHS</span>
+                        </div>
                         <p className="text-[10px] text-muted-foreground font-bold uppercase mt-1">
-                            All Financial Activities
+                            Successful Transactions
                         </p>
                     </CardContent>
                 </Card>
@@ -212,6 +242,20 @@ export default function TransactionsPage() {
                         </div>
                         <p className="text-[10px] text-muted-foreground font-bold uppercase mt-1">
                             Successfully Processed
+                        </p>
+                    </CardContent>
+                </Card>
+                <Card className="bg-background border-borderColorPrimary shadow-none rounded-2xl">
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <CardTitle className="text-[10px] font-black uppercase tracking-widest opacity-50">
+                            Volume
+                        </CardTitle>
+                        <TrendingUp className="h-4 w-4 text-blue-500" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-black">{totalTransactions}</div>
+                        <p className="text-[10px] text-muted-foreground font-bold uppercase mt-1">
+                            Total Items
                         </p>
                     </CardContent>
                 </Card>
@@ -454,7 +498,7 @@ export default function TransactionsPage() {
                                                                             variant="default"
                                                                             size="sm"
                                                                             onClick={() =>
-                                                                                handleApprove(withdrawal._id)
+                                                                                handleViewDetails(withdrawal._id)
                                                                             }
                                                                             className="font-black uppercase text-[10px] h-8 bg-green-600 hover:bg-green-700 text-white"
                                                                         >
@@ -465,7 +509,7 @@ export default function TransactionsPage() {
                                                                             variant="destructive"
                                                                             size="sm"
                                                                             onClick={() =>
-                                                                                handleReject(withdrawal._id)
+                                                                                handleViewDetails(withdrawal._id)
                                                                             }
                                                                             className="font-black uppercase text-[10px] h-8"
                                                                         >
@@ -487,6 +531,15 @@ export default function TransactionsPage() {
                     </div>
                 </CardHeader>
             </Card>
+
+            <TransactionDetailsModal
+                isOpen={isDetailsModalOpen}
+                onClose={() => setIsDetailsModalOpen(false)}
+                item={selectedItem}
+                onApprove={onConfirmApprove}
+                onReject={onConfirmReject}
+                isLoading={approveWithdrawal.isPending || rejectWithdrawal.isPending}
+            />
         </div>
     );
 }

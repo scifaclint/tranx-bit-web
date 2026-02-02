@@ -17,6 +17,8 @@ const api = axios.create({
 // Flag to prevent multiple refresh attempts
 let isRefreshing = false;
 let failedQueue: any[] = [];
+// ⭐ NEW: Flag to prevent multiple logout triggers and block API stress
+let isLoggingOut = false;
 
 const processQueue = (error: any, token: string | null = null) => {
   failedQueue.forEach((prom) => {
@@ -30,9 +32,32 @@ const processQueue = (error: any, token: string | null = null) => {
   failedQueue = [];
 };
 
+// Helper to handle forced logout exactly once
+const handleForcedLogout = () => {
+  if (isLoggingOut) return;
+  isLoggingOut = true;
+
+  useAuthStore.getState().clearAuth();
+
+  if (typeof window !== "undefined") {
+    const currentPath = window.location.pathname;
+    if (currentPath !== "/auth") {
+      sessionStorage.setItem("returnUrl", currentPath);
+      // Use replace for immediate redirection
+      window.location.replace("/auth");
+      toast.error("Your session has expired. Please sign in again to continue.");
+    }
+  }
+};
+
 // Add a request interceptor to include the token for all requests
 api.interceptors.request.use(
   (config) => {
+    // ⭐ NEW: If we are already logging out, block all new requests immediately to save backend stress
+    if (isLoggingOut) {
+      return Promise.reject(new Error("Session expired, logging out..."));
+    }
+
     const token = useAuthStore.getState().token;
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -67,8 +92,19 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // If error is 401 and we haven't tried to refresh yet
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // ⭐ NEW: If we are already logging out, just kill everything
+    if (isLoggingOut) {
+      return Promise.reject(error);
+    }
+
+    // If error is 401
+    if (error.response?.status === 401) {
+      // If we've already tried to refresh and it still failed with 401
+      if (originalRequest._retry) {
+        handleForcedLogout();
+        return Promise.reject(error);
+      }
+
       // If already refreshing, queue this request
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
@@ -92,8 +128,7 @@ api.interceptors.response.use(
           `${process.env.NEXT_PUBLIC_API_URL}/auth/refresh-token`,
           {},
           {
-            withCredentials: true, // Send refresh token cookie
-            // ⭐ NEW: Added header here too for the standalone refresh call
+            withCredentials: true,
             headers: {
               "X-Requested-With": "XMLHttpRequest",
             },
@@ -102,33 +137,15 @@ api.interceptors.response.use(
 
         if (response.data.status && response.data.token) {
           const newAccessToken = response.data.token;
-
-          // Update token in Zustand
           useAuthStore.getState().setToken(newAccessToken);
-
-          // Update Authorization header
-          api.defaults.headers.common["Authorization"] =
-            `Bearer ${newAccessToken}`;
+          api.defaults.headers.common["Authorization"] = `Bearer ${newAccessToken}`;
           originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-
-          // Process queued requests
           processQueue(null, newAccessToken);
-
-          // Retry original request
           return api(originalRequest);
         }
       } catch (refreshError) {
-        // Refresh failed - logout user
         processQueue(refreshError, null);
-
-        const currentPath = window.location.pathname;
-        if (currentPath !== "/auth") {
-          sessionStorage.setItem("returnUrl", currentPath);
-        }
-
-        useAuthStore.getState().clearAuth();
-        window.location.href = "/auth";
-
+        handleForcedLogout();
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
@@ -137,7 +154,7 @@ api.interceptors.response.use(
 
     // Handle other errors
     const message = extractErrorMessage(error);
-    if (!axios.isCancel(error)) {
+    if (!axios.isCancel(error) && !isLoggingOut) {
       toast.error(message);
     }
 

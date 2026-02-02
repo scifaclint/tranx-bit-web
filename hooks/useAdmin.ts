@@ -9,6 +9,8 @@ import {
     SetPinPayload,
     SystemSettings,
     UpdateSystemSettingsPayload,
+    ApproveWithdrawalPayload,
+    RejectWithdrawalPayload,
 } from "@/lib/api/admin";
 import { queryKeys } from "@/lib/query/queryKeys";
 
@@ -192,6 +194,94 @@ export const useUpdateSystemSettings = () => {
                     },
                 };
             });
+        },
+    });
+};
+
+export const useApproveWithdrawal = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (payload: ApproveWithdrawalPayload) => adminApi.approveWithdrawal(payload),
+        onSuccess: (response) => {
+            const updatedItem = response.data;
+
+            // Update withdrawals list cache
+            queryClient.setQueriesData(
+                { queryKey: queryKeys.admin.withdrawals.all },
+                (old: any) => {
+                    if (!old || !old.data || !old.data.withdrawals) return old;
+                    return {
+                        ...old,
+                        data: {
+                            ...old.data,
+                            withdrawals: old.data.withdrawals.map((w: any) =>
+                                w._id === updatedItem._id ? { ...w, status: updatedItem.status } : w
+                            ),
+                        },
+                    };
+                }
+            );
+
+            // Update transactions list cache as well (since a withdrawal is a transaction)
+            queryClient.setQueriesData(
+                { queryKey: queryKeys.admin.transactions.all },
+                (old: any) => {
+                    if (!old || !old.data || !old.data.transactions) return old;
+                    return {
+                        ...old,
+                        data: {
+                            ...old.data,
+                            transactions: old.data.transactions.map((t: any) =>
+                                t._id === updatedItem._id ? { ...t, status: updatedItem.status } : t
+                            ),
+                        },
+                    };
+                }
+            );
+        },
+    });
+};
+
+export const useRejectWithdrawal = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (payload: RejectWithdrawalPayload) => adminApi.rejectWithdrawal(payload),
+        onSuccess: (response) => {
+            const updatedItem = response.data;
+
+            // Update withdrawals list cache
+            queryClient.setQueriesData(
+                { queryKey: queryKeys.admin.withdrawals.all },
+                (old: any) => {
+                    if (!old || !old.data || !old.data.withdrawals) return old;
+                    return {
+                        ...old,
+                        data: {
+                            ...old.data,
+                            withdrawals: old.data.withdrawals.map((w: any) =>
+                                w._id === updatedItem._id ? { ...w, status: updatedItem.status } : w
+                            ),
+                        },
+                    };
+                }
+            );
+
+            // Update transactions list cache
+            queryClient.setQueriesData(
+                { queryKey: queryKeys.admin.transactions.all },
+                (old: any) => {
+                    if (!old || !old.data || !old.data.transactions) return old;
+                    return {
+                        ...old,
+                        data: {
+                            ...old.data,
+                            transactions: old.data.transactions.map((t: any) =>
+                                t._id === updatedItem._id ? { ...t, status: updatedItem.status } : t
+                            ),
+                        },
+                    };
+                }
+            );
         },
     });
 };
