@@ -7,8 +7,8 @@ import { Twitter, Instagram, Send, Mail, ShieldCheck } from "lucide-react";
 const FOOTER_LINKS = {
   Product: [
     // { name: "How it Works", href: "/how-it-works" },
-    { name: "Sell Gift Cards", href: "/sell-cards" },
-    { name: "Buy Gift Cards", href: "/buy-cards" },
+    { name: "Sell Gift Cards", href: "/sell-giftcards" },
+    { name: "Buy Gift Cards", href: "/buy-giftcards" },
     // { name: "Market Rates", href: "/rates" },
   ],
   Company: [
