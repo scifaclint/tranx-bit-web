@@ -47,9 +47,9 @@ export default function PaymentMethodModal({
         mobileNetwork: "",
         accountName: "",
         mobileNumber: "",
-        cryptoAsset: "bitcoin" as "bitcoin" | "usdt",
+        cryptoAsset: "bitcoin" as "bitcoin" | "usdt" | "litecoin",
         walletAddress: "",
-        network: "bitcoin" as "bitcoin" | "tron_trc20",
+        network: "bitcoin" as "bitcoin" | "tron_trc20" | "litecoin",
     });
 
     const { data: supportedData } = useSupportedPaymentMethods();
@@ -305,7 +305,9 @@ export default function PaymentMethodModal({
                                         <Select
                                             value={paymentForm.cryptoAsset}
                                             onValueChange={(val: any) => {
-                                                const newNetwork = val === 'bitcoin' ? 'bitcoin' : 'tron_trc20';
+                                                let newNetwork: "bitcoin" | "tron_trc20" | "litecoin" = 'bitcoin';
+                                                if (val === 'usdt') newNetwork = 'tron_trc20';
+                                                else if (val === 'litecoin') newNetwork = 'litecoin';
                                                 setPaymentForm({ ...paymentForm, cryptoAsset: val, network: newNetwork });
                                             }}
                                         >
@@ -315,8 +317,14 @@ export default function PaymentMethodModal({
                                             <SelectContent>
                                                 <SelectItem value="bitcoin">
                                                     <div className="flex items-center gap-2">
-                                                        <Image src={PAYMENT_LOGOS.btc} alt="BTC" width={20} height={20} className="w-5 h-5" />
+                                                        <Image src={PAYMENT_LOGOS.bitcoin} alt="BTC" width={20} height={20} className="w-5 h-5" />
                                                         <span>Bitcoin (BTC)</span>
+                                                    </div>
+                                                </SelectItem>
+                                                <SelectItem value="litecoin">
+                                                    <div className="flex items-center gap-2">
+                                                        <Image src={PAYMENT_LOGOS.litecoin} alt="LTC" width={20} height={20} className="w-5 h-5" />
+                                                        <span>Litecoin (LTC)</span>
                                                     </div>
                                                 </SelectItem>
                                                 <SelectItem value="usdt">
@@ -358,6 +366,8 @@ export default function PaymentMethodModal({
                                             <SelectContent>
                                                 {paymentForm.cryptoAsset === 'bitcoin' ? (
                                                     <SelectItem value="bitcoin">Bitcoin Network</SelectItem>
+                                                ) : paymentForm.cryptoAsset === 'litecoin' ? (
+                                                    <SelectItem value="litecoin">Litecoin (LTC)</SelectItem>
                                                 ) : (
                                                     <SelectItem value="tron_trc20">Tron (TRC20)</SelectItem>
                                                 )}

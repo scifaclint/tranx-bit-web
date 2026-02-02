@@ -100,7 +100,7 @@ export default function SettingsPage() {
   const { user, setAuth } = useAuthStore();
 
   // Debug: Check what's in the store
-  console.log("User from store:", user);
+  // console.log("User from store:", user);
 
   useEffect(() => {
     setMounted(true);
@@ -114,13 +114,13 @@ export default function SettingsPage() {
       email: user?.email || "",
       phone: user?.phone || "",
     };
-    console.log("Initial formData:", initialData);
+    // console.log("Initial formData:", initialData);
     return initialData;
   });
 
   // Update form when user data changes (e.g., after login or store rehydration)
   useEffect(() => {
-    console.log("useEffect triggered, user:", user);
+    // console.log("useEffect triggered, user:", user);
     if (user) {
       const updatedData = {
         firstName: user.first_name || "",
@@ -587,11 +587,11 @@ export default function SettingsPage() {
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
                               <div
-                                className={`w-12 h-12 rounded-full flex items-center justify-center p-2.5 ${method.type === "crypto" ? (method.cryptoAsset === "bitcoin" ? "bg-orange-100 dark:bg-orange-950/30" : "bg-blue-100 dark:bg-blue-950/30") : "bg-zinc-100 dark:bg-zinc-800"}`}
+                                className={`w-12 h-12 rounded-full flex items-center justify-center p-2.5 ${method.type === "crypto" ? (method.cryptoAsset === "bitcoin" ? "bg-orange-100 dark:bg-orange-950/30" : (method.cryptoAsset === "litecoin" ? "bg-blue-50 dark:bg-blue-900/20" : "bg-teal-100 dark:bg-teal-950/30")) : "bg-zinc-100 dark:bg-zinc-800"}`}
                               >
                                 {method.type === "crypto" || (method.type === "mobile_money" && PAYMENT_LOGOS[method.mobileNetwork]) ? (
                                   <Image
-                                    src={PAYMENT_LOGOS[method.type === "crypto" ? (method.cryptoAsset === "bitcoin" ? "btc" : "usdt") : method.mobileNetwork]}
+                                    src={PAYMENT_LOGOS[method.type === "crypto" ? method.cryptoAsset : method.mobileNetwork]}
                                     alt={method.type}
                                     width={24}
                                     height={24}

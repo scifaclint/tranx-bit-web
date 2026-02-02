@@ -409,12 +409,6 @@ export const RegisterForm = ({
         }
       } catch (error: any) {
         setIsLoading(false);
-        const errorMessage = extractErrorMessage(error);
-        const errorTitle = error?.response?.data?.error || "Registration error";
-
-        toast.error(errorTitle, {
-          description: errorMessage,
-        });
       }
     },
     [

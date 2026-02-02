@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTransactionDetails } from "@/hooks/useTransactions";
+import { PAYMENT_LOGOS, NETWORK_LABELS } from "@/lib/payment-constants";
 
 export default function TransactionDetailsPage() {
     const router = useRouter();
@@ -121,17 +122,30 @@ export default function TransactionDetailsPage() {
         }
     };
 
+    const getTypeLabel = (type: string) => {
+        if (!type) return "";
+        return type.split("_").map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
+    };
+
     const getPaymentMethodImage = (method: any) => {
         if (!method) return null;
-        if (method.type === "btc") return "/payments/bitcoin.svg";
-        if (method.type === "mobile_money") {
-            switch (method.mobileNetwork) {
-                case "mtn": return "/payments/mtn-seeklogo.svg";
-                case "telecel": return "/payments/telecel_logo.svg";
-                case "airteltigo": return "/payments/airtel-tigo.svg";
-                default: return null;
+
+        // Values to check in order of priority
+        const valuesToTry = [
+            method.mobileNetwork,
+            method.cryptoAsset,
+            method.type,
+            method.mobile_network, // Case variation
+            method.crypto_asset    // Case variation
+        ];
+
+        for (const val of valuesToTry) {
+            if (val && typeof val === "string") {
+                const key = val.toLowerCase();
+                if (PAYMENT_LOGOS[key]) return PAYMENT_LOGOS[key];
             }
         }
+
         return null;
     };
 
@@ -169,7 +183,7 @@ export default function TransactionDetailsPage() {
                     </div>
                     <div className="space-y-1">
                         <p className="text-zinc-500 dark:text-zinc-400 text-sm font-medium uppercase tracking-wide">
-                            {transaction.type}
+                            {getTypeLabel(transaction.type)}
                         </p>
                         <h2 className="text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
                             {transaction.currency} {transaction.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -248,17 +262,21 @@ export default function TransactionDetailsPage() {
                                 </div>
                                 <div className="space-y-1 overflow-hidden">
                                     <p className="text-sm font-bold truncate">
-                                        {transaction.paymentMethodId.accountName || "Unknown Account"}
+                                        {transaction.paymentMethodId?.accountName || transaction.paymentMethodId?.name || "Unknown Account"}
                                     </p>
                                     <p className="text-xs text-zinc-500 font-mono">
-                                        {transaction.paymentMethodId.mobileNumber || transaction.paymentMethodId.accountNumber}
+                                        {transaction.paymentMethodId?.mobileNumber || transaction.paymentMethodId?.walletAddress || transaction.paymentMethodId?.accountNumber}
                                     </p>
                                 </div>
-                                {transaction.paymentMethodId.mobileNetwork && (
-                                    <div className="ml-auto text-xs font-medium px-2 py-1 rounded bg-zinc-200 dark:bg-zinc-800 capitalize">
-                                        {transaction.paymentMethodId.mobileNetwork?.toUpperCase()}
-                                    </div>
-                                )}
+                                {(() => {
+                                    const netOrAsset = transaction.paymentMethodId?.mobileNetwork || transaction.paymentMethodId?.cryptoAsset;
+                                    if (!netOrAsset) return null;
+                                    return (
+                                        <div className="ml-auto text-xs font-medium px-2 py-1 rounded bg-zinc-200 dark:bg-zinc-800 capitalize">
+                                            {NETWORK_LABELS[netOrAsset.toLowerCase()] || netOrAsset.toUpperCase()}
+                                        </div>
+                                    );
+                                })()}
                             </div>
                         </CardContent>
                     </Card>

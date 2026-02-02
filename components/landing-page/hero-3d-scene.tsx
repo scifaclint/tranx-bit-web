@@ -98,13 +98,13 @@ function Scene() {
 
       {/* 2. MIDGROUND: Floating Glass Cards (The 'Products') */}
       {/* Left Cluster */}
-      <GeometricCard
+      {/* <GeometricCard
         position={[leftX, isMobile ? 3 : 1, -2]}
         rotation={[0.2, 0.5, 0]}
         scale={cardScale}
         color={isDark ? "#6366f1" : "#a5b4fc"}
         imagePath="/brands/logo-amazon.svg"
-      />
+      /> */}
       <GeometricCard
         position={[leftInnerX, isMobile ? -3.5 : -2, -1]}
         rotation={[-0.2, 0.3, 0.2]}
@@ -114,13 +114,13 @@ function Scene() {
       />
 
       {/* Right Cluster */}
-      <GeometricCard
+      {/* <GeometricCard
         position={[rightX, isMobile ? 2.5 : 2, -3]}
         rotation={[0, -0.4, -0.1]}
         scale={cardScale * 1.1}
         color={isDark ? "#4f46e5" : "#818cf8"}
         imagePath="/brands/steam-1.svg"
-      />
+      /> */}
       <GeometricCard
         position={[rightInnerX, isMobile ? -3 : -1, 0]}
         rotation={[0.1, -0.6, 0.1]}

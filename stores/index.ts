@@ -23,6 +23,8 @@ interface AuthStore {
   setToken: (token: string) => void;
   clearAuth: () => void;
   setLoading: (status: boolean) => void;
+  _hasHydrated: boolean;
+  setHasHydrated: (state: boolean) => void;
 }
 
 export const useAuthStore = create<AuthStore>()(
@@ -51,9 +53,13 @@ export const useAuthStore = create<AuthStore>()(
         });
       },
 
+
       setLoading: (status: boolean) => {
         set({ isLoading: status });
       },
+
+      _hasHydrated: false,
+      setHasHydrated: (state) => set({ _hasHydrated: state }),
     }),
     {
       name: "auth-storage-tranxbit",
@@ -62,6 +68,9 @@ export const useAuthStore = create<AuthStore>()(
         user: state.user,
         isAuthenticated: state.isAuthenticated,
       }),
+      onRehydrateStorage: (state) => {
+        return () => state.setHasHydrated(true);
+      },
     }
   )
 );

@@ -320,9 +320,7 @@ export default function OrderDetailsModal({
                 Customer's Payout Info (
                 {order.paymentMethod ||
                   (order.paymentMethodId.type === "crypto"
-                    ? order.paymentMethodId.cryptoAsset === "bitcoin"
-                      ? "Bitcoin"
-                      : "USDT"
+                    ? (order.paymentMethodId.cryptoAsset === "bitcoin" ? "Bitcoin" : (order.paymentMethodId.cryptoAsset === "litecoin" ? "Litecoin" : "USDT"))
                     : order.paymentMethodId.type.replace("_", " "))}
                 )
               </div>

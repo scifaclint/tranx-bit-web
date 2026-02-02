@@ -134,7 +134,7 @@ export default function SellGiftcardOrderPage() {
 
   const paymentMethodDisplay = paymentMethod?.type === "mobile_money"
     ? `${paymentMethod.mobileNetwork?.toUpperCase()} - ${paymentMethod.accountName} (${paymentMethod.mobileNumber})`
-    : `${NETWORK_LABELS[paymentMethod?.cryptoAsset || ""] || (paymentMethod?.cryptoAsset === "bitcoin" ? "BTC" : "USDT")} - ${paymentMethod?.walletAddress}`;
+    : `${NETWORK_LABELS[paymentMethod?.cryptoAsset || ""] || paymentMethod?.cryptoAsset?.toUpperCase() || "CRYPTO"} - ${paymentMethod?.walletAddress}`;
 
   const rate = orderData.orderType === "sell" ? orderData.sellRate : orderData.buyRate;
 
@@ -380,7 +380,7 @@ export default function SellGiftcardOrderPage() {
             <div className="flex items-center gap-3 p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border border-borderColorPrimary">
               <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center p-2 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
                 {(() => {
-                  const logoKey = paymentMethod?.type === "mobile_money" ? paymentMethod.mobileNetwork : (paymentMethod?.cryptoAsset === "bitcoin" ? "btc" : "usdt");
+                  const logoKey = paymentMethod?.type === "mobile_money" ? paymentMethod.mobileNetwork : paymentMethod?.cryptoAsset;
                   return logoKey && PAYMENT_LOGOS[logoKey] ? (
                     <Image
                       src={PAYMENT_LOGOS[logoKey]}

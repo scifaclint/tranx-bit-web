@@ -42,7 +42,7 @@ export default function TawkToWidget({
           window.Tawk_API.setAttributes({
             alwaysOnline: "true",
           }, function (err: any) {
-            if (err) console.error("Tawk error:", err);
+            // Error silencing
           });
         }
 
@@ -171,9 +171,6 @@ export default function TawkToWidget({
         id="tawk-to-script"
         strategy="afterInteractive"
         onLoad={handleScriptLoad}
-        onError={(e) => {
-          console.error("Failed to load Tawk.to script:", e);
-        }}
       >
         {`
           var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();

@@ -1,6 +1,6 @@
-'use client'; 
+'use client';
 
-import { Plus, FilePlus2 , Cloud } from "lucide-react";
+import { Plus, FilePlus2, Cloud } from "lucide-react";
 import { useState } from "react";
 import {
   DropdownMenu,
@@ -14,7 +14,7 @@ import { GoogleDriveModal } from "@/components/ui/modals";
 import { driveService } from '@/lib/services/driveServices';
 import { validateFile } from "@/lib/utils";
 import { toast } from "sonner"
- 
+
 import { dropboxService } from "@/lib/services/dropboxServices";
 import { oneDriveService, OneDriveResponse } from '@/lib/services/onedriveServices';
 
@@ -29,12 +29,12 @@ import { usePathname } from "next/navigation";
 
 interface FileUploadButtonProps {
   onUploadFromComputer: () => void;
-  onUploadFromDrive: (file: File) => void; 
+  onUploadFromDrive: (file: File) => void;
   buttonIcon?: React.ReactNode;
   disabled?: boolean;
 }
 
-interface DriveFile { 
+interface DriveFile {
   id: string;
   name: string;
   type: 'folder' | 'file';
@@ -43,8 +43,8 @@ interface DriveFile {
   thumbnailUrl?: string;
 }
 
-export function FileUploadButton({ 
-  onUploadFromComputer, 
+export function FileUploadButton({
+  onUploadFromComputer,
   onUploadFromDrive,
   buttonIcon,
   disabled = false
@@ -52,21 +52,21 @@ export function FileUploadButton({
   const [showDriveModal, setShowDriveModal] = useState(false);
   const pathname = usePathname();
   const { restrictions, isRestricted } = useUsageRestrictionsStore();
-  
-  const isPathRestricted = pathname.includes('/chat') ? isRestricted('chat') 
-                        : pathname.includes('/image') ? isRestricted('image')
-                        : pathname.includes('/audio') ? isRestricted('audio')
-                        : pathname.includes('/video') ? isRestricted('video')
-                        : false;
+
+  const isPathRestricted = pathname.includes('/chat') ? isRestricted('chat')
+    : pathname.includes('/image') ? isRestricted('image')
+      : pathname.includes('/audio') ? isRestricted('audio')
+        : pathname.includes('/video') ? isRestricted('video')
+          : false;
 
   const handleDriveFileSelect = async (file: DriveFile) => {
     try {
       // Create a placeholder for loading state
       const placeholderBlob = new Blob([], { type: file.mimeType });
       const placeholderUrl = URL.createObjectURL(placeholderBlob);
-      
-      const placeholderFile = new File([placeholderBlob], file.name, { 
-        type: file.mimeType 
+
+      const placeholderFile = new File([placeholderBlob], file.name, {
+        type: file.mimeType
       });
 
       // Show loading state
@@ -78,7 +78,7 @@ export function FileUploadButton({
         throw new Error('Google Drive API not initialized');
       }
       const accessToken = gapi.auth.getToken().access_token;
-      
+
       // Special handling for PDFs
       const isPDF = file.mimeType === 'application/pdf';
       // console.log('Downloading file:', { name: file.name, type: file.mimeType, isPDF });
@@ -112,8 +112,8 @@ export function FileUploadButton({
 
       // Create a regular File object
       const driveFile = new File(
-        [arrayBuffer], 
-        file.name, 
+        [arrayBuffer],
+        file.name,
         { type: file.mimeType }
       );
 
@@ -138,13 +138,7 @@ export function FileUploadButton({
 
       toast.success('File uploaded');
     } catch (error) {
-      // console.error('Error processing Drive file:', error);
-      // Add more detailed error information
-      const errorMessage = error instanceof Error 
-        ? `${error.message}\n${error.stack}` 
-        : "Failed to process file";
-      // console.error('Detailed error:', errorMessage);
-      toast.error(`${error instanceof Error ? error.message : "Failed to process file"}`)
+      // Error handled by local logic or toast below if needed, but let's remove if it's generic
     }
   };
 
@@ -154,12 +148,12 @@ export function FileUploadButton({
         success: async (files) => {
           if (files && files.length > 0) {
             const file = files[0];
-            
+
             // Create a placeholder for loading state
             const placeholderBlob = new Blob([], { type: getMimeType(file.name) });
             const placeholderUrl = URL.createObjectURL(placeholderBlob);
-            
-            const placeholderFile = new File([placeholderBlob], file.name, { 
+
+            const placeholderFile = new File([placeholderBlob], file.name, {
               type: getMimeType(file.name)
             });
 
@@ -179,8 +173,8 @@ export function FileUploadButton({
 
               // Create a regular File object
               const dropboxFile = new File(
-                [arrayBuffer], 
-                file.name, 
+                [arrayBuffer],
+                file.name,
                 { type: getMimeType(file.name) }
               );
 
@@ -212,16 +206,14 @@ export function FileUploadButton({
         sizeLimit: 100 * 1024 * 1024 // 100MB
       });
     } catch (error) {
-      // console.error('Error processing Dropbox file:', error);
-
-      toast.error(`${error instanceof Error ? error.message : "Failed to process file"}`)
+      // toast.error(`${error instanceof Error ? error.message : "Failed to process file"}`)
     }
   };
 
   const handleOneDriveSelect = () => {
     toast.info('Coming soon!, Client ID required');
   }
-  
+
   const getMimeType = (filename: string): string => {
     const ext = filename.split('.').pop()?.toLowerCase();
     const mimeTypes: Record<string, string> = {
@@ -239,25 +231,25 @@ export function FileUploadButton({
 
   return (
     <>
-          <TooltipProvider delayDuration={0}>
+      <TooltipProvider delayDuration={0}>
         <Tooltip>
           <TooltipTrigger asChild>
             <div>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          {buttonIcon ? buttonIcon : (
-            <Button 
-            variant="ghost2" 
-            className={`flex-shrink-0 focus-visible:outline-none border-none p-0 ${disabled ? 'cursor-pointer' : ''}`} 
-            aria-label="Upload File"
-            disabled={disabled}
-            >
-              <Plus size={30} className={`border border-borderColorPrimary rounded-full p-[0.3rem]`} />
-            </Button>
-          )}
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-56 bg-backgroundSecondary rounded-xl border-borderColorPrimary">
-          {/* <DropdownMenuItem 
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  {buttonIcon ? buttonIcon : (
+                    <Button
+                      variant="ghost2"
+                      className={`flex-shrink-0 focus-visible:outline-none border-none p-0 ${disabled ? 'cursor-pointer' : ''}`}
+                      aria-label="Upload File"
+                      disabled={disabled}
+                    >
+                      <Plus size={30} className={`border border-borderColorPrimary rounded-full p-[0.3rem]`} />
+                    </Button>
+                  )}
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-56 bg-backgroundSecondary rounded-xl border-borderColorPrimary">
+                  {/* <DropdownMenuItem 
             onClick={() => setShowDriveModal(true)} 
             className="gap-2"
           >
@@ -293,16 +285,16 @@ export function FileUploadButton({
             />
             <span>Add from OneDrive</span>
           </DropdownMenuItem> */}
-          <DropdownMenuItem onClick={onUploadFromComputer} className="gap-2">
-            <FilePlus2  className="h-4 w-4" />
-            <span>Upload from Computer</span>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-      </div>
-      </TooltipTrigger>
-      <TooltipContent>
-            {disabled && isPathRestricted ? 'File upload disabled (Limit reached)' : disabled 
+                  <DropdownMenuItem onClick={onUploadFromComputer} className="gap-2">
+                    <FilePlus2 className="h-4 w-4" />
+                    <span>Upload from Computer</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            {disabled && isPathRestricted ? 'File upload disabled (Limit reached)' : disabled
               ? <p>File upload disabled for web search</p>
               : <p>Upload a file</p>
             }
@@ -310,8 +302,8 @@ export function FileUploadButton({
         </Tooltip>
       </TooltipProvider>
 
-      <GoogleDriveModal 
-        isOpen={showDriveModal} 
+      <GoogleDriveModal
+        isOpen={showDriveModal}
         onClose={() => setShowDriveModal(false)}
         onFileSelect={handleDriveFileSelect}
       />

@@ -192,7 +192,7 @@ function SellGiftCardsContent() {
           setCalculationData(response.data);
         }
       } catch (error) {
-        console.error("Calculation failed:", error);
+        // Calculation fail silently or handled elsewhere
       } finally {
         setIsCalculating(false);
       }
@@ -279,8 +279,6 @@ function SellGiftCardsContent() {
           : undefined,
       };
 
-      console.log("Submitting Sell Order Payload:", payload);
-
       const response = await ordersApi.createSellOrder(payload);
 
       console.log("Create Order Response:", response);
@@ -294,12 +292,10 @@ function SellGiftCardsContent() {
         refreshUser();
         router.push(`/sell-giftcards/${orderId}`);
       } else {
-        toast.error(response.message || "Failed to create order");
+        // Error handled by global interceptor
       }
     } catch (error: any) {
-      console.error("Order creation error:", error);
-      const errorMessage = error?.response?.data?.message || error?.message || "Failed to submit order. Please try again.";
-      toast.error(errorMessage);
+      // Error handled by global interceptor
     } finally {
       setIsSubmitting(false);
     }
@@ -601,7 +597,7 @@ function SellGiftCardsContent() {
                 {(() => {
                   const method = paymentMethods.find((m) => m._id === selectedPaymentMethod);
                   if (!method) return <Wallet className="h-4 w-4 text-zinc-500" />;
-                  const logoKey = method.type === "mobile_money" ? method.mobileNetwork : (method.cryptoAsset === "bitcoin" ? "btc" : "usdt");
+                  const logoKey = method.type === "mobile_money" ? method.mobileNetwork : method.cryptoAsset;
                   return PAYMENT_LOGOS[logoKey] ? (
                     <div className="w-5 h-5 flex-shrink-0">
                       <Image
@@ -657,7 +653,7 @@ function SellGiftCardsContent() {
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 flex-shrink-0 flex items-center justify-center p-1 bg-zinc-50 dark:bg-zinc-900 rounded-md border border-zinc-200 dark:border-zinc-800">
                         {(() => {
-                          const logoKey = method.type === "mobile_money" ? method.mobileNetwork : (method.cryptoAsset === "bitcoin" ? "btc" : "usdt");
+                          const logoKey = method.type === "mobile_money" ? method.mobileNetwork : method.cryptoAsset;
                           return PAYMENT_LOGOS[logoKey] ? (
                             <Image
                               src={PAYMENT_LOGOS[logoKey]}

@@ -16,9 +16,9 @@ export interface MobileMoneyPaymentMethod {
 export interface CryptoPaymentMethod {
   type: "crypto";
   name: string;
-  cryptoAsset: "bitcoin" | "usdt";
+  cryptoAsset: "bitcoin" | "usdt" | "litecoin";
   walletAddress: string;
-  network: "bitcoin" | "tron_trc20";
+  network: "bitcoin" | "tron_trc20" | "litecoin";
 }
 
 export type AddPaymentMethodPayload =
@@ -48,9 +48,9 @@ interface BasePaymentMethodResponse {
 // Crypto payment method response
 export interface CryptoPaymentMethodResponse extends BasePaymentMethodResponse {
   type: "crypto";
-  cryptoAsset: "bitcoin" | "usdt";
+  cryptoAsset: "bitcoin" | "usdt" | "litecoin";
   walletAddress: string;
-  network: "bitcoin" | "tron_trc20";
+  network: "bitcoin" | "tron_trc20" | "litecoin";
 }
 
 // Mobile Money payment method response
@@ -120,9 +120,9 @@ export type UpdatePaymentMethodPayload = {
     }
     | {
       type?: "crypto";
-      cryptoAsset?: "bitcoin" | "usdt";
+      cryptoAsset?: "bitcoin" | "usdt" | "litecoin";
       walletAddress?: string;
-      network?: "bitcoin" | "tron_trc20";
+      network?: "bitcoin" | "tron_trc20" | "litecoin";
     }
   );
 
@@ -185,6 +185,9 @@ export interface TransactionDetailsResponse {
       accountNumber?: string;
       mobileNetwork?: string | null;
       mobileNumber?: string;
+      name?: string;
+      walletAddress?: string;
+      cryptoAsset?: string;
     };
     orderId?: {
       _id: string;

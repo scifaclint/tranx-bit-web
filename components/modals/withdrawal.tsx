@@ -78,8 +78,7 @@ export default function WithdrawalModal({
                 }
             }
         } catch (error: any) {
-            console.error("Failed to fetch payment methods:", error);
-            toast.error("Failed to load payment methods");
+            // Error is handled by global interceptor
         } finally {
             setLoadingMethods(false);
         }
@@ -141,7 +140,6 @@ export default function WithdrawalModal({
             const errorMessage = error?.response?.data?.error || error?.message || "Withdrawal failed";
             setErrors({ submit: errorMessage });
             triggerShake();
-            toast.error(errorMessage);
         } finally {
             setIsSubmitting(false);
         }
@@ -160,7 +158,11 @@ export default function WithdrawalModal({
     };
 
     const getPaymentMethodImage = (method: PaymentMethodResponse) => {
-        if (method.type === "crypto") return method.cryptoAsset === "bitcoin" ? "/payments/bitcoin.svg" : "/payments/tether-usdt.svg";
+        if (method.type === "crypto") {
+            if (method.cryptoAsset === "bitcoin") return "/payments/bitcoin.svg";
+            if (method.cryptoAsset === "litecoin") return "/payments/litecoin-logo.png";
+            return "/payments/tether-usdt.svg";
+        }
         if (method.type === "mobile_money") {
             switch (method.mobileNetwork) {
                 case "mtn": return "/payments/mtn-seeklogo.svg";

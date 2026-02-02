@@ -84,8 +84,6 @@ export function LoginForm({
       }
     } catch (error: any) {
       setPassword("");
-      const message = extractErrorMessage(error);
-      toast.error(message);
     } finally {
       setIsLoading(false);
     }

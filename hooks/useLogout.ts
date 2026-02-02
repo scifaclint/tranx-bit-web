@@ -17,7 +17,6 @@ export const useLogout = () => {
             // Optional: Wait for API logout if needed, but always clear local session
             await authApi.logout();
         } catch (error) {
-            console.error("Logout API error:", error);
             // We still clear local session even if API fails
         } finally {
             clearAuth();

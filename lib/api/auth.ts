@@ -208,7 +208,6 @@ export const authApi = {
 
   logout: async () => {
     const response = await api.post("/auth/logout");
-    console.log(response, "logged out");
     return response.data;
   },
 
@@ -240,7 +239,6 @@ export const authApi = {
     try {
       const response = await api.post("/auth/resend-verification-code", data);
       if (!response.data.status) {
-        toast.error(response.data.message || "Failed to send code");
         throw new Error(response.data.message || "Failed to send code");
       }
       return response.data;

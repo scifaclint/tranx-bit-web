@@ -122,7 +122,6 @@ export default function PinSetupDialog({ open, onOpenChange, onPinSet, mode = 'a
                 setErrors({ confirmPin: errorMessage });
             }
             triggerShake();
-            toast.error(errorMessage);
         } finally {
             setIsSubmitting(false);
         }

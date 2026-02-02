@@ -13,7 +13,7 @@ interface RouteGuardProps {
 
 const authRoutes = ["/auth"];
 
-const publicRoutes = ["/blog", "/", "/reset-password", "/home"];
+const publicRoutes = ["/blog", "/", "/reset-password", "/home", "/terms-of-service", "/privacy-policy"];
 
 const restrictedRoutes = ["/buy-giftcards"];
 
@@ -22,10 +22,14 @@ function RouteGuardInner({ children }: RouteGuardProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { token } = useAuthStore();
+  const { token, user, _hasHydrated } = useAuthStore();
   const [authState, setAuthState] = useState<
     "checking" | "authorized" | "unauthorized"
-  >("checking");
+  >(() => {
+    // Optimistic check: if we have both token and user, we're likely authorized
+    if (token && user) return "authorized";
+    return "checking";
+  });
   const [isLoading, setIsLoading] = useState(false);
   const isCheckingRef = useRef(false);
 
@@ -46,6 +50,8 @@ function RouteGuardInner({ children }: RouteGuardProps) {
   // 1. Enforce Redirects (Sync-ish)
   // If we have a token and are on /auth, get out immediately.
   useEffect(() => {
+    if (!_hasHydrated) return;
+
     if (token && pathname === "/auth") {
       const mode = searchParams.get("mode");
       if (mode !== "verify-email") {
@@ -61,13 +67,20 @@ function RouteGuardInner({ children }: RouteGuardProps) {
     if (isRestricted) {
       router.replace("/dashboard");
     }
+
+    // NEW: Handle unauthenticated access to private routes
+    if (!token && _hasHydrated) {
+      if (!authRoutes.includes(pathname) && !isPublicRoute(pathname)) {
+        router.replace("/auth");
+      }
+    }
   }, [token, pathname, router, searchParams]);
 
   // 2. Auth Validation (Async)
   // ALWAYS fetch user from API if token exists, never rely solely on cache
   useEffect(() => {
     const checkAuth = async () => {
-      if (isCheckingRef.current) {
+      if (isCheckingRef.current || !_hasHydrated) {
         return;
       }
 
@@ -77,24 +90,33 @@ function RouteGuardInner({ children }: RouteGuardProps) {
           setAuthState("authorized");
         } else if (!token) {
           setAuthState("authorized");
-        } else {
+        } else if (!user) {
+          // Has token but no user, need to check
           setAuthState("checking");
         }
+        // If we have token AND user, we already set "authorized" in useState initializer
+        // or it will be handled by the redirect effect above
         return;
       }
 
       // CASE: No token
+      // If we are in a protected layout (where RouteGuard is used) and have no token,
+      // we must redirect immediately and NOT authorize the view.
       if (!token) {
+        setAuthState("unauthorized");
         if (!authRoutes.includes(pathname) && !isPublicRoute(pathname)) {
           router.replace("/auth");
-          return;
         }
-        setAuthState("authorized");
         return;
       }
 
       // CASE: Has token + valid page (e.g. Dashboard)
-      setAuthState("checking");
+      // Only set to "checking" if we don't have a user cached.
+      // If we have both, we valid in background.
+      if (!user) {
+        setAuthState("checking");
+      }
+
       isCheckingRef.current = true;
       try {
         const response = await authApi.getUser();
@@ -120,6 +142,8 @@ function RouteGuardInner({ children }: RouteGuardProps) {
           router.replace("/auth");
         }
       } catch (error) {
+        // If it's a 401, the axios interceptor might have already handled it,
+        // but we ensure the local state is cleaned up here too.
         setAuthState("unauthorized");
         useAuthStore.getState().clearAuth();
         router.replace("/auth");
@@ -129,11 +153,11 @@ function RouteGuardInner({ children }: RouteGuardProps) {
     };
 
     checkAuth();
-  }, [token, pathname]);
+  }, [token, _hasHydrated]);
 
 
   // Show loading screen while checking auth or during explicit loading states
-  if (isLoading || authState === "checking") {
+  if (!_hasHydrated || isLoading || authState === "checking") {
     return <LoadingAnimation />;
   }
 

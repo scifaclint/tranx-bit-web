@@ -6,26 +6,31 @@ import { Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const FAQS = [
-    {
-        question: "How long does payout take?",
-        answer: "Most payouts are processed within 5-30 minutes of card verification. Depending on your chosen withdrawal method, funds typically arrive in your account instantly."
-    },
-    {
-        question: "What cards do you accept?",
-        answer: "We accept 100+ global brands including Amazon, iTunes, Google Play, Steam, Vanilla, Visa/Mastercard, Sephora, and many more. Both physical cards and e-codes are welcome."
-    },
-    {
-        question: "Is it safe to sell my cards here?",
-        answer: "Absolutely. All uploaded gift cards are fully encrypted and stored in our secure, isolated vaults. Your card data is protected with military-grade encryption and only accessed during automated verification."
-    },
-    {
-        question: "What payment methods do you support?",
-        answer: "We support instant payouts via Mobile Money (all networks) and major Cryptocurrencies including Bitcoin (BTC), USDT (ERC20/TRC20), and Litecoin (LTC)."
-    },
-    {
-        question: "Do you charge any fees?",
-        answer: "We pride ourselves on transparency. There are zero hidden fees. We charge a minimal platform fee of 1-2% depending on the brand, which is always shown upfront before you trade."
-    }
+  {
+    question: "How long does payout take?",
+    answer:
+      "Most payouts are processed within 5-30 minutes of card verification. Depending on your chosen withdrawal method, funds typically arrive in your account instantly.",
+  },
+  {
+    question: "What cards do you accept?",
+    answer:
+      "We accept 100+ global brands including Amazon, iTunes, Google Play, Steam, Vanilla, Visa/Mastercard, Sephora, and many more. Both physical cards and e-codes are welcome.",
+  },
+  {
+    question: "Is it safe to sell my cards here?",
+    answer:
+      "Absolutely. All uploaded gift cards are fully encrypted and stored in our secure, isolated vaults. Your card data is protected with PCI-DSS compliant security and only accessed during automated verification.",
+  },
+  {
+    question: "What payment methods do you support?",
+    answer:
+      "We support instant payouts via Mobile Money (all networks) and major Cryptocurrencies including Bitcoin (BTC), USDT (ERC20/TRC20), and Litecoin (LTC).",
+  },
+  {
+    question: "Do you charge any fees?",
+    answer:
+      "We pride ourselves on transparency. There are zero hidden fees. We charge a minimal platform fee of 1-2% depending on the brand, which is always shown upfront before you trade.",
+  },
 ];
 
 export function LandingFAQ() {

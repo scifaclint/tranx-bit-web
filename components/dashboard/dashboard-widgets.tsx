@@ -117,10 +117,19 @@ export default function DashboardWidgets() {
 
     // Handle successful withdrawal
     const handleWithdrawalSuccess = (data: any) => {
-        // TODO: Update user balance in store
-        // TODO: Show success message
-        // TODO: Optionally navigate to transactions
-        console.log("Withdrawal successful:", data);
+        if (!user) return;
+
+        const newBalance = data.newBalance.toString();
+        const updatedUser = { ...user };
+
+        if (withdrawalSource === 'main') {
+            updatedUser.wallet_balance = newBalance;
+        } else {
+            updatedUser.referral_balance = newBalance;
+        }
+
+        setUser(updatedUser as any);
+        toast.success(data.message || `Withdrawal of ${currency.symbol}${data.amount || ''} was successful`);
     };
 
     useEffect(() => {
