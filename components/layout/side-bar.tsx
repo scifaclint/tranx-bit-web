@@ -26,7 +26,7 @@ import {
   Settings,
   Users,
   CreditCard,
-  Wallet, ShoppingBag, Banknote, Coins
+  Wallet, ShoppingBag, Banknote, Coins, FileWarning
 } from "lucide-react";
 
 export const AdminBaseRoute = "/internal-portal-Trx13";
@@ -120,6 +120,12 @@ const Sidebar = ({
       label: "Currency",
       icon: Coins,
       href: `${AdminBaseRoute}/currency`,
+    },
+    {
+      id: "logs",
+      label: "Logs & Errors",
+      icon: FileWarning,
+      href: `${AdminBaseRoute}/logs`,
     },
     // {
     //   id: "users",

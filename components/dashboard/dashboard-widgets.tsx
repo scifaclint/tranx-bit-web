@@ -158,7 +158,7 @@ export default function DashboardWidgets() {
                                 </p>
                                 <div className="flex items-center gap-3">
                                     <h2 className="text-4xl font-bold text-gray-900 dark:text-gray-100">
-                                        {currency.symbol}{user?.wallet_balance || "0.00"}
+                                        {currency.symbol}{parseFloat(user?.wallet_balance || "0").toFixed(2)}
                                     </h2>
                                     {balanceValue >= 0 && (
                                         <TooltipProvider>
@@ -185,7 +185,7 @@ export default function DashboardWidgets() {
                                     <div className="mt-3 flex items-center gap-2">
                                         <div className="px-2 py-0.5 rounded-md bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-white/10">
                                             <span className="text-[12px] font-bold text-zinc-900 dark:text-zinc-100">
-                                                {currency.symbol}{user.referral_balance || "0.00"}
+                                                {currency.symbol}{parseFloat(user.referral_balance || "0").toFixed(2)}
                                             </span>
                                         </div>
                                         <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
@@ -263,7 +263,7 @@ export default function DashboardWidgets() {
                                         <span className="text-[10px] text-zinc-400 font-medium">Use your available credits</span>
                                     </div>
                                     <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
-                                        {currency.symbol}{user?.wallet_balance || "0.00"}
+                                        {currency.symbol}{parseFloat(user?.wallet_balance || "0").toFixed(2)}
                                     </span>
                                 </DropdownMenuItem>
 
@@ -285,7 +285,7 @@ export default function DashboardWidgets() {
                                         <span className="text-[10px] text-zinc-400 font-medium">Use your earned bonuses</span>
                                     </div>
                                     <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
-                                        {currency.symbol}{user?.referral_balance || "0.00"}
+                                        {currency.symbol}{parseFloat(user?.referral_balance || "0").toFixed(2)}
                                     </span>
                                 </DropdownMenuItem>
                             </DropdownMenuContent>

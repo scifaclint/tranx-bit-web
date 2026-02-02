@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, Suspense } from "react";
+import axios from "axios";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -281,21 +282,21 @@ function SellGiftCardsContent() {
 
       const response = await ordersApi.createSellOrder(payload);
 
-      console.log("Create Order Response:", response);
+      // Resilient ID and status extraction (handles cases where backend naming might vary)
+      const orderId = response.data?.orderId || (response as any).orderId || (response as any).data?._id;
+      const status = response.status || (response as any).success;
 
-      // Safely extract orderId from data object or root response
-      const orderId = response.data?.orderId || (response as any).orderId;
-
-      if (response.status && orderId) {
+      if (status && orderId) {
         toast.success("Order created successfully!");
-        // Silently refresh user data in the background
         refreshUser();
         router.push(`/sell-giftcards/${orderId}`);
       } else {
-        // Error handled by global interceptor
+        toast.error("Order created but navigation failed. Please check your orders page.");
       }
     } catch (error: any) {
-      // Error handled by global interceptor
+      if (!axios.isCancel(error)) {
+        toast.error(error.message || "Something went wrong creating the order");
+      }
     } finally {
       setIsSubmitting(false);
     }

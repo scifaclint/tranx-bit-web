@@ -270,6 +270,39 @@ export interface GetAllWithdrawalsResponse {
   };
 }
 
+// ============= LOG TYPES =============
+
+export interface AdminLog {
+  _id: string;
+  level: "error" | "warn" | "info";
+  message: string;
+  stack?: string;
+  path?: string;
+  method?: string;
+  userId?: {
+    _id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+  };
+  ipAddress?: string;
+  metadata?: Record<string, any>;
+  createdAt: string;
+}
+
+export interface GetAdminLogsResponse {
+  status: boolean;
+  message: string;
+  data: {
+    logs: AdminLog[];
+    pagination: {
+      currentPage: number;
+      totalPages: number;
+      totalItems: number;
+    };
+  };
+}
+
 // ============= SETTINGS TYPES =============
 
 export interface SystemSettings {
@@ -398,6 +431,15 @@ export const adminApi = {
     payload: UpdateSystemSettingsPayload
   ): Promise<UpdateSystemSettingsResponse> => {
     const response = await api.patch("/admin/settings", payload);
+    return response.data;
+  },
+
+  getAdminLogs: async (params?: {
+    page?: number;
+    limit?: number;
+    level?: string;
+  }): Promise<GetAdminLogsResponse> => {
+    const response = await api.get("/admin/logs", { params });
     return response.data;
   },
 };

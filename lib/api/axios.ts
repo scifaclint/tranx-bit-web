@@ -37,16 +37,22 @@ const handleForcedLogout = () => {
   if (isLoggingOut) return;
   isLoggingOut = true;
 
-  useAuthStore.getState().clearAuth();
-
   if (typeof window !== "undefined") {
     const currentPath = window.location.pathname;
+
+    // Only save return URL if not already on auth page
     if (currentPath !== "/auth") {
       sessionStorage.setItem("returnUrl", currentPath);
-      // Use replace for immediate redirection
-      window.location.replace("/auth");
       toast.error("Your session has expired. Please sign in again to continue.");
     }
+
+    // ⭐ GENTLE LOGOUT: Delay clearing state and redirecting
+    // This allows in-flight successful responses (like order creation) 
+    // to finish their local UI logic (navigation, toasts) before the rug is pulled.
+    setTimeout(() => {
+      useAuthStore.getState().clearAuth();
+      window.location.href = "/auth";
+    }, 500);
   }
 };
 
@@ -55,7 +61,7 @@ api.interceptors.request.use(
   (config) => {
     // ⭐ NEW: If we are already logging out, block all new requests immediately to save backend stress
     if (isLoggingOut) {
-      return Promise.reject(new Error("Session expired, logging out..."));
+      return Promise.reject(new axios.Cancel("Session expired, logging out..."));
     }
 
     const token = useAuthStore.getState().token;
@@ -92,9 +98,9 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // ⭐ NEW: If we are already logging out, just kill everything
+    // ⭐ NEW: If we are already logging out, just kill everything silently
     if (isLoggingOut) {
-      return Promise.reject(error);
+      return Promise.reject(new axios.Cancel("Logging out"));
     }
 
     // If error is 401
@@ -102,7 +108,7 @@ api.interceptors.response.use(
       // If we've already tried to refresh and it still failed with 401
       if (originalRequest._retry) {
         handleForcedLogout();
-        return Promise.reject(error);
+        return Promise.reject(new axios.Cancel("Session expired"));
       }
 
       // If already refreshing, queue this request
@@ -141,19 +147,26 @@ api.interceptors.response.use(
           api.defaults.headers.common["Authorization"] = `Bearer ${newAccessToken}`;
           originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
           processQueue(null, newAccessToken);
+          isRefreshing = false;
           return api(originalRequest);
+        } else {
+          // Refresh succeeded but no token - treat as logout
+          isRefreshing = false;
+          processQueue(new Error("Token refresh failed"), null);
+          handleForcedLogout();
+          return Promise.reject(new axios.Cancel("Session expired"));
         }
-      } catch (refreshError) {
+      } catch (refreshError: any) {
+        isRefreshing = false;
         processQueue(refreshError, null);
         handleForcedLogout();
-        return Promise.reject(refreshError);
-      } finally {
-        isRefreshing = false;
+        return Promise.reject(new axios.Cancel("Session expired"));
       }
     }
 
     // Handle other errors
     const message = extractErrorMessage(error);
+    // Don't show toast if we're logging out or if request was cancelled
     if (!axios.isCancel(error) && !isLoggingOut) {
       toast.error(message);
     }

@@ -34,6 +34,11 @@ export const queryKeys = {
     settings: {
       all: ["admin", "settings"] as const,
     },
+    logs: {
+      all: ["admin", "logs"] as const,
+      list: (params?: { page?: number; limit?: number; level?: string }) =>
+        ["admin", "logs", "list", params] as const,
+    },
   },
   payments: {
     all: ["payments"] as const,

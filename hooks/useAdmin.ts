@@ -79,6 +79,24 @@ export const useSystemSettings = () => {
     });
 };
 
+export const useAdminLogs = (params?: {
+    page?: number;
+    limit?: number;
+    level?: string;
+}) => {
+    const defaultParams = {
+        page: 1,
+        limit: 50,
+        ...params,
+    };
+
+    return useQuery({
+        queryKey: queryKeys.admin.logs.list(defaultParams),
+        queryFn: () => adminApi.getAdminLogs(defaultParams),
+        staleTime: 10 * 60 * 1000, // 10 minutes
+    });
+};
+
 // ============= MUTATIONS =============
 
 export const useApproveOrder = () => {
