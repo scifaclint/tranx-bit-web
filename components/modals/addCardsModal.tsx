@@ -25,9 +25,26 @@ import { Textarea } from "@/components/ui/textarea"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 import { useAddCard, useUpdateCard } from "@/hooks/useAdmin"
+import { useCurrencies } from "@/hooks/useCards"
 import { toast } from "sonner"
 import { Loader } from "lucide-react"
 import PinVerificationModal from "./pin-verification-modal"
+import "flag-icons/css/flag-icons.min.css";
+import { Globe } from "lucide-react";
+
+const CurrencyFlag = ({ code, className }: { code: string; className?: string }) => {
+    const currencyToCountry: Record<string, string> = {
+        USD: "us",
+        GBP: "gb",
+        EUR: "eu",
+        CAD: "ca",
+        AUD: "au",
+        JPY: "jp",
+        CNY: "cn"
+    };
+    const countryCode = currencyToCountry[code.toUpperCase()] || code.slice(0, 2).toLowerCase();
+    return <span className={`fi fi-${countryCode} rounded-sm shadow-sm ${className}`} />;
+};
 
 export interface CardData {
     id?: string
@@ -62,7 +79,7 @@ export default function AddCardsModal({ isOpen, onClose, initialData }: AddCards
         type: "buy",
         description: "",
         image: "",
-        fixedCurrency: "USD",
+        fixedCurrency: "", // Default to All
         buyRate: 0,
         sellRate: 0,
         minQuantity: 1,
@@ -73,8 +90,14 @@ export default function AddCardsModal({ isOpen, onClose, initialData }: AddCards
 
     const addCardMutation = useAddCard()
     const updateCardMutation = useUpdateCard()
+    const { data: currenciesResponse } = useCurrencies()
     const [isPinModalOpen, setIsPinModalOpen] = useState(false)
     const [pendingFormData, setPendingFormData] = useState<FormData | null>(null)
+
+    const currencies = currenciesResponse?.data || []
+    const filteredCurrencies = currencies.filter(
+        curr => !["nigeria", "ghana"].includes(curr.name.toLowerCase())
+    )
 
     const isLoading = addCardMutation.isPending || updateCardMutation.isPending
 
@@ -83,7 +106,7 @@ export default function AddCardsModal({ isOpen, onClose, initialData }: AddCards
             setFormData({
                 ...initialData,
                 brand: initialData.brand || "",
-                fixedCurrency: initialData.fixedCurrency || "USD",
+                fixedCurrency: initialData.fixedCurrency || "",
                 buyRate: initialData.buyRate || 0,
                 sellRate: initialData.sellRate || 0,
                 minQuantity: initialData.minQuantity || 1,
@@ -107,7 +130,7 @@ export default function AddCardsModal({ isOpen, onClose, initialData }: AddCards
                 type: "buy",
                 description: "",
                 image: "",
-                fixedCurrency: "USD",
+                fixedCurrency: "",
                 buyRate: 0,
                 sellRate: 0,
                 minQuantity: 1,
@@ -161,7 +184,8 @@ export default function AddCardsModal({ isOpen, onClose, initialData }: AddCards
         data.append('brand', formData.brand)
         data.append('type', formData.type)
         data.append('description', formData.description ?? "")
-        data.append('fixedCurrency', formData.fixedCurrency ?? "")
+        // Handle "all" by sending null or empty string to backend
+        data.append('fixedCurrency', formData.fixedCurrency || "")
         data.append('instructions', formData.instructions ?? "")
         data.append('status', formData.status === "active" ? "active" : "inactive")
 
@@ -251,13 +275,31 @@ export default function AddCardsModal({ isOpen, onClose, initialData }: AddCards
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="grid gap-2">
                                     <Label htmlFor="fixedCurrency">Fixed Currency</Label>
-                                    <Input
-                                        id="fixedCurrency"
-                                        placeholder="e.g. USD"
-                                        value={formData.fixedCurrency}
-                                        onChange={(e) => setFormData({ ...formData, fixedCurrency: e.target.value })}
-                                        required
-                                    />
+                                    <Select
+                                        value={formData.fixedCurrency || "all"}
+                                        onValueChange={(val) => setFormData({ ...formData, fixedCurrency: val === "all" ? "" : val })}
+                                    >
+                                        <SelectTrigger id="fixedCurrency" className="h-10">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">
+                                                <div className="flex items-center gap-2">
+                                                    <Globe className="h-3.5 w-3.5 opacity-50" />
+                                                    <span className="font-bold">ALL</span>
+                                                </div>
+                                            </SelectItem>
+                                            {filteredCurrencies.map((curr) => (
+                                                <SelectItem key={curr.id} value={curr.symbol}>
+                                                    <div className="flex items-center gap-2">
+                                                        <CurrencyFlag code={curr.id} />
+                                                        <span className="font-bold">{curr.name}</span>
+                                                        <span className="text-[10px] opacity-50">({curr.symbol})</span>
+                                                    </div>
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 </div>
                                 <div className="grid gap-2">
                                     <Label htmlFor="type">Type</Label>

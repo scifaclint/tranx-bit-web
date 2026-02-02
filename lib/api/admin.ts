@@ -52,6 +52,10 @@ export interface UpdateCardPayload extends Partial<AddCardPayload> {
   status?: "active" | "inactive";
 }
 
+export interface ClearAdminLogsPayload {
+  adminPin: string;
+}
+
 // ============= RESPONSE TYPES =============
 
 export interface ApproveOrderResponse {
@@ -440,6 +444,13 @@ export const adminApi = {
     level?: string;
   }): Promise<GetAdminLogsResponse> => {
     const response = await api.get("/admin/logs", { params });
+    return response.data;
+  },
+
+  clearAdminLogs: async (
+    payload: ClearAdminLogsPayload
+  ): Promise<{ status: boolean; message: string }> => {
+    const response = await api.post("/admin/logs/clear", payload);
     return response.data;
   },
 };

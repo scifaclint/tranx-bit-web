@@ -11,6 +11,7 @@ import {
     UpdateSystemSettingsPayload,
     ApproveWithdrawalPayload,
     RejectWithdrawalPayload,
+    ClearAdminLogsPayload,
 } from "@/lib/api/admin";
 import { queryKeys } from "@/lib/query/queryKeys";
 
@@ -297,6 +298,34 @@ export const useRejectWithdrawal = () => {
                                 t._id === updatedItem._id ? { ...t, status: updatedItem.status } : t
                             ),
                         },
+                    };
+                }
+            );
+        },
+    });
+};
+
+export const useClearAdminLogs = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (payload: ClearAdminLogsPayload) => adminApi.clearAdminLogs(payload),
+        onSuccess: () => {
+            // Update all logs cache entries to be empty
+            queryClient.setQueriesData(
+                { queryKey: queryKeys.admin.logs.all },
+                (old: any) => {
+                    if (!old || !old.data) return old;
+                    return {
+                        ...old,
+                        data: {
+                            ...old.data,
+                            logs: [],
+                            pagination: {
+                                ...old.data.pagination,
+                                totalItems: 0,
+                                totalPages: 0,
+                            }
+                        }
                     };
                 }
             );

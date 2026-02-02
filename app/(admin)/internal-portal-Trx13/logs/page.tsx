@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import { useAdminLogs } from "@/hooks/useAdmin";
+import { useAdminLogs, useClearAdminLogs } from "@/hooks/useAdmin";
 import { AdminLog } from "@/lib/api/admin";
+import PinVerificationModal from "@/components/modals/pin-verification-modal";
 import {
     RefreshCw,
     Eye,
@@ -213,6 +214,7 @@ export default function LogsPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedLog, setSelectedLog] = useState<AdminLog | null>(null);
     const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+    const [isPinModalOpen, setIsPinModalOpen] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
 
     const {
@@ -227,6 +229,8 @@ export default function LogsPage() {
         level: activeTab === "all" ? undefined : activeTab,
     });
 
+    const clearLogsMutation = useClearAdminLogs();
+
     const logs = logsResponse?.data?.logs || [];
     const pagination = logsResponse?.data?.pagination;
 
@@ -240,7 +244,17 @@ export default function LogsPage() {
     };
 
     const handleClearLogs = () => {
-        toast.info("Clear logs implementation coming soon");
+        setIsPinModalOpen(true);
+    };
+
+    const handleClearConfirm = async (pin: string) => {
+        try {
+            await clearLogsMutation.mutateAsync({ adminPin: pin });
+            toast.success("Logs cleared successfully");
+            setIsPinModalOpen(false);
+        } catch (error: any) {
+            toast.error(error.message || "Failed to clear logs");
+        }
     };
 
     const handleViewDetails = (log: AdminLog) => {
@@ -551,6 +565,15 @@ export default function LogsPage() {
                 isOpen={isDetailsModalOpen}
                 onClose={() => setIsDetailsModalOpen(false)}
                 log={selectedLog}
+            />
+
+            <PinVerificationModal
+                isOpen={isPinModalOpen}
+                onClose={() => setIsPinModalOpen(false)}
+                onConfirm={handleClearConfirm}
+                isPending={clearLogsMutation.isPending}
+                title="Clear System Logs"
+                description="This action will permanently delete all logs. Please enter your admin PIN to confirm."
             />
         </div>
     );
