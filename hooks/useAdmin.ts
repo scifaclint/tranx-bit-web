@@ -83,8 +83,25 @@ export const useApproveOrder = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: (payload: ApproveOrderPayload) => adminApi.approveOrder(payload),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.admin.orders.all });
+        onSuccess: (response, variables) => {
+            // Update admin orders list status
+            queryClient.setQueriesData(
+                { queryKey: queryKeys.admin.orders.all },
+                (old: any) => {
+                    if (!old || !old.data || !old.data.orders) return old;
+                    return {
+                        ...old,
+                        data: {
+                            ...old.data,
+                            orders: old.data.orders.map((o: any) =>
+                                o._id === variables.orderId
+                                    ? { ...o, status: response.data.status }
+                                    : o
+                            ),
+                        },
+                    };
+                }
+            );
         },
     });
 };
@@ -93,8 +110,25 @@ export const useRejectOrder = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: (payload: RejectOrderPayload) => adminApi.rejectOrder(payload),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.admin.orders.all });
+        onSuccess: (_data, variables) => {
+            // Update admin orders list status
+            queryClient.setQueriesData(
+                { queryKey: queryKeys.admin.orders.all },
+                (old: any) => {
+                    if (!old || !old.data || !old.data.orders) return old;
+                    return {
+                        ...old,
+                        data: {
+                            ...old.data,
+                            orders: old.data.orders.map((o: any) =>
+                                o._id === variables.orderId
+                                    ? { ...o, status: "failed" } // Status becomes failed on rejection
+                                    : o
+                            ),
+                        },
+                    };
+                }
+            );
         },
     });
 };
@@ -145,8 +179,19 @@ export const useUpdateSystemSettings = () => {
     return useMutation({
         mutationFn: (payload: UpdateSystemSettingsPayload) =>
             adminApi.updateSystemSettings(payload),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.admin.settings.all });
+        onSuccess: (_data, variables) => {
+            queryClient.setQueryData(queryKeys.admin.settings.all, (old: any) => {
+                if (!old) return old;
+                // Merge new settings (excluding adminPin)
+                const { adminPin, ...newSettings } = variables;
+                return {
+                    ...old,
+                    data: {
+                        ...old.data,
+                        ...newSettings,
+                    },
+                };
+            });
         },
     });
 };

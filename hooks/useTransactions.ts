@@ -7,6 +7,7 @@ export const useUserTransactions = (params?: { page?: number; limit?: number; ty
     return useQuery({
         queryKey: queryKeys.transactions.user(params),
         queryFn: () => paymentApi.getTransactions(params),
+        staleTime: 60 * 1000, // 1 minute
     });
 };
 
@@ -19,6 +20,7 @@ export const useUserTransactionsInfinite = (params?: { type?: string; status?: s
             const { currentPage, totalPages } = lastPage.data.pagination;
             return currentPage < totalPages ? currentPage + 1 : undefined;
         },
+        staleTime: 60 * 1000, // 1 minute
     });
 };
 

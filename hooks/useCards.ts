@@ -6,7 +6,7 @@ export const useCards = (params: { limit?: number; page?: number } = {}) => {
     return useQuery({
         queryKey: [...queryKeys.cards.all, params],
         queryFn: () => cardsApi.getAll(params),
-        staleTime: 5 * 60 * 1000, // 5 minutes
+        staleTime: Infinity,
         ...params,
     });
 };

@@ -8,6 +8,7 @@ export const usePaymentMethods = () => {
     return useQuery({
         queryKey: queryKeys.payments.list(),
         queryFn: () => paymentApi.getPaymentMethods(),
+        staleTime: 5 * 60 * 1000, // 5 minutes (user payment methods don't change often)
     });
 };
 
@@ -15,6 +16,7 @@ export const useSupportedPaymentMethods = () => {
     return useQuery({
         queryKey: queryKeys.payments.supported(),
         queryFn: () => paymentApi.getSupportedPaymentMethods(),
+        staleTime: Infinity,
     });
 };
 
@@ -24,8 +26,14 @@ export const useAddPaymentMethod = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: (payload: AddPaymentMethodPayload) => paymentApi.addPaymentMethod(payload),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.payments.all });
+        onSuccess: (response) => {
+            queryClient.setQueryData(queryKeys.payments.list(), (old: any) => {
+                if (!old) return old;
+                return {
+                    ...old,
+                    data: [response.data, ...old.data],
+                };
+            });
         },
     });
 };
@@ -45,8 +53,17 @@ export const useSetDefaultPaymentMethod = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: (id: string) => paymentApi.setDefaultPaymentMethod(id),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.payments.all });
+        onSuccess: (_data, id) => {
+            queryClient.setQueryData(queryKeys.payments.list(), (old: any) => {
+                if (!old) return old;
+                return {
+                    ...old,
+                    data: old.data.map((m: any) => ({
+                        ...m,
+                        isDefault: m._id === id,
+                    })),
+                };
+            });
         },
     });
 };
@@ -55,8 +72,14 @@ export const useDeletePaymentMethod = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: (id: string) => paymentApi.deletePaymentMethod(id),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.payments.all });
+        onSuccess: (_data, id) => {
+            queryClient.setQueryData(queryKeys.payments.list(), (old: any) => {
+                if (!old) return old;
+                return {
+                    ...old,
+                    data: old.data.filter((m: any) => m._id !== id),
+                };
+            });
         },
     });
 };
