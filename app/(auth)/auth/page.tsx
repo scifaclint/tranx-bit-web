@@ -140,15 +140,15 @@ function AuthPageInner() {
 
   return (
     <div className="max-w-md mx-auto">
-      <div className="flex items-center justify-center gap-2 mb-8">
+      <div className="flex items-center justify-center gap-2 mb-5 ">
         <TranxBitLogo
-          variant={resolvedTheme === "light" ? "dark" : "light"}
           size="medium"
+          variant={resolvedTheme === "dark" ? "light" : "dark"}
         />
       </div>
 
-      <div>
-        <h2 className="text-muted-foreground mb-6 text-center">
+      <div className=" ">
+        <h2 className="text-muted-foreground mb-6 mt-4 text-center ">
           {authMode === "login" && "Login to your account"}
           {authMode === "register" && "Create new account"}
           {authMode === "forgot-password" && "Reset your password"}

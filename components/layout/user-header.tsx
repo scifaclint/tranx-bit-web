@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Menu, Bell } from "lucide-react";
+import { Menu, Bell, MessageSquare } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Button } from "@/components/ui/button";
 import ProfileDropdown from "../profileDropdown";
@@ -20,6 +20,7 @@ import { usePathname } from "next/navigation";
 import { useAuthStore } from "@/stores";
 
 import { getWelcomeMessage } from "@/lib/constants";
+import { FeedbackModal } from "../modals/feedbackModal";
 
 interface UserHeaderProps {
     onOpenMobileMenu: () => void;
@@ -29,6 +30,7 @@ export default function UserHeader({ onOpenMobileMenu }: UserHeaderProps) {
     const { user } = useAuthStore();
     const pathname = usePathname();
     const [notificationOpen, setNotificationOpen] = useState(false);
+    const [feedbackOpen, setFeedbackOpen] = useState(false);
     const [greetingInfo, setGreetingInfo] = useState({ greeting: "Welcome", message: "" });
 
     const isAdminRoute = pathname.startsWith("/internal-portal-Trx13");
@@ -92,6 +94,24 @@ export default function UserHeader({ onOpenMobileMenu }: UserHeaderProps) {
                     </TooltipProvider>
                 )}
 
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="rounded-full hover:bg-muted"
+                                onClick={() => setFeedbackOpen(true)}
+                            >
+                                <MessageSquare size={20} className="text-foreground" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Give Feedback</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+
                 <Popover open={notificationOpen} onOpenChange={setNotificationOpen}>
                     <PopoverTrigger asChild>
                         <button className="relative p-2 rounded-full hover:bg-muted transition-colors">
@@ -116,6 +136,7 @@ export default function UserHeader({ onOpenMobileMenu }: UserHeaderProps) {
                 </Popover>
                 <ProfileDropdown />
             </div>
+            <FeedbackModal isOpen={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
         </div>
     );
 }

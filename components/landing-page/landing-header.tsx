@@ -4,6 +4,9 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Menu } from "lucide-react";
+import TranxBitLogo from "../design/tranx-bit-logo";
+import { useTheme } from "next-themes";
+import { useState, useEffect } from "react";
 import {
   Sheet,
   SheetContent,
@@ -19,6 +22,15 @@ const NAV_ITEMS = [
 ];
 
 export default function LandingHeader() {
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const logoVariant = mounted && theme === "dark" ? "light" : "dark";
+
   return (
     <motion.header
       initial={{ y: -20, opacity: 0 }}
@@ -34,12 +46,9 @@ export default function LandingHeader() {
           transition={{ duration: 0.5, delay: 0.2 }}
         >
           <Link href="/" className="flex items-center space-x-2 group">
-            <div className="h-8 w-8 rounded-full bg-foreground flex items-center justify-center transition-transform group-hover:scale-110 group-active:scale-95">
-              <span className="text-background font-bold text-sm">T</span>
+            <div className="transition-transform group-hover:scale-110 group-active:scale-95">
+              <TranxBitLogo size="medium" variant={logoVariant} />
             </div>
-            <span className="font-semibold text-lg tracking-tight">
-              TranxBit
-            </span>
           </Link>
         </motion.div>
 

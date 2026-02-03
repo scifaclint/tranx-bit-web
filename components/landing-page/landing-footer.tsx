@@ -2,7 +2,11 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { Twitter, Instagram, Send, Mail, ShieldCheck } from "lucide-react";
+import { Send, ShieldCheck } from "lucide-react";
+import { WhatsAppIcon, TelegramIcon } from "../design/social-icons";
+import TranxBitLogo from "../design/tranx-bit-logo";
+import { useTheme } from "next-themes";
+import { useState, useEffect } from "react";
 
 const FOOTER_LINKS = {
   Product: [
@@ -13,7 +17,7 @@ const FOOTER_LINKS = {
   ],
   Company: [
     { name: "About Us", href: "/about" },
-    { name: "Contact Support", href: "/support" },
+    { name: "Contact Support", href: "mailto:tranxbit94@gmail.com" },
     // { name: "Careers", href: "/careers" },
     // { name: "Blog", href: "/blog" },
   ],
@@ -26,32 +30,39 @@ const FOOTER_LINKS = {
 };
 
 const SOCIALS = [
-  { icon: Twitter, href: "#", label: "Twitter" },
-  { icon: Instagram, href: "#", label: "Instagram" },
-  { icon: Send, href: "#", label: "Telegram" },
+  { icon: WhatsAppIcon, href: "https://wa.me/233534507042", label: "WhatsApp" },
+  { icon: TelegramIcon, href: "https://t.me/tranxbit", label: "Telegram" },
 ];
 
 export function LandingFooter() {
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const logoVariant = mounted && theme === "dark" ? "light" : "dark";
+
   return (
     <footer className="w-full bg-background border-t border-border/40 pt-20 pb-10 px-6 md:px-8 relative overflow-hidden">
       {/* Background Atmosphere */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[80%] h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[80%] h-px  from-transparent via-primary/20 to-transparent" />
       <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-primary/5 blur-[120px] rounded-full pointer-events-none" />
 
       <div className="max-w-7xl mx-auto relative z-10">
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-12 mb-16">
           {/* Brand Column */}
           <div className="col-span-2 lg:col-span-2">
-            <Link href="/" className="flex items-center space-x-2 mb-6 group">
-              <div className="h-10 w-10 rounded-xl bg-foreground flex items-center justify-center transition-transform group-hover:scale-105">
-                <span className="text-background font-bold text-lg">T</span>
+            <Link href="/" className="flex items-center group mb-0 relative">
+              <div className="transition-transform group-hover:scale-105">
+                <TranxBitLogo size="medium" variant={logoVariant} />
               </div>
-              <span className="font-bold text-2xl tracking-tight">
-                TranxBit
-              </span>
             </Link>
-            <p className="text-muted-foreground text-sm max-w-sm leading-relaxed mb-8">
-              Trade with confidence. Join thousands of users across Nigeria and Ghana who trust us for the best rates and instant  payouts. Secure, transparent, and built for you
+            <p className="text-muted-foreground mt-4 text-sm max-w-sm leading-relaxed mb-8 relative z-10 ">
+              Trade with confidence. Join thousands of users across Nigeria and
+              Ghana who trust us for the best rates and instant payouts. Secure,
+              transparent, and built for you
             </p>
             <div className="flex items-center gap-4">
               {SOCIALS.map((social, i) => (

@@ -13,7 +13,7 @@ interface RouteGuardProps {
 
 const authRoutes = ["/auth"];
 
-const publicRoutes = ["/blog", "/", "/reset-password", "/home", "/terms-of-service", "/privacy-policy"];
+const publicRoutes = ["/blog", "/", "/reset-password", "/home", "/terms-of-service", "/privacy-policy","/about"];
 
 const restrictedRoutes = ["/buy-giftcards"];
 

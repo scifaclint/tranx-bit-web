@@ -1,4 +1,4 @@
-import { LogOut, Settings } from "lucide-react";
+import { LogOut, Settings, MessageSquare } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,8 +21,10 @@ import { useRouter } from "next/navigation";
 import { authApi } from "@/lib/api/auth";
 import { useLogout } from "@/hooks/useLogout";
 import { Loader2 } from "lucide-react";
+import { FeedbackModal } from "./modals/feedbackModal";
 const ProfileDropdown = () => {
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const router = useRouter(); // Uncommented for settings navigation
 
   const { user, clearAuth } = useAuthStore();
@@ -73,6 +75,10 @@ const ProfileDropdown = () => {
             <Settings className="mr-2 h-4 w-4" />
             <span>Settings</span>
           </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setShowFeedbackModal(true)} className="cursor-pointer lg:hidden">
+            <MessageSquare className="mr-2 h-4 w-4" />
+            <span>Feedback</span>
+          </DropdownMenuItem>
           <DropdownMenuItem
             onClick={handleLogoutClick}
             className="cursor-pointer text-red-700 hover:bg-red-200 hover:text-red-800"
@@ -118,6 +124,11 @@ const ProfileDropdown = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <FeedbackModal
+        isOpen={showFeedbackModal}
+        onClose={() => setShowFeedbackModal(false)}
+      />
     </>
   );
 };
