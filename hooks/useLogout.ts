@@ -1,14 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+// import { useRouter } from "next/navigation";
 import { authApi } from "@/lib/api/auth";
 import { useAuthStore } from "@/stores";
 import { toast } from "sonner";
 
 export const useLogout = () => {
     const [isLoggingOut, setIsLoggingOut] = useState(false);
-    const router = useRouter();
+    // const router = useRouter();
     const { clearAuth } = useAuthStore();
 
     const handleLogout = async () => {
@@ -21,7 +21,8 @@ export const useLogout = () => {
         } finally {
             clearAuth();
             setIsLoggingOut(false);
-            router.replace("/auth");
+            // router.replace("/auth");
+            window.location.href = "/auth";
             toast.success("Logged out successfully");
         }
     };

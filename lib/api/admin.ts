@@ -434,6 +434,7 @@ export const adminApi = {
   updateSystemSettings: async (
     payload: UpdateSystemSettingsPayload
   ): Promise<UpdateSystemSettingsResponse> => {
+    // console.log(payload);
     const response = await api.patch("/admin/settings", payload);
     return response.data;
   },

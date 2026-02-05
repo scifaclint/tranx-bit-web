@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Menu } from "lucide-react";
+import { Menu, LogOut, LayoutDashboard, Loader2 } from "lucide-react";
 import TranxBitLogo from "../design/tranx-bit-logo";
 import { useTheme } from "next-themes";
 import { useState, useEffect } from "react";
@@ -15,6 +15,23 @@ import {
   SheetDescription,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAuthStore } from "@/stores";
+import { useLogout } from "@/hooks/useLogout";
 
 const NAV_ITEMS = [
   { name: "Sell Cards", href: "/sell-giftcards" },
@@ -24,12 +41,33 @@ const NAV_ITEMS = [
 export default function LandingHeader() {
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const { user } = useAuthStore();
+  const { handleLogout, isLoggingOut } = useLogout();
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
   const logoVariant = mounted && theme === "dark" ? "light" : "dark";
+
+  const userName = user
+    ? `${user.first_name || ""} ${user.last_name || ""}`.trim()
+    : "User";
+  const userImage = user?.photo_url || "/profiles/avatarImage.jpg";
+  const initials =
+    (user?.first_name?.[0] || "U") + (user?.last_name?.[0] || "");
+
+  const handleLogoutClick = () => {
+    setShowLogoutDialog(true);
+  };
+
+  const handleLogoutConfirm = async () => {
+    await handleLogout();
+    setShowLogoutDialog(false);
+    setIsSheetOpen(false);
+  };
 
   return (
     <motion.header
@@ -76,23 +114,74 @@ export default function LandingHeader() {
 
         {/* CTA Buttons & Mobile Menu */}
         <div className="flex items-center space-x-4">
-          <motion.div
-            initial={{ opacity: 0, x: 10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-            className="hidden sm:flex items-center space-x-2"
-          >
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/auth?mode=login">Login</Link>
-            </Button>
-            <Button size="sm" asChild className="rounded-full px-5">
-              <Link href="/auth?mode=register">Get Started</Link>
-            </Button>
-          </motion.div>
+          {user ? (
+            // Logged in - Show Profile Dropdown (Desktop)
+            <motion.div
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+              className="hidden sm:flex items-center space-x-2"
+            >
+              <DropdownMenu>
+                <DropdownMenuTrigger className="outline-none">
+                  <Avatar className="h-9 w-9 cursor-pointer ring-2 ring-primary/20 hover:ring-primary/40 transition-all">
+                    <AvatarImage src={userImage} alt={userName} />
+                    <AvatarFallback className="text-xs bg-primary/10">
+                      {initials.toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <div className="flex items-center gap-2 p-2 pb-2">
+                    <Avatar className="w-9 h-9">
+                      <AvatarImage src={userImage} alt={userName} />
+                      <AvatarFallback className="text-xs">
+                        {initials.toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium truncate max-w-[120px]">
+                        {userName}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="my-1 h-px bg-border" />
+                  <DropdownMenuItem asChild className="cursor-pointer">
+                    <Link href="/dashboard">
+                      <LayoutDashboard className="mr-2 h-4 w-4" />
+                      <span>Dashboard</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={handleLogoutClick}
+                    className="cursor-pointer text-red-600 focus:text-red-700 focus:bg-red-50 dark:focus:bg-red-950/20"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Logout</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </motion.div>
+          ) : (
+            // Not logged in - Show Login/Signup (Desktop)
+            <motion.div
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+              className="hidden sm:flex items-center space-x-2"
+            >
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/auth?mode=login">Login</Link>
+              </Button>
+              <Button size="sm" asChild className="rounded-full px-5">
+                <Link href="/auth?mode=register">Get Started</Link>
+              </Button>
+            </motion.div>
+          )}
 
           {/* Mobile Menu Trigger */}
           <div className="md:hidden">
-            <Sheet>
+            <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-9 w-9">
                   <Menu className="h-5 w-5" />
@@ -109,34 +198,125 @@ export default function LandingHeader() {
                   </SheetDescription>
                 </SheetHeader>
 
-                <nav className="flex flex-col space-y-5 mt-8">
+                {user && (
+                  // Show user info at top when logged in
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 mb-4">
+                    <Avatar className="w-12 h-12 ring-2 ring-primary/20">
+                      <AvatarImage src={userImage} alt={userName} />
+                      <AvatarFallback className="text-sm">
+                        {initials.toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-semibold truncate max-w-[180px]">
+                        {userName}
+                      </span>
+                      <span className="text-xs text-muted-foreground truncate max-w-[180px]">
+                        {user.email}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                <nav className="flex flex-col space-y-5 mt-4">
                   {NAV_ITEMS.map((item) => (
                     <Link
                       key={item.name}
                       href={item.href}
+                      onClick={() => setIsSheetOpen(false)}
                       className="text-base font-medium hover:text-primary transition-colors"
                     >
                       {item.name}
                     </Link>
                   ))}
                 </nav>
-                <div className="mt-auto flex flex-col space-y-4 pb-8">
-                  <Button
-                    variant="outline"
-                    asChild
-                    className="w-full rounded-xl h-12"
-                  >
-                    <Link href="/auth?mode=login">Login</Link>
-                  </Button>
-                  <Button asChild className="w-full rounded-xl h-12">
-                    <Link href="/auth?mode=register">Get Started</Link>
-                  </Button>
+
+                <div className="mt-auto flex flex-col space-y-3 pb-8">
+                  {user ? (
+                    // Logged in - Show Dashboard & Logout
+                    <>
+                      <Button
+                        asChild
+                        className="w-full rounded-xl h-12"
+                        onClick={() => setIsSheetOpen(false)}
+                      >
+                        <Link href="/dashboard">
+                          <LayoutDashboard className="mr-2 h-4 w-4" />
+                          Go to Dashboard
+                        </Link>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={handleLogoutClick}
+                        className="w-full rounded-xl h-12 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20 border-red-200"
+                      >
+                        <LogOut className="mr-2 h-4 w-4" />
+                        Logout
+                      </Button>
+                    </>
+                  ) : (
+                    // Not logged in - Show Login & Signup
+                    <>
+                      <Button
+                        variant="outline"
+                        asChild
+                        className="w-full rounded-xl h-12"
+                        onClick={() => setIsSheetOpen(false)}
+                      >
+                        <Link href="/auth?mode=login">Login</Link>
+                      </Button>
+                      <Button
+                        asChild
+                        className="w-full rounded-xl h-12"
+                        onClick={() => setIsSheetOpen(false)}
+                      >
+                        <Link href="/auth?mode=register">Get Started</Link>
+                      </Button>
+                    </>
+                  )}
                 </div>
               </SheetContent>
             </Sheet>
           </div>
         </div>
       </div>
+
+      {/* Logout Confirmation Dialog */}
+      <Dialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirm Logout</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to logout? You'll need to sign in again to
+              access your account.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-4 sm:gap-0">
+            <Button
+              variant="outline"
+              disabled={isLoggingOut}
+              onClick={() => setShowLogoutDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleLogoutConfirm}
+              disabled={isLoggingOut}
+              className="bg-red-600 ml-2 hover:bg-red-700 min-w-[100px]"
+            >
+              {isLoggingOut ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Logout
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </motion.header>
   );
 }

@@ -1,9 +1,6 @@
 import api from "./axios";
 
-export type MobileNetwork =
-  | "mtn"
-  | "telecel"
-  | "airteltigo";
+export type MobileNetwork = "mtn" | "telecel" | "airteltigo";
 
 export interface MobileMoneyPaymentMethod {
   type: "mobile_money";
@@ -18,7 +15,7 @@ export interface CryptoPaymentMethod {
   name: string;
   cryptoAsset: "bitcoin" | "usdt" | "litecoin";
   walletAddress: string;
-  network: "bitcoin" | "tron_trc20" | "litecoin";
+  network: "bitcoin" | "tron_trc20" | "litecoin" | "bsc";
 }
 
 export type AddPaymentMethodPayload =
@@ -50,12 +47,11 @@ export interface CryptoPaymentMethodResponse extends BasePaymentMethodResponse {
   type: "crypto";
   cryptoAsset: "bitcoin" | "usdt" | "litecoin";
   walletAddress: string;
-  network: "bitcoin" | "tron_trc20" | "litecoin";
+  network: "bitcoin" | "tron_trc20" | "litecoin" | "bsc";
 }
 
 // Mobile Money payment method response
-export interface MobileMoneyPaymentMethodResponse
-  extends BasePaymentMethodResponse {
+export interface MobileMoneyPaymentMethodResponse extends BasePaymentMethodResponse {
   type: "mobile_money";
   mobileNetwork: MobileNetwork;
   mobileNumber: string;
@@ -83,6 +79,12 @@ export interface SupportedNetwork {
   name: string;
 }
 
+export interface SupportedCryptoAsset {
+  id: string;
+  name: string;
+  networks: SupportedNetwork[];
+}
+
 export interface SupportedMethodDetails {
   name: string;
   description: string;
@@ -94,13 +96,23 @@ export interface SupportedMethodDetails {
   };
 }
 
+export interface SupportedCryptoMethodDetails {
+  name: string;
+  description: string;
+  assets: SupportedCryptoAsset[];
+  fields: {
+    required: string[];
+    validation: Record<string, string>;
+  };
+}
+
 export interface GetSupportedPaymentMethodsResponse {
   status: boolean;
   message: string;
   data: {
     supportedMethods: {
       mobile_money: SupportedMethodDetails;
-      crypto: SupportedMethodDetails;
+      crypto: SupportedCryptoMethodDetails;
     };
     instructions: Record<string, string>;
   };
@@ -112,19 +124,19 @@ export type UpdatePaymentMethodPayload = {
   isActive?: boolean;
   notes?: string;
 } & (
-    | {
+  | {
       type?: "mobile_money";
       mobileNetwork?: MobileNetwork;
       mobileNumber?: string;
       accountName?: string;
     }
-    | {
+  | {
       type?: "crypto";
       cryptoAsset?: "bitcoin" | "usdt" | "litecoin";
       walletAddress?: string;
-      network?: "bitcoin" | "tron_trc20" | "litecoin";
+      network?: "bitcoin" | "tron_trc20" | "litecoin" | "bsc";
     }
-  );
+);
 
 export interface WithdrawalPayload {
   amount: number;
@@ -198,7 +210,7 @@ export interface TransactionDetailsResponse {
 
 export const paymentApi = {
   addPaymentMethod: async (
-    payload: AddPaymentMethodPayload
+    payload: AddPaymentMethodPayload,
   ): Promise<AddPaymentMethodResponse> => {
     const response = await api.post("/payments", payload);
     return response.data;
@@ -211,7 +223,7 @@ export const paymentApi = {
 
   updatePaymentMethod: async (
     id: string,
-    payload: UpdatePaymentMethodPayload
+    payload: UpdatePaymentMethodPayload,
   ): Promise<any> => {
     const response = await api.put(`/payments/${id}`, payload);
     return response.data;
@@ -227,22 +239,30 @@ export const paymentApi = {
     return response.data;
   },
 
-  getSupportedPaymentMethods: async (): Promise<GetSupportedPaymentMethodsResponse> => {
-    const response = await api.get("/payments/supported");
-    return response.data;
-  },
+  getSupportedPaymentMethods:
+    async (): Promise<GetSupportedPaymentMethodsResponse> => {
+      const response = await api.get("/payments/supported");
+      return response.data;
+    },
 
   withdraw: async (payload: WithdrawalPayload): Promise<WithdrawalResponse> => {
     const response = await api.post("/transactions/withdraw", payload);
     return response.data;
   },
 
-  getTransactions: async (params?: { page?: number; limit?: number; type?: string; status?: string }): Promise<GetTransactionsResponse> => {
+  getTransactions: async (params?: {
+    page?: number;
+    limit?: number;
+    type?: string;
+    status?: string;
+  }): Promise<GetTransactionsResponse> => {
     const response = await api.get("/transactions", { params });
     return response.data;
   },
 
-  getTransactionDetails: async (id: string): Promise<TransactionDetailsResponse> => {
+  getTransactionDetails: async (
+    id: string,
+  ): Promise<TransactionDetailsResponse> => {
     const response = await api.get(`/transactions/${id}`);
     return response.data;
   },
