@@ -39,10 +39,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
         <Card
           onClick={() => {
-            toast.info("Coming Soon!", {
-              description: "The Buy Gift Card feature is under development and will be available soon.",
-              position: "bottom-right",
-            });
+            router.push("/buy-giftcards");
           }}
           className="bg-background  rounded-2xl p-5 border-0 hover:shadow-md transition-all duration-200 cursor-pointer"
         >
