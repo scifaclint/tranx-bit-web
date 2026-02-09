@@ -12,7 +12,8 @@ import {
     RefreshCcw,
     Search,
     Loader2,
-    Inbox
+    Inbox,
+    CreditCard
 } from "lucide-react";
 import {
     Sheet,
@@ -93,6 +94,7 @@ export function AllTransactionsModal({ isOpen, onClose }: AllTransactionsModalPr
             case "trade_credit": return <ArrowDownLeft className="w-4 h-4" />;
             case "bonus": return <Gift className="w-4 h-4" />;
             case "internal_transfer": return <Repeat className="w-4 h-4" />;
+            case "order_payment": return <CreditCard className="w-4 h-4" />;
             default: return <RefreshCcw className="w-4 h-4" />;
         }
     };
@@ -172,6 +174,7 @@ export function AllTransactionsModal({ isOpen, onClose }: AllTransactionsModalPr
                                     <SelectItem value="withdrawal">Withdrawal</SelectItem>
                                     <SelectItem value="trade_credit">Trade Credit</SelectItem>
                                     <SelectItem value="bonus">Bonus</SelectItem>
+                                    <SelectItem value="order_payment">Order Payment</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -217,8 +220,10 @@ export function AllTransactionsModal({ isOpen, onClose }: AllTransactionsModalPr
                                     <div className={`
                                         w-10 h-10 rounded-full 
                                         flex items-center justify-center shrink-0 border
-                                        ${tx.type === 'withdrawal'
-                                            ? 'bg-zinc-50 border-zinc-200 text-zinc-900 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-100'
+                                        ${tx.type === 'withdrawal' || tx.type === 'order_payment'
+                                            ? tx.type === 'order_payment'
+                                                ? 'bg-indigo-50 border-indigo-200 text-indigo-700 dark:bg-indigo-900/20 dark:border-indigo-900/30 dark:text-indigo-400'
+                                                : 'bg-zinc-50 border-zinc-200 text-zinc-900 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-100'
                                             : 'bg-zinc-50 border-zinc-200 text-zinc-500 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-400'
                                         }
                                     `}>
@@ -234,9 +239,9 @@ export function AllTransactionsModal({ isOpen, onClose }: AllTransactionsModalPr
                                     </div>
                                 </div>
                                 <div className="text-right shrink-0">
-                                    <p className={`font-bold text-sm mb-1 ${tx.type === 'withdrawal' ? 'text-zinc-900 dark:text-zinc-100' : 'text-zinc-900 dark:text-zinc-100'
+                                    <p className={`font-bold text-sm mb-1 ${tx.type === 'withdrawal' || tx.type === 'order_payment' ? 'text-zinc-900 dark:text-zinc-100' : 'text-zinc-900 dark:text-zinc-100'
                                         }`}>
-                                        {tx.type === 'withdrawal' ? '−' : '+'}
+                                        {tx.type === 'withdrawal' || tx.type === 'order_payment' ? '−' : '+'}
                                         {tx.currency} {Number(tx.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                     </p>
                                     <Badge variant="outline" className={`text-[10px] uppercase font-bold px-1.5 h-5 ${getStatusColor(tx.status)}`}>
