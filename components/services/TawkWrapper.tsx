@@ -25,6 +25,7 @@ export default function TawkToWidgetWrapper() {
                 "/register*",
                 "/internal-portal-Trx13*",
                 "/reset-password*",
+                "/buy-giftcards",
                 "/sell-giftcards",
                 "/transactions",
                 "/settings"
