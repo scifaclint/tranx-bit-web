@@ -12,7 +12,8 @@ import {
     RefreshCcw,
     CheckCircle2,
     Clock,
-    XCircle
+    XCircle,
+    CreditCard
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,8 @@ export default function RecentTransactions() {
                 return <Gift className="w-4 h-4 sm:w-5 sm:h-5" />;
             case "internal_transfer":
                 return <Repeat className="w-4 h-4 sm:w-5 sm:h-5" />;
+            case "order_payment":
+                return <CreditCard className="w-4 h-4 sm:w-5 sm:h-5" />;
             default:
                 return <RefreshCcw className="w-4 h-4 sm:w-5 sm:h-5" />;
         }
@@ -123,8 +126,10 @@ export default function RecentTransactions() {
                                         w-10 h-10 sm:w-11 sm:h-11 rounded-full 
                                         flex items-center justify-center shrink-0 border
                                         transition-colors duration-200
-                                        ${tx.type === 'withdrawal'
-                                            ? 'bg-white border-zinc-200 text-zinc-900 dark:bg-zinc-900 dark:border-zinc-700 dark:text-zinc-100'
+                                        ${tx.type === 'withdrawal' || tx.type === 'order_payment'
+                                            ? tx.type === 'order_payment'
+                                                ? 'bg-indigo-50 border-indigo-200 text-indigo-700 dark:bg-indigo-900/20 dark:border-indigo-900/30 dark:text-indigo-400'
+                                                : 'bg-white border-zinc-200 text-zinc-900 dark:bg-zinc-900 dark:border-zinc-700 dark:text-zinc-100'
                                             : 'bg-zinc-50 border-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-300'
                                         }
                                     `}>
@@ -146,7 +151,7 @@ export default function RecentTransactions() {
                                         font-bold text-sm sm:text-base tabular-nums tracking-tight
                                         ${tx.type === 'withdrawal' ? 'text-zinc-900 dark:text-zinc-100' : 'text-zinc-900 dark:text-zinc-100'}
                                     `}>
-                                        {tx.type === 'withdrawal' ? '−' : '+'}
+                                        {tx.type === 'withdrawal' || tx.type === 'order_payment' ? '−' : '+'}
                                         {tx.currency} {tx.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                     </p>
                                     <Badge

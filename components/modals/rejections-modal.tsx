@@ -85,9 +85,9 @@ export default function RejectionModal({ isOpen, onClose, order }: RejectionModa
                                 {isBuying ? 'Payable Amount:' : 'Expected Payout:'}
                             </span>
                             <span className="font-bold text-right text-lg text-red-600 line-through decoration-red-600/50">
-                                {order.payoutCurrency} {order.amountToReceive?.toLocaleString()}
+                                {order.payoutCurrency} {order.totalAmount?.toLocaleString()}
                             </span>
-                            <span className="text-[10px] text-muted-foreground text-right col-span-2 italic line-through">(${order.totalAmount?.toLocaleString()} USD equivalent)</span>
+                            <span className="text-[10px] text-muted-foreground text-right col-span-2 italic line-through">(Face Value: {order.cardCurrency} {order.cardValue?.toLocaleString()})</span>
                         </div>
                     </div>
 

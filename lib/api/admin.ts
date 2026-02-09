@@ -56,6 +56,28 @@ export interface ClearAdminLogsPayload {
   adminPin: string;
 }
 
+export interface UpdateCardStatusPayload {
+  cardStatus: "pending" | "valid" | "invalid";
+  adminPin: string;
+}
+
+export interface AddPlatformPaymentPayload {
+  adminPin: string;
+  type: "mobile_money" | "crypto" | "bank";
+  name: string;
+  mobileNetwork?: string;
+  mobileNumber?: string;
+  accountName?: string;
+  walletAddress?: string;
+  network?: string;
+  cryptoAsset?: string;
+  isActive: boolean;
+}
+
+export interface UpdatePlatformPaymentPayload extends Partial<AddPlatformPaymentPayload> {
+  adminPin: string;
+}
+
 // ============= RESPONSE TYPES =============
 
 export interface ApproveOrderResponse {
@@ -150,6 +172,34 @@ export interface AdminPaymentMethod {
   bankName?: string | null;
 }
 
+export interface AdminPlatformPayment {
+  _id: string;
+  isPlatform: boolean;
+  type: "mobile_money" | "crypto" | "bank";
+  name: string;
+  mobileNetwork?: string;
+  mobileNumber?: string;
+  accountName?: string;
+  walletAddress?: string;
+  network?: string;
+  cryptoAsset?: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface PaymentMethodSnapshot {
+  type: string;
+  name: string;
+  cryptoAsset?: string;
+  walletAddress?: string;
+  network?: string;
+  accountName?: string;
+  accountNumber?: string;
+  mobileNumber?: string;
+  mobileNetwork?: string;
+  bankName?: string;
+}
+
 export interface AdminOrder {
   _id: string;
   orderNumber: string;
@@ -159,16 +209,17 @@ export interface AdminOrder {
   items: AdminOrderItem[];
   totalAmount: number;
   totalItems: number;
-  amountToReceive: number;
   payoutCurrency: string;
   cardCurrency: string;
   cardValue: number;
+  cardStatus?: "pending" | "valid" | "invalid";
   hasImages?: boolean;
   imagesCount?: number;
   cardImages?: string[];
   recipientEmail?: string | null;
   paymentMethod: string;
   paymentMethodId: AdminPaymentMethod;
+  paymentMethodSnapshot?: PaymentMethodSnapshot;
   notes?: string;
   additionalComments?: string;
   isReferralBonusPaid: boolean;
@@ -204,6 +255,30 @@ export interface GetAllOrdersResponse {
 export interface DeleteCardResponse {
   status: boolean;
   message: string;
+}
+
+export interface UpdateCardStatusResponse {
+  status: boolean;
+  message: string;
+  data: AdminOrder;
+}
+
+export interface GetPlatformPaymentsResponse {
+  status: boolean;
+  count: number;
+  data: AdminPlatformPayment[];
+}
+
+export interface AddPlatformPaymentResponse {
+  status: boolean;
+  message: string;
+  data: AdminPlatformPayment;
+}
+
+export interface UpdatePlatformPaymentResponse {
+  status: boolean;
+  message: string;
+  data: AdminPlatformPayment;
 }
 
 // ============= TRANSACTION TYPES =============
@@ -452,6 +527,39 @@ export const adminApi = {
     payload: ClearAdminLogsPayload
   ): Promise<{ status: boolean; message: string }> => {
     const response = await api.post("/admin/logs/clear", payload);
+    return response.data;
+  },
+
+  updateCardStatus: async (
+    orderId: string,
+    payload: UpdateCardStatusPayload
+  ): Promise<UpdateCardStatusResponse> => {
+    const response = await api.patch(`/admin/orders/${orderId}/card-status`, payload);
+    return response.data;
+  },
+
+  getPlatformPayments: async (): Promise<GetPlatformPaymentsResponse> => {
+    const response = await api.get("/admin/payments/platform");
+    return response.data;
+  },
+
+  addPlatformPayment: async (
+    payload: AddPlatformPaymentPayload
+  ): Promise<AddPlatformPaymentResponse> => {
+    const response = await api.post("/admin/payments/platform", payload);
+    return response.data;
+  },
+
+  updatePlatformPayment: async (
+    id: string,
+    payload: UpdatePlatformPaymentPayload
+  ): Promise<UpdatePlatformPaymentResponse> => {
+    const response = await api.put(`/admin/payments/platform/${id}`, payload);
+    return response.data;
+  },
+
+  deletePlatformPayment: async (id: string): Promise<{ status: boolean; message: string }> => {
+    const response = await api.delete(`/admin/payments/platform/${id}`);
     return response.data;
   },
 };

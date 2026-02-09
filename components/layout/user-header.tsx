@@ -6,11 +6,6 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Button } from "@/components/ui/button";
 import ProfileDropdown from "../profileDropdown";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -18,6 +13,13 @@ import {
 } from "@/components/ui/tooltip";
 import { usePathname } from "next/navigation";
 import { useAuthStore } from "@/stores";
+import {
+  Sheet,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import NotificationCenter from "../features/notifications/NotificationCenter";
+import { useUIStore } from "@/hooks/useUIStore";
+import { useNotifications } from "@/hooks/useNotifications";
 
 import { getWelcomeMessage } from "@/lib/constants";
 import { FeedbackModal } from "../modals/feedbackModal";
@@ -28,8 +30,9 @@ interface UserHeaderProps {
 
 export default function UserHeader({ onOpenMobileMenu }: UserHeaderProps) {
   const { user } = useAuthStore();
+  const { unreadCount } = useNotifications();
+  const { isNotificationCenterOpen, setNotificationCenterOpen } = useUIStore();
   const pathname = usePathname();
-  const [notificationOpen, setNotificationOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [greetingInfo, setGreetingInfo] = useState({
     greeting: "Welcome",
@@ -117,28 +120,23 @@ export default function UserHeader({ onOpenMobileMenu }: UserHeaderProps) {
           </Tooltip>
         </TooltipProvider>
 
-        <Popover open={notificationOpen} onOpenChange={setNotificationOpen}>
-          <PopoverTrigger asChild>
-            <button className="relative p-2 rounded-full hover:bg-muted transition-colors">
+        <Sheet
+          open={isNotificationCenterOpen}
+          onOpenChange={setNotificationCenterOpen}
+        >
+          <SheetTrigger asChild>
+            <button
+              className="relative p-2 rounded-full hover:bg-muted transition-colors"
+              onClick={() => setNotificationCenterOpen(true)}
+            >
               <Bell size={20} className="text-foreground" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full"></span>
+              {unreadCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full" />
+              )}
             </button>
-          </PopoverTrigger>
-          <PopoverContent className="w-80" align="end">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold">Notifications</h3>
-                <span className="text-xs text-muted-foreground">0 new</span>
-              </div>
-              <div className="text-center py-6">
-                <Bell className="w-12 h-12 text-muted-foreground/20 mx-auto mb-3" />
-                <p className="text-muted-foreground text-sm">
-                  No notifications yet
-                </p>
-              </div>
-            </div>
-          </PopoverContent>
-        </Popover>
+          </SheetTrigger>
+          <NotificationCenter />
+        </Sheet>
         <ProfileDropdown />
       </div>
       <FeedbackModal

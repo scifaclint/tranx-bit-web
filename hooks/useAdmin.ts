@@ -12,6 +12,9 @@ import {
     ApproveWithdrawalPayload,
     RejectWithdrawalPayload,
     ClearAdminLogsPayload,
+    UpdateCardStatusPayload,
+    AddPlatformPaymentPayload,
+    UpdatePlatformPaymentPayload,
 } from "@/lib/api/admin";
 import { queryKeys } from "@/lib/query/queryKeys";
 
@@ -95,6 +98,14 @@ export const useAdminLogs = (params?: {
         queryKey: queryKeys.admin.logs.list(defaultParams),
         queryFn: () => adminApi.getAdminLogs(defaultParams),
         staleTime: 10 * 60 * 1000, // 10 minutes
+    });
+};
+
+export const useAdminPlatformPayments = () => {
+    return useQuery({
+        queryKey: queryKeys.admin.payments.platform,
+        queryFn: () => adminApi.getPlatformPayments(),
+        staleTime: Infinity,
     });
 };
 
@@ -329,6 +340,69 @@ export const useClearAdminLogs = () => {
                     };
                 }
             );
+        },
+    });
+};
+
+export const useUpdateCardStatus = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ orderId, payload }: { orderId: string; payload: UpdateCardStatusPayload }) =>
+            adminApi.updateCardStatus(orderId, payload),
+        onSuccess: (response) => {
+            const updatedOrder = response.data;
+            // Update admin orders list cache
+            queryClient.setQueriesData(
+                { queryKey: queryKeys.admin.orders.all },
+                (old: any) => {
+                    if (!old || !old.data || !old.data.orders) return old;
+                    return {
+                        ...old,
+                        data: {
+                            ...old.data,
+                            orders: old.data.orders.map((o: any) =>
+                                o._id === updatedOrder._id ? { ...o, cardStatus: updatedOrder.cardStatus } : o
+                            ),
+                        },
+                    };
+                }
+            );
+            // Also invalidate order detail if it exists
+            queryClient.invalidateQueries({ queryKey: queryKeys.orders.detail(updatedOrder._id) });
+        },
+    });
+};
+
+export const useAddPlatformPayment = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (payload: AddPlatformPaymentPayload) => adminApi.addPlatformPayment(payload),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.admin.payments.all });
+            queryClient.invalidateQueries({ queryKey: queryKeys.admin.payments.platform });
+        },
+    });
+};
+
+export const useUpdatePlatformPayment = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, payload }: { id: string; payload: UpdatePlatformPaymentPayload }) =>
+            adminApi.updatePlatformPayment(id, payload),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.admin.payments.all });
+            queryClient.invalidateQueries({ queryKey: queryKeys.admin.payments.platform });
+        },
+    });
+};
+
+export const useDeletePlatformPayment = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (id: string) => adminApi.deletePlatformPayment(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.admin.payments.all });
+            queryClient.invalidateQueries({ queryKey: queryKeys.admin.payments.platform });
         },
     });
 };

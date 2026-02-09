@@ -124,19 +124,19 @@ export type UpdatePaymentMethodPayload = {
   isActive?: boolean;
   notes?: string;
 } & (
-  | {
+    | {
       type?: "mobile_money";
       mobileNetwork?: MobileNetwork;
       mobileNumber?: string;
       accountName?: string;
     }
-  | {
+    | {
       type?: "crypto";
       cryptoAsset?: "bitcoin" | "usdt" | "litecoin";
       walletAddress?: string;
       network?: "bitcoin" | "tron_trc20" | "litecoin" | "bsc";
     }
-);
+  );
 
 export interface WithdrawalPayload {
   amount: number;
@@ -201,10 +201,30 @@ export interface TransactionDetailsResponse {
       walletAddress?: string;
       cryptoAsset?: string;
     };
+    paymentMethodSnapshot?: {
+      type: "mobile_money" | "crypto";
+      name: string;
+      accountName?: string;
+      mobileNetwork?: string;
+      mobileNumber?: string;
+      walletAddress?: string;
+      cryptoAsset?: string;
+      network?: string;
+      accountNumber?: string;
+    };
     orderId?: {
       _id: string;
       orderNumber: string;
     };
+  };
+}
+
+export interface PaystackInitializeResponse {
+  status: boolean;
+  message: string;
+  data: {
+    checkoutUrl: string;
+    reference: string;
   };
 }
 
@@ -218,6 +238,11 @@ export const paymentApi = {
 
   getPaymentMethods: async (): Promise<GetPaymentMethodsResponse> => {
     const response = await api.get("/payments");
+    return response.data;
+  },
+
+  getPlatformPaymentMethods: async (): Promise<GetPaymentMethodsResponse> => {
+    const response = await api.get("/payments/platform");
     return response.data;
   },
 
@@ -264,6 +289,18 @@ export const paymentApi = {
     id: string,
   ): Promise<TransactionDetailsResponse> => {
     const response = await api.get(`/transactions/${id}`);
+    return response.data;
+  },
+
+  initializePaystack: async (
+    orderId: string,
+  ): Promise<PaystackInitializeResponse> => {
+    const response = await api.post(`/payments/paystack/initialize/${orderId}`);
+    return response.data;
+  },
+
+  verifyPaystack: async (reference: string): Promise<any> => {
+    const response = await api.post(`/payments/paystack/verify/${reference}`);
     return response.data;
   },
 };

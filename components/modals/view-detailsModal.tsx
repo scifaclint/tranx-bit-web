@@ -10,10 +10,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, XCircle, Copy } from "lucide-react";
+import { CheckCircle, XCircle, Copy, Plus, Trash2, MessageSquare } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { useApproveOrder, useRejectOrder } from "@/hooks/useAdmin";
+import { useApproveOrder, useRejectOrder, useUpdateCardStatus } from "@/hooks/useAdmin";
 import { toast } from "sonner";
 import { Loader } from "lucide-react";
 
@@ -21,6 +21,7 @@ import { AdminOrder } from "@/lib/api/admin";
 import Image from "next/image";
 import PinVerificationModal from "./pin-verification-modal";
 import { ordersApi } from "@/lib/api/orders";
+import { PAYMENT_LOGOS } from "@/lib/payment-constants";
 
 interface OrderDetailsModalProps {
   isOpen: boolean;
@@ -33,11 +34,12 @@ export default function OrderDetailsModal({
   onClose,
   order,
 }: OrderDetailsModalProps) {
-  const [inputCode, setInputCode] = useState("");
+  const [codes, setCodes] = useState<string[]>([""]);
+  const [adminNotes, setAdminNotes] = useState("");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isPinModalOpen, setIsPinModalOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState<
-    "approve" | "reject" | null
+    "approve" | "reject" | "mark-valid" | null
   >(null);
   const [rejectionReason, setRejectionReason] = useState("");
   const [fetchedImages, setFetchedImages] = useState<string[]>([]);
@@ -45,7 +47,8 @@ export default function OrderDetailsModal({
 
   const approveMutation = useApproveOrder();
   const rejectMutation = useRejectOrder();
-  const isLoading = approveMutation.isPending || rejectMutation.isPending;
+  const updateCardStatusMutation = useUpdateCardStatus();
+  const isLoading = approveMutation.isPending || rejectMutation.isPending || updateCardStatusMutation.isPending;
 
   if (!order) return null;
 
@@ -85,17 +88,27 @@ export default function OrderDetailsModal({
       if (pendingAction === "approve") {
         await approveMutation.mutateAsync({
           orderId: order._id,
-          giftCardCodes: inputCode ? [inputCode] : [],
+          giftCardCodes: codes.filter(c => c.trim() !== ""),
           adminPin: pin,
+          adminNotes: adminNotes || undefined,
         });
         toast.success("Order approved successfully");
-      } else {
+      } else if (pendingAction === "reject") {
         await rejectMutation.mutateAsync({
           orderId: order._id,
           rejectionReason: rejectionReason,
           adminPin: pin,
         });
         toast.success("Order rejected successfully");
+      } else if (pendingAction === "mark-valid") {
+        await updateCardStatusMutation.mutateAsync({
+          orderId: order._id,
+          payload: {
+            cardStatus: "valid",
+            adminPin: pin
+          }
+        });
+        toast.success("Card marked as valid successfully");
       }
       setIsPinModalOpen(false);
       setPendingAction(null);
@@ -103,6 +116,11 @@ export default function OrderDetailsModal({
     } catch (error) {
       toast.error(`Failed to ${pendingAction} order`);
     }
+  };
+
+  const handleMarkAsValid = () => {
+    setPendingAction("mark-valid");
+    setIsPinModalOpen(true);
   };
 
   const handleCopyCode = (text: string) => {
@@ -202,63 +220,82 @@ export default function OrderDetailsModal({
                 </span>
                 <span className="font-bold text-right text-lg text-green-600">
                   {order.payoutCurrency}{" "}
-                  {order.amountToReceive?.toLocaleString()}
+                  {order.totalAmount?.toLocaleString()}
                 </span>
                 <span className="text-[10px] text-muted-foreground text-right col-span-2 italic">
-                  (${order.totalAmount?.toLocaleString()} USD equivalent)
+                  (Card Value: {order.cardCurrency} {order.cardValue?.toLocaleString()})
                 </span>
+
+                {/* Mark as Valid Action for Selling */}
+                {order.status !== "completed" && order.status !== "failed" && (
+                  <div className="col-span-2 flex justify-end pt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className={cn(
+                        "h-8 text-[11px] font-bold uppercase tracking-wider",
+                        order.cardStatus === "valid"
+                          ? "bg-green-100 text-green-700 border-green-200 hover:bg-green-200"
+                          : "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+                      )}
+                      onClick={handleMarkAsValid}
+                      disabled={isLoading || order.cardStatus === "valid"}
+                    >
+                      {order.cardStatus === "valid" ? "Card Verified: Valid" : "Mark Card as Valid"}
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Card Images */}
-            {(order.hasImages || fetchedImages.length > 0) && (
+            {(order.hasImages || (order.cardImages && order.cardImages.length > 0) || fetchedImages.length > 0) && (
               <div className="border rounded-lg overflow-hidden">
                 <div className="bg-muted/50 px-4 py-2 border-b text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Card Images (Customer uploaded)
                 </div>
                 <div className="p-4">
-                  {fetchedImages.length > 0 ? (
-                    <div className="flex gap-4 overflow-x-auto">
-                      {fetchedImages.map((img, idx) => (
-                        <div
-                          key={idx}
-                          className="relative h-24 w-40 bg-muted border rounded-md overflow-hidden group cursor-pointer shrink-0"
-                          onClick={() => setSelectedImage(img)}
-                        >
-                          <Image
-                            src={img}
-                            alt={`Card ${idx + 1}`}
-                            fill
-                            className="object-cover transition-transform group-hover:scale-105"
-                          />
-                          <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <span className="text-white text-[10px] font-bold bg-black/40 px-2 py-1 rounded">
-                              CLICK TO ZOOM
-                            </span>
-                          </div>
+                  {(() => {
+                    const displayImages = (order.cardImages && order.cardImages.length > 0) ? order.cardImages : fetchedImages;
+                    if (displayImages.length > 0) {
+                      return (
+                        <div className="flex gap-4 overflow-x-auto scrollbar-hide">
+                          {displayImages.map((img, idx) => (
+                            <div
+                              key={idx}
+                              className="relative h-24 w-40 bg-muted border rounded-md overflow-hidden group cursor-pointer shrink-0"
+                              onClick={() => setSelectedImage(img)}
+                            >
+                              <Image
+                                src={img}
+                                alt={`Card ${idx + 1}`}
+                                fill
+                                className="object-cover transition-transform group-hover:scale-105"
+                              />
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-2 gap-2">
-                      <p className="text-sm text-muted-foreground">
-                        This order has {order.imagesCount || 0} image
-                        {order.imagesCount !== 1 ? "s" : ""}
-                      </p>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleFetchImages}
-                        disabled={isFetchingImages}
-                        className="bg-blue-600 text-white hover:bg-blue-700 hover:text-white"
-                      >
-                        {isFetchingImages ? (
-                          <Loader className="mr-2 h-4 w-4 animate-spin" />
-                        ) : null}
-                        View Images
-                      </Button>
-                    </div>
-                  )}
+                      );
+                    }
+                    return (
+                      <div className="flex flex-col items-center justify-center py-2 gap-2">
+                        <p className="text-sm text-muted-foreground">
+                          This order has {order.imagesCount || 0} image
+                          {order.imagesCount !== 1 ? "s" : ""}
+                        </p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleFetchImages}
+                          disabled={isFetchingImages}
+                          className="bg-blue-600 text-white hover:bg-blue-700"
+                        >
+                          {isFetchingImages ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : null}
+                          View Images
+                        </Button>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             )}
@@ -318,92 +355,129 @@ export default function OrderDetailsModal({
             <div className="border rounded-lg overflow-hidden">
               <div className="bg-muted/50 px-4 py-2 border-b text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Customer's Payout Info (
-                {order.paymentMethod ||
-                  (order.paymentMethodId.type === "crypto"
-                    ? (order.paymentMethodId.cryptoAsset === "bitcoin" ? "Bitcoin" : (order.paymentMethodId.cryptoAsset === "litecoin" ? "Litecoin" : "USDT"))
-                    : order.paymentMethodId.type.replace("_", " "))}
+                {order.paymentMethodSnapshot?.type
+                  ? order.paymentMethodSnapshot.name || order.paymentMethodSnapshot.type.replace("_", " ")
+                  : (order.paymentMethod ||
+                    (order.paymentMethodId?.type === "crypto"
+                      ? (order.paymentMethodId?.cryptoAsset === "bitcoin" ? "Bitcoin" : (order.paymentMethodId?.cryptoAsset === "litecoin" ? "Litecoin" : "USDT"))
+                      : order.paymentMethodId?.type?.replace("_", " ") || "N/A"))}
                 )
               </div>
               <div className="grid grid-cols-2 gap-y-2 text-sm p-4">
-                {order.paymentMethodId.type === "bank" ? (
+                {order.paymentMethodSnapshot ? (
+                  // New Snapshot Logic
                   <>
-                    <span className="text-muted-foreground">Account Name:</span>
-                    <span className="font-medium text-right">
-                      {order.paymentMethodId.accountName}
-                    </span>
-                    <span className="text-muted-foreground">
-                      Account Number:
-                    </span>
-                    <div className="flex items-center justify-end gap-2">
-                      <span className="font-medium font-mono">
-                        {order.paymentMethodId.accountNumber}
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 w-6 p-0"
-                        onClick={() =>
-                          handleCopyCode(order.paymentMethodId.accountNumber!)
-                        }
-                      >
-                        <Copy className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </>
-                ) : order.paymentMethodId.type === "mobile_money" ? (
-                  <>
-                    <span className="text-muted-foreground">Network:</span>
-                    <span className="font-medium text-right uppercase">
-                      {order.paymentMethodId.mobileNetwork}
-                    </span>
-                    <span className="text-muted-foreground">Account Name:</span>
-                    <span className="font-medium text-right">
-                      {order.paymentMethodId.accountName}
-                    </span>
-                    <span className="text-muted-foreground">
-                      Mobile Number:
-                    </span>
-                    <div className="flex items-center justify-end gap-2">
-                      <span className="font-medium font-mono">
-                        {order.paymentMethodId.mobileNumber ||
-                          order.paymentMethodId.accountNumber}
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 w-6 p-0"
-                        onClick={() =>
-                          handleCopyCode(
-                            (order.paymentMethodId.mobileNumber ||
-                              order.paymentMethodId.accountNumber)!,
-                          )
-                        }
-                      >
-                        <Copy className="h-3 w-3" />
-                      </Button>
-                    </div>
+                    {(order.paymentMethodSnapshot.accountName || order.paymentMethodSnapshot.accountNumber || order.paymentMethodSnapshot.mobileNumber) && (
+                      <>
+                        <span className="text-muted-foreground">Account Name:</span>
+                        <span className="font-medium text-right">{order.paymentMethodSnapshot.accountName || "N/A"}</span>
+                        <span className="text-muted-foreground">
+                          {order.paymentMethodSnapshot.mobileNumber ? "Mobile Number:" : "Account Number:"}
+                        </span>
+                        <div className="flex items-center justify-end gap-2">
+                          <span className="font-medium font-mono">
+                            {order.paymentMethodSnapshot.mobileNumber || order.paymentMethodSnapshot.accountNumber}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0"
+                            onClick={() => handleCopyCode(order.paymentMethodSnapshot!.mobileNumber || order.paymentMethodSnapshot!.accountNumber!)}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        {order.paymentMethodSnapshot.mobileNetwork && (
+                          <>
+                            <span className="text-muted-foreground">Network:</span>
+                            <div className="flex items-center justify-end gap-2">
+                              {PAYMENT_LOGOS[order.paymentMethodSnapshot.mobileNetwork.toLowerCase()] && (
+                                <Image
+                                  src={PAYMENT_LOGOS[order.paymentMethodSnapshot.mobileNetwork.toLowerCase()]}
+                                  alt={order.paymentMethodSnapshot.mobileNetwork}
+                                  width={20}
+                                  height={20}
+                                  className="object-contain"
+                                />
+                              )}
+                              <span className="font-medium text-right uppercase text-[10px]">
+                                {order.paymentMethodSnapshot.mobileNetwork}
+                              </span>
+                            </div>
+                          </>
+                        )}
+                      </>
+                    )}
+                    {order.paymentMethodSnapshot.walletAddress && (
+                      <>
+                        <span className="text-muted-foreground uppercase">
+                          {PAYMENT_LOGOS[order.paymentMethodSnapshot.cryptoAsset?.toLowerCase() || ''] && (
+                            <Image
+                              src={PAYMENT_LOGOS[order.paymentMethodSnapshot.cryptoAsset?.toLowerCase() || '']}
+                              alt={order.paymentMethodSnapshot.cryptoAsset || 'Crypto'}
+                              width={16}
+                              height={16}
+                              className="inline-block mr-1 object-contain"
+                            />
+                          )}
+                          {order.paymentMethodSnapshot.cryptoAsset || "Crypto"} Address:
+                        </span>
+                        <div className="flex flex-col items-end gap-1">
+                          <span className="font-medium font-mono text-[10px] break-all text-right">
+                            {order.paymentMethodSnapshot.walletAddress}
+                          </span>
+                          <Button variant="outline" size="sm" className="h-7 mt-1" onClick={() => handleCopyCode(order.paymentMethodSnapshot!.walletAddress!)}>
+                            <Copy className="mr-1 h-3 w-3" /> Copy
+                          </Button>
+                        </div>
+                        {order.paymentMethodSnapshot.network && (
+                          <>
+                            <span className="text-muted-foreground">Blockchain:</span>
+                            <span className="font-medium text-right uppercase text-[10px]">{order.paymentMethodSnapshot.network}</span>
+                          </>
+                        )}
+                      </>
+                    )}
                   </>
                 ) : (
-                  <>
-                    <span className="text-muted-foreground uppercase">
-                      {order.paymentMethodId.cryptoAsset || "Crypto"} Address:
-                    </span>
-                    <div className="flex flex-col items-end gap-1">
-                      <span className="font-medium font-mono text-[10px] break-all text-right">
-                        {order.paymentMethodId.walletAddress}
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-7 mt-1"
-                        onClick={() =>
-                          handleCopyCode(order.paymentMethodId.walletAddress!)
-                        }
-                      >
-                        <Copy className="mr-1 h-3 w-3" /> Copy
-                      </Button>
-                    </div>
-                  </>
+                  // Legacy Fallback Logic
+                  order.paymentMethodId.type === "bank" ? (
+                    <>
+                      <span className="text-muted-foreground">Account Name:</span>
+                      <span className="font-medium text-right">{order.paymentMethodId.accountName}</span>
+                      <span className="text-muted-foreground">Account Number:</span>
+                      <div className="flex items-center justify-end gap-2">
+                        <span className="font-medium font-mono">{order.paymentMethodId.accountNumber}</span>
+                        <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => handleCopyCode(order.paymentMethodId.accountNumber!)}>
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </>
+                  ) : order.paymentMethodId.type === "mobile_money" ? (
+                    <>
+                      <span className="text-muted-foreground">Network:</span>
+                      <span className="font-medium text-right uppercase text-[10px]">{order.paymentMethodId.mobileNetwork}</span>
+                      <span className="text-muted-foreground">Account Name:</span>
+                      <span className="font-medium text-right">{order.paymentMethodId.accountName}</span>
+                      <span className="text-muted-foreground">Mobile Number:</span>
+                      <div className="flex items-center justify-end gap-2">
+                        <span className="font-medium font-mono">{order.paymentMethodId.mobileNumber || order.paymentMethodId.accountNumber}</span>
+                        <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => handleCopyCode((order.paymentMethodId.mobileNumber || order.paymentMethodId.accountNumber)!)}>
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-muted-foreground uppercase">{order.paymentMethodId.cryptoAsset || "Crypto"} Address:</span>
+                      <div className="flex flex-col items-end gap-1">
+                        <span className="font-medium font-mono text-[10px] break-all text-right">{order.paymentMethodId.walletAddress}</span>
+                        <Button variant="outline" size="sm" className="h-7 mt-1" onClick={() => handleCopyCode(order.paymentMethodId.walletAddress!)}>
+                          <Copy className="mr-1 h-3 w-3" /> Copy
+                        </Button>
+                      </div>
+                    </>
+                  )
                 )}
               </div>
             </div>
@@ -414,55 +488,54 @@ export default function OrderDetailsModal({
           </div>
         )}
 
-        {/* Card Images (For both types, if available) */}
-        {isBuying && (order.hasImages || fetchedImages.length > 0) && (
+        {/* Payment Receipt (For both types, if available) */}
+        {(order.hasImages || (order.cardImages && order.cardImages.length > 0) || fetchedImages.length > 0) && (
           <div className="border rounded-lg overflow-hidden mt-2">
             <div className="bg-muted/50 px-4 py-2 border-b text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Proof of Payment / Receipts
+              {isBuying ? "Payment Receipt" : "Card Images / Prove of Ownership"}
             </div>
             <div className="p-4">
-              {fetchedImages.length > 0 ? (
-                <div className="flex gap-4 overflow-x-auto">
-                  {fetchedImages.map((img, idx) => (
-                    <div
-                      key={idx}
-                      className="relative h-24 w-40 bg-muted border rounded-md overflow-hidden group cursor-pointer shrink-0"
-                      onClick={() => setSelectedImage(img)}
-                    >
-                      <Image
-                        src={img}
-                        alt={`Receipt ${idx + 1}`}
-                        fill
-                        className="object-cover transition-transform group-hover:scale-105"
-                      />
-                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <span className="text-white text-[10px] font-bold bg-black/40 px-2 py-1 rounded">
-                          CLICK TO ZOOM
-                        </span>
-                      </div>
+              {(() => {
+                const displayImages = (order.cardImages && order.cardImages.length > 0) ? order.cardImages : fetchedImages;
+                if (displayImages.length > 0) {
+                  return (
+                    <div className="flex gap-4 overflow-x-auto scrollbar-hide">
+                      {displayImages.map((img, idx) => (
+                        <div
+                          key={idx}
+                          className="relative h-24 w-40 bg-muted border rounded-md overflow-hidden group cursor-pointer shrink-0"
+                          onClick={() => setSelectedImage(img)}
+                        >
+                          <Image
+                            src={img}
+                            alt={`Receipt ${idx + 1}`}
+                            fill
+                            className="object-cover transition-transform group-hover:scale-105"
+                          />
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-2 gap-2">
-                  <p className="text-sm text-muted-foreground">
-                    This order has {order.imagesCount || 0} image
-                    {order.imagesCount !== 1 ? "s" : ""}
-                  </p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleFetchImages}
-                    disabled={isFetchingImages}
-                    className="bg-blue-600 text-white hover:bg-blue-700 hover:text-white"
-                  >
-                    {isFetchingImages ? (
-                      <Loader className="mr-2 h-4 w-4 animate-spin" />
-                    ) : null}
-                    View Images
-                  </Button>
-                </div>
-              )}
+                  );
+                }
+                return (
+                  <div className="flex flex-col items-center justify-center py-2 gap-2">
+                    <p className="text-sm text-muted-foreground">
+                      This order has {order.imagesCount || 0} image
+                      {order.imagesCount !== 1 ? "s" : ""}
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleFetchImages}
+                      disabled={isFetchingImages}
+                      className="bg-blue-600 text-white hover:bg-blue-700"
+                    >
+                      {isFetchingImages ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : null}
+                      View Images
+                    </Button>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         )}
@@ -476,6 +549,117 @@ export default function OrderDetailsModal({
                 Customer is BUYING this card from YOU
               </p>
             </div>
+
+            {/* Payment Info (For Buy Orders) */}
+            {order.paymentMethodSnapshot && (
+              <div className="border rounded-lg overflow-hidden">
+                <div className="bg-muted/50 px-4 py-2 border-b text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Payment Method (Customer Paid To)
+                </div>
+                <div className="grid grid-cols-2 gap-y-2 text-sm p-4">
+                  <span className="text-muted-foreground">Method:</span>
+                  <span className="font-medium text-right capitalize">
+                    {order.paymentMethodSnapshot.name || order.paymentMethodSnapshot.type?.replace("_", " ")}
+                  </span>
+
+                  {order.paymentMethodSnapshot.accountName && (
+                    <>
+                      <span className="text-muted-foreground">Account Name:</span>
+                      <span className="font-medium text-right">{order.paymentMethodSnapshot.accountName}</span>
+                    </>
+                  )}
+
+                  {order.paymentMethodSnapshot.accountNumber && (
+                    <>
+                      <span className="text-muted-foreground">
+                        {order.paymentMethodSnapshot.mobileNumber ? "Mobile Number:" : "Account Number:"}
+                      </span>
+                      <div className="flex items-center justify-end gap-2">
+                        <span className="font-medium font-mono">
+                          {order.paymentMethodSnapshot.mobileNumber || order.paymentMethodSnapshot.accountNumber}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0"
+                          onClick={() => handleCopyCode(order.paymentMethodSnapshot!.mobileNumber || order.paymentMethodSnapshot!.accountNumber!)}
+                        >
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </>
+                  )}
+
+                  {order.paymentMethodSnapshot.mobileNumber && !order.paymentMethodSnapshot.accountNumber && (
+                    <>
+                      <span className="text-muted-foreground">Mobile Number:</span>
+                      <div className="flex items-center justify-end gap-2">
+                        <span className="font-medium font-mono">{order.paymentMethodSnapshot.mobileNumber}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0"
+                          onClick={() => handleCopyCode(order.paymentMethodSnapshot!.mobileNumber!)}
+                        >
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </>
+                  )}
+
+                  {order.paymentMethodSnapshot.mobileNetwork && (
+                    <>
+                      <span className="text-muted-foreground">Network:</span>
+                      <div className="flex items-center justify-end gap-2">
+                        {PAYMENT_LOGOS[order.paymentMethodSnapshot.mobileNetwork.toLowerCase()] && (
+                          <Image
+                            src={PAYMENT_LOGOS[order.paymentMethodSnapshot.mobileNetwork.toLowerCase()]}
+                            alt={order.paymentMethodSnapshot.mobileNetwork}
+                            width={20}
+                            height={20}
+                            className="object-contain"
+                          />
+                        )}
+                        <span className="font-medium text-right uppercase text-[10px]">
+                          {order.paymentMethodSnapshot.mobileNetwork}
+                        </span>
+                      </div>
+                    </>
+                  )}
+
+                  {order.paymentMethodSnapshot.walletAddress && (
+                    <>
+                      <span className="text-muted-foreground uppercase">
+                        {PAYMENT_LOGOS[order.paymentMethodSnapshot.cryptoAsset?.toLowerCase() || ''] && (
+                          <Image
+                            src={PAYMENT_LOGOS[order.paymentMethodSnapshot.cryptoAsset?.toLowerCase() || '']}
+                            alt={order.paymentMethodSnapshot.cryptoAsset || 'Crypto'}
+                            width={16}
+                            height={16}
+                            className="inline-block mr-1 object-contain"
+                          />
+                        )}
+                        {order.paymentMethodSnapshot.cryptoAsset || "Crypto"} Address:
+                      </span>
+                      <div className="flex flex-col items-end gap-1">
+                        <span className="font-medium font-mono text-[10px] break-all text-right">
+                          {order.paymentMethodSnapshot.walletAddress}
+                        </span>
+                        <Button variant="outline" size="sm" className="h-7 mt-1" onClick={() => handleCopyCode(order.paymentMethodSnapshot!.walletAddress!)}>
+                          <Copy className="mr-1 h-3 w-3" /> Copy
+                        </Button>
+                      </div>
+                      {order.paymentMethodSnapshot.network && (
+                        <>
+                          <span className="text-muted-foreground">Blockchain:</span>
+                          <span className="font-medium text-right uppercase text-[10px]">{order.paymentMethodSnapshot.network}</span>
+                        </>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Customer Details */}
             <div className="space-y-3">
@@ -517,31 +701,80 @@ export default function OrderDetailsModal({
                 <span className="text-muted-foreground font-semibold">
                   Total Paid:
                 </span>
-                <span className="font-bold text-right text-lg">
-                  ${order.totalAmount.toLocaleString()}
+                <span className="font-bold text-right text-lg text-green-600">
+                  {order.payoutCurrency} {order.totalAmount?.toLocaleString()}
                 </span>
+                <span className="text-[10px] text-muted-foreground text-right col-span-2 italic">
+                  (Card Value: {order.cardCurrency} {order.cardValue?.toLocaleString()})
+                </span>
+
               </div>
             </div>
 
             {/* Card Code Section (for BUY orders) */}
             {(order.status === "pending" || order.status === "processing") && (
-              <div className="space-y-3 p-4 border-2 border-blue-100 rounded-xl bg-blue-50/30">
-                <h3 className="font-bold text-sm text-blue-700 uppercase tracking-wider">
-                  Approve with Gift Card Code
-                </h3>
-                <div className="grid gap-2">
-                  <div className="text-sm text-muted-foreground mb-1">
-                    Enter the gift card code to send to the customer:
+              <div className="space-y-4 p-4 border-2 border-blue-100 rounded-xl bg-blue-50/30">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-bold text-sm text-blue-700 uppercase tracking-wider">
+                    Approve with Gift Card Codes
+                  </h3>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCodes([...codes, ""])}
+                    className="h-7 px-2 text-[10px] font-bold bg-blue-600 text-white hover:bg-blue-700 hover:text-white border-none"
+                  >
+                    <Plus className="h-3 w-3 mr-1" /> ADD CODE
+                  </Button>
+                </div>
+
+                <div className="space-y-3">
+                  {codes.map((code, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <div className="relative flex-1">
+                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-blue-400">
+                          #{idx + 1}
+                        </span>
+                        <input
+                          type="text"
+                          value={code}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+                            const formatted = val.match(/.{1,4}/g)?.join("-") || val;
+                            const newCodes = [...codes];
+                            newCodes[idx] = formatted.slice(0, 25); // Limit to reasonable length
+                            setCodes(newCodes);
+                          }}
+                          placeholder="XXXX-XXXX-XXXX-XXXX"
+                          className="w-full pl-8 pr-3 py-2 text-sm rounded-md border-2 border-blue-200 bg-background font-mono tracking-wider focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        />
+                      </div>
+                      {codes.length > 1 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setCodes(codes.filter((_, i) => i !== idx))}
+                          className="h-9 w-9 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Admin Notes Section */}
+                <div className="space-y-2 pt-2 border-t border-blue-100">
+                  <div className="flex items-center gap-2 text-[11px] font-bold text-blue-700 uppercase tracking-wider">
+                    <MessageSquare className="h-3.5 w-3.5" />
+                    Admin Notes / Message
                   </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={inputCode}
-                      onChange={(e) => setInputCode(e.target.value)}
-                      placeholder="Enter card code (e.g. XXXX-XXXX-XXXX-XXXX)"
-                      className="flex-1 px-3 py-2.5 text-sm rounded-md border-2 border-blue-200 bg-background font-mono tracking-wider focus:outline-none focus:ring-2 focus:ring-blue-400"
-                    />
-                  </div>
+                  <textarea
+                    value={adminNotes}
+                    onChange={(e) => setAdminNotes(e.target.value)}
+                    placeholder="Enter internal notes or message to user..."
+                    className="w-full px-3 py-2 text-sm rounded-md border-2 border-blue-100 bg-background focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[60px]"
+                  />
                 </div>
               </div>
             )}
@@ -602,7 +835,7 @@ export default function OrderDetailsModal({
                   : "bg-green-600 hover:bg-green-700",
               )}
               onClick={handleApprove}
-              disabled={(isBuying && !inputCode.trim()) || isLoading}
+              disabled={(isBuying && !codes.some(c => c.trim())) || isLoading}
             >
               {approveMutation.isPending ? (
                 <Loader className="mr-2 h-4 w-4 animate-spin" />

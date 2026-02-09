@@ -22,6 +22,7 @@ import { ordersApi, OrderDetailsResponse } from "@/lib/api/orders";
 import { PAYMENT_LOGOS, NETWORK_LABELS, CARD_CURRENCIES } from "@/lib/payment-constants";
 import Image from "next/image";
 import "flag-icons/css/flag-icons.min.css";
+import CardValidationStatus from "@/components/features/orders/CardValidationStatus";
 
 export default function SellGiftcardOrderPage() {
   const params = useParams();
@@ -127,14 +128,23 @@ export default function SellGiftcardOrderPage() {
   const firstItem = orderData.items?.[0];
   const cardName = firstItem?.cardName || firstItem?.cardBrand || "Gift Card";
   const cardValue = orderData.cardValue || 0;
-  const amountToReceive = orderData.amountToReceive || 0;
-  const paymentMethod = orderData.paymentMethodId;
+  const amountToReceive = orderData.totalAmount || 0;
+  const paymentMethod = orderData.paymentMethodSnapshot;
   const cardCurrencyInfo = getCurrencyInfo(orderData.cardCurrency);
   const payoutCurrencyInfo = getCurrencyInfo(orderData.payoutCurrency);
 
-  const paymentMethodDisplay = paymentMethod?.type === "mobile_money"
-    ? `${paymentMethod.mobileNetwork?.toUpperCase()} - ${paymentMethod.accountName} (${paymentMethod.mobileNumber})`
-    : `${NETWORK_LABELS[paymentMethod?.cryptoAsset || ""] || paymentMethod?.cryptoAsset?.toUpperCase() || "CRYPTO"} - ${paymentMethod?.walletAddress}`;
+  const paymentMethodDisplay = (() => {
+    if (!paymentMethod) return "Not Provided";
+    if (paymentMethod.type === "mobile_money") {
+      return `${paymentMethod.mobileNetwork?.toUpperCase()} - ${paymentMethod.accountName} (${paymentMethod.mobileNumber})`;
+    }
+    if (paymentMethod.type === "crypto") {
+      const asset = paymentMethod.cryptoAsset?.toUpperCase() || "CRYPTO";
+      const label = NETWORK_LABELS[paymentMethod.cryptoAsset || ""] || asset;
+      return `${label} - ${paymentMethod.walletAddress}`;
+    }
+    return "Not Provided";
+  })();
 
   const rate = orderData.orderType === "sell" ? orderData.sellRate : orderData.buyRate;
 
@@ -186,6 +196,11 @@ export default function SellGiftcardOrderPage() {
           </div>
         </div>
       </Card>
+
+      {/* Card Validation Status */}
+      {orderData.cardStatus && (
+        <CardValidationStatus status={orderData.cardStatus as "pending" | "valid" | "invalid"} />
+      )}
 
       {/* Rejection Reason (if failed) */}
       {orderData.status === "failed" && orderData.rejectionReason && (

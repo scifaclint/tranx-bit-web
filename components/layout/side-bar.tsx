@@ -26,7 +26,11 @@ import {
   Settings,
   Users,
   CreditCard,
-  Wallet, ShoppingBag, Banknote, Coins, FileWarning
+  Wallet,
+  ShoppingBag,
+  Banknote,
+  Coins,
+  FileWarning,
 } from "lucide-react";
 
 export const AdminBaseRoute = "/internal-portal-Trx13";
@@ -67,13 +71,12 @@ const Sidebar = ({
       icon: LayoutDashboard,
       href: "/dashboard",
     },
-    // Hiding "Buy Gift Card" for now - prioritizing core features for MVP
-    /* {
+    {
       id: "buy",
       label: "Buy Gift Card",
       icon: ShoppingCart,
       href: "/buy-giftcards",
-    }, */
+    },
     {
       id: "sell",
       label: "Sell Gift Card",
@@ -152,9 +155,9 @@ const Sidebar = ({
     // Use startsWith for buy and sell routes to keep them active on sub-routes
     const isActive =
       item.href === "/buy-giftcards" ||
-        item.href === "/sell-giftcards" ||
-        item.href === "/orders" ||
-        item.href.includes(`${AdminBaseRoute}/`)
+      item.href === "/sell-giftcards" ||
+      item.href === "/orders" ||
+      item.href.includes(`${AdminBaseRoute}/`)
         ? pathname.startsWith(item.href)
         : pathname === item.href;
 
@@ -167,18 +170,19 @@ const Sidebar = ({
         onClick={
           isLogout
             ? (e) => {
-              e.preventDefault();
-              setShowLogoutModal(true);
-            }
+                e.preventDefault();
+                setShowLogoutModal(true);
+              }
             : undefined
         }
         className={`
           w-full flex items-center gap-3 justify-start h-12 rounded-lg transition-all duration-300
-          ${isActive
-            ? // Active state with fafafa background and gray text
-            "bg-primary/10 text-primary"
-            : // Inactive state with hover
-            "hover:bg-muted"
+          ${
+            isActive
+              ? // Active state with fafafa background and gray text
+                "bg-primary/10 text-primary"
+              : // Inactive state with hover
+                "hover:bg-muted"
           }
           ${isCollapsed ? "justify-center px-0" : "px-4"}
         `}
@@ -208,11 +212,7 @@ const Sidebar = ({
     return isLogout ? (
       <div onClick={() => onClose?.()}>{content}</div>
     ) : (
-      <Link
-        href={item.href}
-        className="block"
-        onClick={() => onClose?.()}
-      >
+      <Link href={item.href} className="block" onClick={() => onClose?.()}>
         {content}
       </Link>
     );
@@ -225,8 +225,9 @@ const Sidebar = ({
       <>
         {/* Logo Area */}
         <div
-          className={`p-6 bg-transparent border-b border-borderColorPrimary ${isCollapsed ? "px-4" : ""
-            }`}
+          className={`p-6 bg-transparent border-b border-borderColorPrimary ${
+            isCollapsed ? "px-4" : ""
+          }`}
         >
           {/* <TranxBitLogo size="medium" variant={logoVariant} /> */}
           {isCollapsed ? (
@@ -245,9 +246,7 @@ const Sidebar = ({
 
         {/* Bottom Items */}
         <div className="px-4 bg-transparent py-6 border-t border-borderColorPrimary space-y-2">
-          <div className="mb-2">
-            {/* <ThemeToggle /> */}
-          </div>
+          <div className="mb-2">{/* <ThemeToggle /> */}</div>
           {bottomItems.map((item) => (
             <NavItem key={item.id} item={item} />
           ))}

@@ -6,16 +6,24 @@ import { useAuthStore } from "@/stores";
 import { authApi } from "@/lib/api/auth";
 // import { toast } from "sonner";
 import LoadingAnimation from "../LoadingAnimation";
-import { AdminBaseRoute } from "@/components/layout/side-bar";
+// import { AdminBaseRoute } from "@/components/layout/side-bar";
 interface RouteGuardProps {
   children: ReactNode;
 }
 
 const authRoutes = ["/auth"];
 
-const publicRoutes = ["/blog", "/", "/reset-password", "/home", "/terms-of-service", "/privacy-policy","/about"];
+const publicRoutes = [
+  "/blog",
+  "/",
+  "/reset-password",
+  "/home",
+  "/terms-of-service",
+  "/privacy-policy",
+  "/about",
+];
 
-const restrictedRoutes = ["/buy-giftcards"];
+const restrictedRoutes: string[] = [];
 
 // Create a separate component for the route guard logic
 function RouteGuardInner({ children }: RouteGuardProps) {
@@ -52,7 +60,7 @@ function RouteGuardInner({ children }: RouteGuardProps) {
   useEffect(() => {
     if (!_hasHydrated) return;
 
-    if (token && pathname === "/auth") {
+    if (token && user && pathname === "/auth") {
       const mode = searchParams.get("mode");
       if (mode !== "verify-email") {
         router.replace("/dashboard");
@@ -74,7 +82,7 @@ function RouteGuardInner({ children }: RouteGuardProps) {
         router.replace("/auth");
       }
     }
-  }, [token, pathname, router, searchParams]);
+  }, [token, user, pathname, router, searchParams, _hasHydrated]);
 
   // 2. Auth Validation (Async)
   // ALWAYS fetch user from API if token exists, never rely solely on cache
@@ -153,8 +161,8 @@ function RouteGuardInner({ children }: RouteGuardProps) {
     };
 
     checkAuth();
-  }, [token, _hasHydrated]);
-
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [_hasHydrated]); // ⭐ CRITICAL: Do NOT include `token` here to prevent infinite refresh loops
 
   // Show loading screen while checking auth or during explicit loading states
   if (!_hasHydrated || isLoading || authState === "checking") {

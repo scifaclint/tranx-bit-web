@@ -321,10 +321,10 @@ export default function CardOrderPage() {
                         <div className="flex flex-col">
                           <span>
                             {order.payoutCurrency}{" "}
-                            {order.amountToReceive?.toLocaleString() || "0"}
+                            {order.totalAmount?.toLocaleString() || "0"}
                           </span>
                           <span className="text-[10px] text-muted-foreground font-normal">
-                            ${order.totalAmount?.toLocaleString() || "0"} USD
+                            Face Value: {order.cardCurrency} {order.cardValue?.toLocaleString() || "0"}
                           </span>
                         </div>
                       </TableCell>
@@ -332,18 +332,17 @@ export default function CardOrderPage() {
                         <Badge
                           variant="outline"
                           className={`text-[9px] px-1.5 h-4 capitalize font-bold tracking-tight
-                                                    ${
-                                                      order.status ===
-                                                      "completed"
-                                                        ? "text-green-600 border-green-600 bg-green-50/50"
-                                                        : order.status ===
-                                                            "pending"
-                                                          ? "text-orange-600 border-orange-600 bg-orange-50/50"
-                                                          : order.status ===
-                                                              "processing"
-                                                            ? "text-blue-600 border-blue-600 bg-blue-50/50"
-                                                            : "text-red-500 border-red-500 bg-red-50/50"
-                                                    }`}
+                                                    ${order.status ===
+                              "completed"
+                              ? "text-green-600 border-green-600 bg-green-50/50"
+                              : order.status ===
+                                "pending"
+                                ? "text-orange-600 border-orange-600 bg-orange-50/50"
+                                : order.status ===
+                                  "processing"
+                                  ? "text-blue-600 border-blue-600 bg-blue-50/50"
+                                  : "text-red-500 border-red-500 bg-red-50/50"
+                            }`}
                         >
                           {order.status.replace("_", " ")}
                         </Badge>
@@ -438,14 +437,14 @@ export default function CardOrderPage() {
                     <div className="flex items-center justify-between pt-3 border-t border-dashed">
                       <div className="flex flex-col">
                         <span className="text-[9px] text-muted-foreground font-black uppercase tracking-widest">
-                          Payout
+                          Payout (Total)
                         </span>
                         <span className="text-base font-black text-foreground">
                           {order.payoutCurrency}{" "}
-                          {order.amountToReceive?.toLocaleString() || "0"}
+                          {order.totalAmount?.toLocaleString() || "0"}
                         </span>
-                        <span className="text-[10px] text-muted-foreground">
-                          ${order.totalAmount?.toLocaleString() || "0"} USD
+                        <span className="text-[10px] text-muted-foreground uppercase font-bold">
+                          Face: {order.cardCurrency} {order.cardValue?.toLocaleString() || "0"}
                         </span>
                       </div>
                       <Button

@@ -8,6 +8,9 @@ import { RouteGuard } from "@/components/features/auth/RouteGuard";
 import QueryProvider from "@/components/providers/queryProvider";
 import { UserProvider } from "@/components/providers/userProvider";
 import { ConnectionStatus } from "@/components/connection-status";
+import AnnouncementBanner from "@/components/features/ui/AnnouncementBanner";
+import { useUIStore } from "@/hooks/useUIStore";
+import { useEffect } from "react";
 
 export default function AuthLayout({
   children,
@@ -16,6 +19,18 @@ export default function AuthLayout({
 }) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const { showAnnouncement } = useUIStore();
+
+  // Demo effect to show announcement
+  useEffect(() => {
+    showAnnouncement({
+      message: "🎉 We've updated our dashboard with new features! improved card validation status.",
+      type: "info",
+      actionLabel: "Learn More",
+      actionUrl: "#",
+      id: "demo-announcement-1",
+    });
+  }, [showAnnouncement]);
 
 
   return (
@@ -35,6 +50,7 @@ export default function AuthLayout({
               flex flex-col items-start min-h-screen bg-background
             `}
               >
+                {/* <AnnouncementBanner /> */}
                 <UserHeader onOpenMobileMenu={() => setIsMobileOpen(true)} />
                 <div className="w-full px-4 sm:px-6 md:px-8 py-4 sm:py-6">
                   <div className="w-full max-w-6xl mx-auto">

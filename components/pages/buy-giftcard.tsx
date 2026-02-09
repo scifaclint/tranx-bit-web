@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,51 +10,135 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import { Minus, Plus, Check, ChevronDown, Loader, Gift } from "lucide-react";
+import { Minus, Plus, ChevronDown, Loader, Gift } from "lucide-react";
 import Image from "next/image";
 import { toast } from "sonner";
-import { useCards } from "@/hooks/useCards";
 import { motion, AnimatePresence } from "framer-motion";
-import { ordersApi } from "@/lib/api/orders";
-// import { cn } from "@/lib/utils";
+import { useCards } from "@/hooks/useCards";
+import { BrandList } from "@/components/shared/brand-list";
+import { useIsMobile } from "@/hooks/use-mobile";
+import MobilePicker from "@/components/modals/mobile-picker";
+import { ordersApi, BuyOrderPayload } from "@/lib/api/orders";
+import "flag-icons/css/flag-icons.min.css";
+import { useAuthStore } from "@/stores";
 
-// Static brands removed to use live data from useCards hook
+const MIN_BUY_AMOUNT = 10;
 
 export default function BuyGiftCardPage() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [selectedBrand, setSelectedBrand] = useState("");
-  const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
+  const [amount, setAmount] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const { data: cardsData, isLoading: isLoadingCards } = useCards();
-  const brands = cardsData?.data?.cards?.filter(c => c.type === "buy" && c.status === "active") || [];
-
-  const selectedBrandData = brands.find(
-    (brand) => brand._id === selectedBrand
+  const isMobile = useIsMobile();
+  const [mounted, setMounted] = useState(false);
+  const { user } = useAuthStore();
+  const [paymentMethod, setPaymentMethod] = useState<"mobile_money" | "tether">(
+    "mobile_money",
   );
 
-  const amounts = selectedBrandData?.denominations || [];
+  // Calculation State
+  const [calculationData, setCalculationData] = useState<{
+    payoutAmount: number;
+    payoutCurrency: string;
+    exchangeRate: number;
+  } | null>(null);
+  const [isCalculating, setIsCalculating] = useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Determine local currency based on user's country
+  const localCurrency = useMemo(() => {
+    if (!user?.country) return "GHS";
+    const country = user.country.toLowerCase();
+    if (country === "nigeria" || country === "ng") return "NGN";
+    return "GHS";
+  }, [user]);
+
+  // Determine Payout Currency based on payment method
+  const payoutCurrency = useMemo(() => {
+    return paymentMethod === "tether" ? "USD" : localCurrency;
+  }, [paymentMethod, localCurrency]);
+
+  // Handle Cost Calculation
+  React.useEffect(() => {
+    const calculateCost = async () => {
+      const parsedAmount = parseFloat(amount);
+      if (
+        !selectedBrand ||
+        isNaN(parsedAmount) ||
+        parsedAmount < MIN_BUY_AMOUNT
+      ) {
+        setCalculationData(null);
+        return;
+      }
+
+      setIsCalculating(true);
+      try {
+        const payload = {
+          type: "buy" as const,
+          cardId: selectedBrand,
+          amount: parsedAmount,
+          currency: "USD",
+          payoutCurrency,
+        };
+
+        const response = await ordersApi.calculateOrder(payload);
+
+        if (response.status) {
+          setCalculationData({
+            payoutAmount: response.data.payoutAmount,
+            payoutCurrency: response.data.payoutCurrency,
+            exchangeRate: response.data.exchangeRate,
+          });
+        }
+      } catch (error) {
+        console.error("Calculation error:", error);
+      } finally {
+        setIsCalculating(false);
+      }
+    };
+
+    const timer = setTimeout(() => {
+      calculateCost();
+    }, 500); // Debounce
+
+    return () => clearTimeout(timer);
+  }, [amount, selectedBrand, payoutCurrency]);
+
+  const calculateTotal = () => {
+    const parsedAmount = parseFloat(amount);
+    if (!isNaN(parsedAmount) && parsedAmount > 0) {
+      if (calculationData) {
+        return calculationData.payoutAmount * quantity;
+      }
+      return 0; // Or parsedAmount * quantity depending on what you want to show while loading
+    }
+    return 0;
+  };
+
+  // Fetch cards from API
+  const { data: cardsData, isLoading: isLoadingCards } = useCards({
+    limit: 1000,
+  });
+
+  // Filter for "buy" or "both" cards
+  const brands = useMemo(() => {
+    const rawBrands =
+      cardsData?.data?.cards?.filter(
+        (c) => (c.type === "buy" || c.type === "both") && c.status === "active",
+      ) || [];
+    return [...rawBrands].sort((a, b) => a.name.localeCompare(b.name));
+  }, [cardsData]);
+
+  const selectedBrandData = brands.find((brand) => brand._id === selectedBrand);
 
   const handleOpenChange = (isOpen: boolean) => {
     setOpen(isOpen);
-  };
-
-  const calculateTotal = () => {
-    if (selectedAmount) {
-      return selectedAmount * quantity;
-    }
-    return 0;
   };
 
   const handleQuantityChange = (value: number) => {
@@ -64,8 +148,14 @@ export default function BuyGiftCardPage() {
   };
 
   const handleBuyCard = async () => {
-    if (!selectedBrand || !selectedAmount) {
-      toast.error("Please select a brand and amount");
+    if (!selectedBrand) {
+      toast.error("Please select a brand");
+      return;
+    }
+
+    const parsedAmount = parseFloat(amount);
+    if (isNaN(parsedAmount) || parsedAmount < MIN_BUY_AMOUNT) {
+      toast.error(`Minimum buy amount is $${MIN_BUY_AMOUNT} USD`);
       return;
     }
 
@@ -77,15 +167,19 @@ export default function BuyGiftCardPage() {
     setIsSubmitting(true);
 
     try {
-      // Add 2-second delay for better UX
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      const payload = {
+      const payload: BuyOrderPayload = {
         cardId: selectedBrand,
-        selectedDenomination: selectedAmount,
-        quantity: quantity,
+        selectedDenomination: parsedAmount,
+        quantity,
+        currency: "USD",
+        payoutCurrency,
         recipientEmail: email,
+        expectedPayout: calculateTotal(),
+        calculatedAt: new Date().toISOString(),
+        paymentMethod: paymentMethod === "tether" ? "tether" : "mobile_money",
       };
+
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
       const response = await ordersApi.createBuyOrder(payload);
 
@@ -96,8 +190,7 @@ export default function BuyGiftCardPage() {
         toast.error(response.message || "Failed to create order");
       }
     } catch (error: any) {
-      const errorMessage = error?.response?.data?.message || error?.message || "Failed to create order. Please try again.";
-      toast.error(errorMessage);
+      toast.error(error.message || "Failed to create order. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -108,13 +201,13 @@ export default function BuyGiftCardPage() {
       {/* Card Brand Selector */}
       <div className="space-y-2">
         <Label>Select Card Brand</Label>
-        <Popover open={open} onOpenChange={handleOpenChange}>
-          <PopoverTrigger asChild disabled={isLoadingCards}>
+        {mounted && isMobile ? (
+          <>
             <Button
               variant="outline"
-              role="combobox"
-              aria-expanded={open}
-              className="w-full justify-between h-10 focus:ring-2 focus:ring-black/20 dark:focus:ring-gray-400/20 focus:border-black dark:focus:border-gray-600 transition-all font-normal"
+              onClick={() => setOpen(true)}
+              disabled={isLoadingCards}
+              className="w-full justify-between h-12 focus:ring-2 focus:ring-black/5 transition-all font-normal bg-white dark:bg-background border-zinc-200 dark:border-borderColorPrimary"
             >
               {isLoadingCards ? (
                 <div className="flex items-center gap-2">
@@ -124,7 +217,7 @@ export default function BuyGiftCardPage() {
               ) : selectedBrandData ? (
                 <div className="flex items-center gap-2">
                   <div className="relative w-5 h-5 flex-shrink-0">
-                    {selectedBrandData.imageUrl && !selectedBrandData.imageUrl.includes("example.com") ? (
+                    {selectedBrandData.imageUrl ? (
                       <Image
                         src={selectedBrandData.imageUrl}
                         alt={selectedBrandData.name}
@@ -132,141 +225,149 @@ export default function BuyGiftCardPage() {
                         className="object-contain"
                       />
                     ) : (
-                      <div className="w-full h-full bg-muted rounded-sm flex items-center justify-center">
-                        <Gift className="w-3 h-3 text-muted-foreground" />
-                      </div>
+                      <Gift className="w-4 h-4 text-zinc-500" />
                     )}
                   </div>
-                  <span>{selectedBrandData.name}</span>
+                  <span className="font-medium">{selectedBrandData.name}</span>
                 </div>
               ) : (
                 <span className="text-muted-foreground">Select card brand</span>
               )}
               <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
-          </PopoverTrigger>
-          <PopoverContent
-            className="w-[var(--radix-popover-trigger-width)] p-0"
-            align="start"
-          >
-            <Command>
-              <CommandInput placeholder="Search brands..." className="h-9" />
-              <CommandList>
+
+            <MobilePicker
+              isOpen={open}
+              onClose={() => setOpen(false)}
+              title="Select Card Brand"
+            >
+              <BrandList
+                brands={brands}
+                selectedBrand={selectedBrand}
+                onSelect={(id) => {
+                  setSelectedBrand(id);
+                  setOpen(false);
+                }}
+                isLoading={isLoadingCards}
+              />
+            </MobilePicker>
+          </>
+        ) : (
+          <Popover open={open} onOpenChange={handleOpenChange}>
+            <PopoverTrigger asChild disabled={isLoadingCards}>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={open}
+                className="w-full justify-between h-12 focus:ring-2 focus:ring-black/5 transition-all font-normal bg-white dark:bg-background border-zinc-200 dark:border-borderColorPrimary"
+              >
                 {isLoadingCards ? (
-                  <div className="flex items-center justify-center py-12">
-                    <Loader className="h-8 w-8 animate-spin text-black/60" />
+                  <div className="flex items-center gap-2">
+                    <Loader className="h-4 w-4 animate-spin text-muted-foreground" />
+                    <span>Loading brands...</span>
+                  </div>
+                ) : selectedBrandData ? (
+                  <div className="flex items-center gap-2">
+                    <div className="relative w-5 h-5 flex-shrink-0">
+                      {selectedBrandData.imageUrl ? (
+                        <Image
+                          src={selectedBrandData.imageUrl}
+                          alt={selectedBrandData.name}
+                          fill
+                          className="object-contain"
+                        />
+                      ) : (
+                        <Gift className="w-4 h-4 text-zinc-500" />
+                      )}
+                    </div>
+                    <span className="font-medium">
+                      {selectedBrandData.name}
+                    </span>
                   </div>
                 ) : (
-                  <>
-                    <CommandEmpty>No brand found.</CommandEmpty>
-                    <CommandGroup>
-                      <div className="grid grid-cols-2 gap-1 p-2">
-                        {brands.map((brand) => (
-                          <CommandItem
-                            key={brand._id}
-                            value={brand.name}
-                            onSelect={() => {
-                              setSelectedBrand(
-                                brand._id === selectedBrand
-                                  ? ""
-                                  : brand._id
-                              );
-                              setSelectedAmount(null);
-                              setOpen(false);
-                            }}
-                            className="flex flex-col items-center justify-center p-3 cursor-pointer hover:bg-backgroundSecondary dark:hover:bg-gray-800 rounded-lg border-2 border-transparent data-[selected=true]:border-black dark:data-[selected=true]:border-gray-600 data-[selected=true]:bg-backgroundSecondary dark:data-[selected=true]:bg-gray-800"
-                          >
-                            <div className="relative w-12 h-12 mb-2">
-                              {brand.imageUrl && !brand.imageUrl.includes("example.com") ? (
-                                <Image
-                                  src={brand.imageUrl}
-                                  alt={brand.name}
-                                  fill
-                                  className="object-contain"
-                                />
-                              ) : (
-                                <div className="w-full h-full bg-muted rounded-lg flex items-center justify-center">
-                                  <Gift className="w-6 h-6 text-muted-foreground" />
-                                </div>
-                              )}
-                            </div>
-                            <span className="text-[10px] font-medium text-center truncate w-full px-1">
-                              {brand.name}
-                            </span>
-                            {selectedBrand === brand._id && (
-                              <Check className="absolute top-1 right-1 h-3 w-3 text-black dark:text-gray-200" />
-                            )}
-                          </CommandItem>
-                        ))}
-                      </div>
-                    </CommandGroup>
-                  </>
+                  <span className="text-muted-foreground">
+                    Select card brand
+                  </span>
                 )}
-              </CommandList>
-            </Command>
-          </PopoverContent>
-        </Popover>
+                <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent
+              className="w-[var(--radix-popover-trigger-width)] p-0 dark:bg-backgroundSecondary"
+              align="start"
+              sideOffset={4}
+            >
+              <div className="max-h-[300px] flex flex-col">
+                <BrandList
+                  brands={brands}
+                  selectedBrand={selectedBrand}
+                  onSelect={(id) => {
+                    setSelectedBrand(id);
+                    setOpen(false);
+                  }}
+                  isLoading={isLoadingCards}
+                />
+              </div>
+            </PopoverContent>
+          </Popover>
+        )}
       </div>
 
-      {/* Amount Selection - Conditional Animation */}
-      <AnimatePresence mode="wait">
-        {selectedBrand && amounts.length > 0 ? (
-          <motion.div
-            key="amount-selection"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="space-y-2 overflow-hidden"
+      {/* Payment Method Selector */}
+      <div className="space-y-2">
+        <Label>Payment Method</Label>
+        <div className="flex gap-2 p-1 bg-zinc-100 dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-borderColorPrimary">
+          <button
+            type="button"
+            onClick={() => setPaymentMethod("mobile_money")}
+            className={`flex-1 px-4 py-2.5 rounded-lg font-medium text-sm transition-all ${paymentMethod === "mobile_money"
+                ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 shadow-sm"
+                : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-50"
+              }`}
           >
-            <Label>Choose Amount</Label>
-            <div className="grid grid-cols-3 gap-2">
-              {amounts.map((amount) => (
-                <button
-                  key={amount}
-                  onClick={() => setSelectedAmount(amount)}
-                  className={`
-                    relative p-[1px] rounded-lg border border-black/20 dark:border-gray-700 transition-all duration-200
-                    ${selectedAmount === amount
-                      ? "border-black dark:border-gray-400"
-                      : "hover:border-black dark:hover:border-gray-600"
-                    }
-                  `}
-                >
-                  <div
-                    className={`
-                    rounded-lg p-3 transition-all duration-200
-                    ${selectedAmount === amount
-                        ? "bg-black dark:bg-gray-700 text-white"
-                        : "bg-backgroundSecondary dark:bg-gray-800"
-                      }
-                  `}
-                  >
-                    <div className="text-base font-bold">${amount}</div>
-                    <div className="text-xs text-inherit opacity-70">USD</div>
-                    {selectedAmount === amount && (
-                      <div className="absolute top-1.5 right-1.5">
-                        <div className="w-3.5 h-3.5 bg-white dark:bg-gray-600 rounded-full flex items-center justify-center border-none">
-                          <div className="w-1.5 h-1.5 bg-black dark:bg-gray-200 rounded-full"></div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </button>
-              ))}
-            </div>
-          </motion.div>
-        ) : !selectedBrand && !isLoadingCards && (
-          <motion.div
-            key="amount-placeholder"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="py-8 border-2 border-dashed rounded-xl flex flex-col items-center justify-center text-muted-foreground/60 bg-muted/5"
+            Mobile Money ({localCurrency})
+          </button>
+          <button
+            type="button"
+            onClick={() => setPaymentMethod("tether")}
+            className={`flex-1 px-4 py-2.5 rounded-lg font-medium text-sm transition-all ${paymentMethod === "tether"
+                ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 shadow-sm"
+                : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-50"
+              }`}
           >
-            <Gift className="h-8 w-8 mb-2 opacity-50" />
-            <p className="text-[10px] font-medium uppercase tracking-wider">Select a brand to see pricing</p>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            Tether (USDT)
+          </button>
+        </div>
+      </div>
+
+      {/* Locked Currency Display */}
+      <div className="space-y-2">
+        <Label>Card Currency</Label>
+        <div className="w-full h-12 flex items-center gap-2 px-3 bg-zinc-50 dark:bg-backgroundSecondary border border-zinc-200 dark:border-borderColorPrimary rounded-xl opacity-80 cursor-not-allowed">
+          <span className="fi fi-us rounded-sm"></span>
+          <span className="font-medium text-sm text-muted-foreground">
+            United States Dollar (USD)
+          </span>
+        </div>
+      </div>
+
+      {/* Amount Input */}
+      <div className="space-y-2">
+        <Label>Amount (USD)</Label>
+        <div className="relative">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 font-medium">
+            $
+          </span>
+          <Input
+            type="number"
+            placeholder={`Min $${MIN_BUY_AMOUNT}`}
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            className="pl-7 h-12 rounded-xl border-zinc-200 dark:border-borderColorPrimary focus-visible:ring-black/5"
+            min={MIN_BUY_AMOUNT}
+          />
+        </div>
+      </div>
 
       {/* Quantity Selector */}
       <div className="space-y-2">
@@ -277,7 +378,7 @@ export default function BuyGiftCardPage() {
             size="icon"
             onClick={() => handleQuantityChange(quantity - 1)}
             disabled={quantity <= 1}
-            className="h-9 w-9 rounded-lg hover:border-black dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
+            className="h-10 w-10 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800"
           >
             <Minus className="h-4 w-4" />
           </Button>
@@ -287,7 +388,7 @@ export default function BuyGiftCardPage() {
             onChange={(e) =>
               handleQuantityChange(parseInt(e.target.value) || 1)
             }
-            className="h-9 w-16 text-center focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+            className="h-10 w-20 text-center focus:ring-2 focus:ring-black/5 rounded-xl"
             min="1"
             placeholder="1"
           />
@@ -295,7 +396,7 @@ export default function BuyGiftCardPage() {
             variant="outline"
             size="icon"
             onClick={() => handleQuantityChange(quantity + 1)}
-            className="h-9 w-9 rounded-lg hover:border-black dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
+            className="h-10 w-10 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800"
           >
             <Plus className="h-4 w-4" />
           </Button>
@@ -311,7 +412,7 @@ export default function BuyGiftCardPage() {
           placeholder="Enter email address"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="h-10 focus:ring-2 focus:ring-black/20 dark:focus:ring-gray-400/20 focus:border-black dark:focus:border-gray-600 transition-all"
+          className="h-12 rounded-xl border-zinc-200 dark:border-borderColorPrimary focus-visible:ring-black/5"
         />
         <p className="text-xs text-muted-foreground">
           The gift card code will be sent to this email address.
@@ -320,17 +421,30 @@ export default function BuyGiftCardPage() {
 
       {/* Calculated Total */}
       <div className="pt-2 space-y-3">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-xl border border-zinc-100 dark:border-zinc-800">
           <span className="text-sm font-medium text-muted-foreground">
-            Total Amount:
+            Total Amount to Pay:
           </span>
-          <span className="text-xl font-bold text-black dark:text-gray-100">
-            ${calculateTotal().toFixed(2)}
+          <span className="text-xl font-bold text-zinc-900 dark:text-zinc-50">
+            {isCalculating ? (
+              <Loader className="h-4 w-4 animate-spin" />
+            ) : calculationData ? (
+              `${calculationData.payoutCurrency} ${calculateTotal().toLocaleString()}`
+            ) : (
+              `${payoutCurrency} 0.00`
+            )}
           </span>
         </div>
         <Button
-          className="w-full bg-black dark:bg-gray-800 text-white dark:text-gray-100 font-semibold shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[0.99] enabled:hover:bg-black/80 dark:enabled:hover:bg-gray-700"
-          disabled={!selectedBrand || !selectedAmount || isSubmitting}
+          className="w-full h-12 bg-black dark:bg-white text-white dark:text-black font-bold rounded-xl hover:opacity-90 active:scale-[0.98] transition-all"
+          disabled={
+            !selectedBrand ||
+            !amount ||
+            parseFloat(amount) < MIN_BUY_AMOUNT ||
+            !email ||
+            isSubmitting ||
+            isCalculating
+          }
           onClick={handleBuyCard}
         >
           {isSubmitting ? (

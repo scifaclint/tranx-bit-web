@@ -34,12 +34,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useCurrencies } from "@/hooks/useCards";
 import { useAuthStore } from "@/stores";
 
-type FilterStatus =
-  | "all"
-  | "pending"
-  | "processing"
-  | "completed"
-  | "failed";
+type FilterStatus = "all" | "pending" | "processing" | "completed" | "failed";
 type FilterType = "all" | "buy" | "sell";
 
 export default function TransactionPage() {
@@ -69,7 +64,9 @@ export default function TransactionPage() {
       if (userCountry === "nigeria") return "₦";
       return "$";
     }
-    const currency = currencies.find(c => c.id.toUpperCase() === currencyId.toUpperCase());
+    const currency = currencies.find(
+      (c) => c.id.toUpperCase() === currencyId.toUpperCase(),
+    );
     return currency?.symbol || currencyId.toUpperCase();
   };
 
@@ -100,22 +97,22 @@ export default function TransactionPage() {
     value: FilterStatus;
     icon: React.ElementType;
   }[] = [
-      { label: "All Status", value: "all", icon: Filter },
-      { label: "Pending", value: "pending", icon: Clock },
-      { label: "Processing", value: "processing", icon: TrendingUp },
-      { label: "Completed", value: "completed", icon: CheckCircle2 },
-      { label: "Failed", value: "failed", icon: XCircle },
-    ];
+    { label: "All Status", value: "all", icon: Filter },
+    { label: "Pending", value: "pending", icon: Clock },
+    { label: "Processing", value: "processing", icon: TrendingUp },
+    { label: "Completed", value: "completed", icon: CheckCircle2 },
+    { label: "Failed", value: "failed", icon: XCircle },
+  ];
 
   const typeFilters: {
     label: string;
     value: FilterType;
     icon: React.ElementType;
   }[] = [
-      { label: "All Types", value: "all", icon: Filter },
-      { label: "Buy", value: "buy", icon: TrendingUp },
-      { label: "Sell", value: "sell", icon: TrendingDown },
-    ];
+    { label: "All Types", value: "all", icon: Filter },
+    { label: "Buy", value: "buy", icon: TrendingUp },
+    { label: "Sell", value: "sell", icon: TrendingDown },
+  ];
 
   const getStatusLabel = () => {
     return (
@@ -131,21 +128,39 @@ export default function TransactionPage() {
 
   // Filter transactions based on active filters (client-side for now, could be server-side later)
   const filteredTransactions = transactions.filter((t) => {
-    const statusMatch = statusFilter === "all" || t.status.toLowerCase() === statusFilter.toLowerCase();
-    const typeMatch = typeFilter === "all" || t.type.toLowerCase() === typeFilter.toLowerCase();
+    const statusMatch =
+      statusFilter === "all" ||
+      t.status.toLowerCase() === statusFilter.toLowerCase();
+    const typeMatch =
+      typeFilter === "all" || t.type.toLowerCase() === typeFilter.toLowerCase();
     return statusMatch && typeMatch;
   });
 
   // Handle row click
-  const handleRowClick = (transactionId: string) => {
-    router.push(`/orders/${transactionId}`);
+  const handleRowClick = (
+    transactionId: string,
+    type: string,
+    status: string,
+  ) => {
+    // Only go to buy-giftcards page if it's a buy order with pending_payment status
+    if (
+      type.toLowerCase() === "buy" &&
+      status.toLowerCase() === "pending_payment"
+    ) {
+      router.push(`/buy-giftcards/${transactionId}`);
+    } else {
+      // All other cases go to orders detail page (buy processing/completed, sell orders, etc.)
+      router.push(`/orders/${transactionId}`);
+    }
   };
 
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px]">
         <Loader className="h-8 w-8 text-black animate-spin" />
-        <p className="mt-2 text-sm text-muted-foreground font-medium">Loading your Orders...</p>
+        <p className="mt-2 text-sm text-muted-foreground font-medium">
+          Loading your Orders...
+        </p>
       </div>
     );
   }
@@ -156,15 +171,22 @@ export default function TransactionPage() {
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-2">
           <h1 className="text-xl sm:text-2xl font-bold">Orders</h1>
-          {isFetching && <Loader className="h-4 w-4 text-muted-foreground animate-spin" />}
+          {isFetching && (
+            <Loader className="h-4 w-4 text-muted-foreground animate-spin" />
+          )}
         </div>
 
         {/* Filter Controls */}
-        <div className={`flex items-center gap-3 ${isMobile ? "w-full overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide" : ""}`}>
+        <div
+          className={`flex items-center gap-3 ${isMobile ? "w-full overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide" : ""}`}
+        >
           {/* Status Filter */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="gap-2 min-w-[140px] bg-backgroundSecondary border-borderColorPrimary dark:border-white/10">
+              <Button
+                variant="outline"
+                className="gap-2 min-w-[140px] bg-backgroundSecondary border-borderColorPrimary dark:border-white/10"
+              >
                 <Filter className="h-4 w-4" />
                 {getStatusLabel()}
               </Button>
@@ -180,10 +202,11 @@ export default function TransactionPage() {
                   <DropdownMenuItem
                     key={filter.value}
                     onClick={() => setStatusFilter(filter.value)}
-                    className={`cursor-pointer flex items-center gap-2 ${statusFilter === filter.value
-                      ? "bg-black text-white dark:bg-white dark:text-black"
-                      : ""
-                      }`}
+                    className={`cursor-pointer flex items-center gap-2 ${
+                      statusFilter === filter.value
+                        ? "bg-black text-white dark:bg-white dark:text-black"
+                        : ""
+                    }`}
                   >
                     <Icon className="h-4 w-4" />
                     {filter.label}
@@ -196,7 +219,10 @@ export default function TransactionPage() {
           {/* Type Filter */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="gap-2 min-w-[130px] bg-backgroundSecondary border-borderColorPrimary dark:border-white/10">
+              <Button
+                variant="outline"
+                className="gap-2 min-w-[130px] bg-backgroundSecondary border-borderColorPrimary dark:border-white/10"
+              >
                 <Filter className="h-4 w-4" />
                 {getTypeLabel()}
               </Button>
@@ -212,10 +238,11 @@ export default function TransactionPage() {
                   <DropdownMenuItem
                     key={filter.value}
                     onClick={() => setTypeFilter(filter.value)}
-                    className={`cursor-pointer flex items-center gap-2 ${typeFilter === filter.value
-                      ? "bg-black text-white dark:bg-white dark:text-black"
-                      : ""
-                      }`}
+                    className={`cursor-pointer flex items-center gap-2 ${
+                      typeFilter === filter.value
+                        ? "bg-black text-white dark:bg-white dark:text-black"
+                        : ""
+                    }`}
                   >
                     <Icon className="h-4 w-4" />
                     {filter.label}
@@ -236,9 +263,14 @@ export default function TransactionPage() {
           className="flex flex-col items-center justify-center py-20 border rounded-2xl bg-backgroundSecondary/20 border-borderColorPrimary border-dashed"
         >
           <div className="bg-muted/20 p-4 rounded-full mb-4">
-            <History className="h-10 w-10 text-muted-foreground/60" strokeWidth={1.5} />
+            <History
+              className="h-10 w-10 text-muted-foreground/60"
+              strokeWidth={1.5}
+            />
           </div>
-          <h3 className="text-lg font-semibold text-foreground/80">No Orders Found</h3>
+          <h3 className="text-lg font-semibold text-foreground/80">
+            No Orders Found
+          </h3>
           <p className="text-muted-foreground text-sm max-w-[250px] text-center mt-2">
             Your gift card Orders will appear here once they are processed.
           </p>
@@ -258,14 +290,24 @@ export default function TransactionPage() {
           )}
 
           {/* Table Body / Card List */}
-          <ScrollArea className={`${isMobile ? "h-[calc(100vh-300px)]" : "h-[calc(100vh-350px)]"} min-h-[400px]`}>
-            <div className={`divide-y divide-border/50 ${isMobile ? "p-4 space-y-4 divide-y-0" : ""}`}>
+          <ScrollArea
+            className={`${isMobile ? "h-[calc(100vh-300px)]" : "h-[calc(100vh-350px)]"} min-h-[400px]`}
+          >
+            <div
+              className={`divide-y divide-border/50 ${isMobile ? "p-4 space-y-4 divide-y-0" : ""}`}
+            >
               {filteredTransactions.map((transaction) => {
                 if (isMobile) {
                   return (
                     <div
                       key={transaction.orderId}
-                      onClick={() => handleRowClick(transaction.orderId)}
+                      onClick={() =>
+                        handleRowClick(
+                          transaction.orderId,
+                          transaction.type,
+                          transaction.status,
+                        )
+                      }
                       className="p-5 bg-backgroundSecondary/30 rounded-2xl border border-borderColorPrimary/50 active:scale-[0.98] transition-all space-y-4"
                     >
                       <div className="flex justify-between items-start">
@@ -284,27 +326,38 @@ export default function TransactionPage() {
                         </div>
                         <Badge
                           variant="outline"
-                          className={`text-[10px] py-0 h-5 font-semibold ${transaction.status.toLowerCase() === "completed"
-                            ? "bg-green-500/10 text-green-500 border-green-500/20"
-                            : (transaction.status.toLowerCase() === "pending" || transaction.status.toLowerCase() === "processing")
-                              ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
-                              : "bg-red-500/10 text-red-500 border-red-500/20"
-                            }`}
+                          className={`text-[10px] py-0 h-5 font-semibold ${
+                            transaction.status.toLowerCase() === "completed"
+                              ? "bg-green-500/10 text-green-500 border-green-500/20"
+                              : transaction.status.toLowerCase() ===
+                                    "pending" ||
+                                  transaction.status.toLowerCase() ===
+                                    "processing"
+                                ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
+                                : "bg-red-500/10 text-red-500 border-red-500/20"
+                          }`}
                         >
-                          {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1).toLowerCase()}
+                          {transaction.status.charAt(0).toUpperCase() +
+                            transaction.status.slice(1).toLowerCase()}
                         </Badge>
                       </div>
 
                       <div className="flex justify-between items-end pt-2">
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
-                            <Badge variant="outline" className="text-[10px] px-1.5 h-4 bg-muted/20">
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] px-1.5 h-4 bg-muted/20"
+                            >
                               {transaction.type.toUpperCase()}
                             </Badge>
-                            <span className="text-[10px] text-muted-foreground">{transaction.date}</span>
+                            <span className="text-[10px] text-muted-foreground">
+                              {transaction.date}
+                            </span>
                           </div>
                           <div className="text-lg font-bold tabular-nums">
-                            {getSymbol()}{transaction.amount.toLocaleString()}
+                            {getSymbol()}
+                            {transaction.amount.toLocaleString()}
                           </div>
                         </div>
                         <div className="p-2 bg-muted/20 rounded-full">
@@ -318,7 +371,13 @@ export default function TransactionPage() {
                 return (
                   <div
                     key={transaction.orderId}
-                    onClick={() => handleRowClick(transaction.orderId)}
+                    onClick={() =>
+                      handleRowClick(
+                        transaction.orderId,
+                        transaction.type,
+                        transaction.status,
+                      )
+                    }
                     className="grid grid-cols-[2fr_1fr_1fr_1.2fr_1fr_auto] gap-4 px-6 py-4 hover:bg-backgroundSecondary transition-all duration-200 cursor-pointer items-center group"
                   >
                     {/* Desktop row content remains same */}
@@ -337,13 +396,18 @@ export default function TransactionPage() {
                     </div>
 
                     <div>
-                      <Badge variant="outline" className="text-xs font-medium w-fit">
-                        {transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1)}
+                      <Badge
+                        variant="outline"
+                        className="text-xs font-medium w-fit"
+                      >
+                        {transaction.type.charAt(0).toUpperCase() +
+                          transaction.type.slice(1)}
                       </Badge>
                     </div>
 
                     <div className="font-semibold text-sm tabular-nums">
-                      {getSymbol()}{transaction.amount.toLocaleString()}
+                      {getSymbol()}
+                      {transaction.amount.toLocaleString()}
                     </div>
 
                     <div className="text-sm text-muted-foreground">
@@ -353,17 +417,27 @@ export default function TransactionPage() {
                     <div>
                       <Badge
                         variant="outline"
-                        className={`w-fit text-xs font-medium flex items-center gap-1.5 ${transaction.status.toLowerCase() === "completed"
-                          ? "border-green-300 bg-green-50 text-green-700 dark:border-green-700 dark:bg-green-950/30 dark:text-green-400"
-                          : (transaction.status.toLowerCase() === "pending" || transaction.status.toLowerCase() === "processing")
-                            ? "border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-400"
-                            : "border-red-300 bg-red-50 text-red-700 dark:border-red-700 dark:bg-red-950/30 dark:text-red-400"
-                          }`}
+                        className={`w-fit text-xs font-medium flex items-center gap-1.5 ${
+                          transaction.status.toLowerCase() === "completed"
+                            ? "border-green-300 bg-green-50 text-green-700 dark:border-green-700 dark:bg-green-950/30 dark:text-green-400"
+                            : transaction.status.toLowerCase() === "pending" ||
+                                transaction.status.toLowerCase() ===
+                                  "processing"
+                              ? "border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-400"
+                              : "border-red-300 bg-red-50 text-red-700 dark:border-red-700 dark:bg-red-950/30 dark:text-red-400"
+                        }`}
                       >
-                        {transaction.status.toLowerCase() === "completed" && <CheckCircle2 className="h-3 w-3" />}
-                        {(transaction.status.toLowerCase() === "pending" || transaction.status.toLowerCase() === "processing") && <Clock className="h-3 w-3" />}
-                        {transaction.status.toLowerCase() === "failed" && <XCircle className="h-3 w-3" />}
-                        {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1).toLowerCase()}
+                        {transaction.status.toLowerCase() === "completed" && (
+                          <CheckCircle2 className="h-3 w-3" />
+                        )}
+                        {(transaction.status.toLowerCase() === "pending" ||
+                          transaction.status.toLowerCase() ===
+                            "processing") && <Clock className="h-3 w-3" />}
+                        {transaction.status.toLowerCase() === "failed" && (
+                          <XCircle className="h-3 w-3" />
+                        )}
+                        {transaction.status.charAt(0).toUpperCase() +
+                          transaction.status.slice(1).toLowerCase()}
                       </Badge>
                     </div>
 

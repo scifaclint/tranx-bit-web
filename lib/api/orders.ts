@@ -1,12 +1,120 @@
 import api from "./axios";
 
+// ============= TYPES =============
+
+export type OrderType = "buy" | "sell";
+
+export type OrderStatus =
+  | "pending" // Initial state (rarely used, usually pending_payment)
+  | "pending_payment" // User needs to send payment (Buy)
+  | "under_review" // Admin needs to check submitted cards (Sell)
+  | "processing" // Payment receipt submitted, awaiting verification (Buy)
+  | "payment_claimed" // Payment confirmed by one party, but not finalized
+  | "completed" // Transaction success
+  | "cancelled" // Avoided by user
+  | "rejected" // Denied by admin
+  | "failed"; // Processing failure
+
+export type CardStatus = "pending" | "valid" | "invalid";
+
+// --- Payment Method Scenarios ---
+export interface MobileMoneySnapshot {
+  type: "mobile_money";
+  name: string;
+  mobileNetwork: "mtn" | "telecel" | "airteltigo";
+  mobileNumber: string;
+  accountName: string;
+}
+
+export interface CryptoSnapshot {
+  type: "crypto";
+  name: string;
+  cryptoAsset: "bitcoin" | "usdt" | "litecoin";
+  walletAddress: string;
+  network: "bitcoin" | "tron_trc20" | "litecoin" | "bsc";
+}
+
+export type PaymentMethodSnapshot = MobileMoneySnapshot | CryptoSnapshot;
+
+// --- Order Item Scenario ---
+export interface OrderItem {
+  giftCardId: string;
+  cardName: string;
+  cardBrand: string;
+  cardDenomination: number;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+  /**
+   * BUY: Populated only when status is 'completed'
+   * SELL: Populated from start if user provided text code instead of images
+   */
+  giftCardCodes?: string[];
+}
+
+// --- The Comprehensive Order Interface ---
+export interface Order {
+  // Core Identifiers
+  _id: string;
+  orderNumber: string;
+  orderType: OrderType;
+  status: OrderStatus;
+  cardStatus?: CardStatus; // For sell orders
+
+  // Financial Data
+  totalAmount: number; // Buy: "You Pay" | Sell: "You Receive"
+  payoutCurrency: string; // Local currency (GHS, NGN)
+  cardCurrency: string; // Instrument currency (USD, EUR, GBP)
+  cardValue: number; // Total face value of the cards
+
+  // Rate Snapshots
+  exchangeRate: number; // Market rate at time of order
+  buyRate?: number; // Platform fee/rate for Buy orders
+  sellRate?: number; // Platform fee/rate for Sell orders
+
+  // Transaction Items
+  items: OrderItem[];
+  totalItems: number;
+
+  // Evidence/Assets
+  /**
+   * BUY: Payment receipts/proof of transfer
+   * SELL: Pictures of the actual gift cards
+   */
+  cardImages: string[];
+  hasImages: boolean;
+  imagesCount: number;
+
+  // Method Details
+  /**
+   * BUY: The Admin's account where payment should go
+   * SELL: The User's account where payout should arrive
+   */
+  paymentMethodSnapshot?: PaymentMethodSnapshot;
+  additionalComments?: string; // For Sell orders
+  rejectionReason?: string; // For Rejected orders
+  recipientEmail?: string;
+
+  // System Timestamps
+  paymentConfirmedAt?: string;
+  completedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // ============= REQUEST PAYLOADS =============
 
 export interface BuyOrderPayload {
   cardId: string;
   selectedDenomination: number;
   quantity: number;
+  currency: string; // "USD"
+  payoutCurrency: string; // "GHS" | "NGN" | "USD" (for tether)
+  paymentMethodId?: string | null;
   recipientEmail: string;
+  expectedPayout?: number;
+  calculatedAt?: string;
+  paymentMethod?: "mobile_money" | "tether";
 }
 
 export interface SellOrderPayload {
@@ -23,6 +131,7 @@ export interface SellOrderPayload {
 }
 
 export interface CalculateOrderPayload {
+  type: "buy" | "sell";
   cardId: string;
   amount: number;
   currency: string;
@@ -46,9 +155,12 @@ export interface BuyOrderResponse {
     orderNumber: string;
     cardDetails: CardDetails;
     quantity: number;
-    totalAmount: number;
+    totalAmount: number; // Total cost in payoutCurrency
+    currency: string;
+    payoutCurrency: string;
     status: string;
     orderType: "buy";
+    paymentMethodSnapshot?: PaymentMethodSnapshot;
     createdAt: string;
   };
 }
@@ -87,69 +199,10 @@ export interface CalculateOrderResponse {
 
 // ============= ORDER DETAILS TYPES =============
 
-interface OrderItem {
-  giftCardId: string;
-  cardName: string;
-  cardBrand: string;
-  cardDenomination: number;
-  quantity: number;
-  unitPrice: number;
-  totalPrice: number;
-  giftCardCodes: string[];
-  _id: string;
-}
-
-interface PaymentMethodDetails {
-  _id: string;
-  type: "mobile_money" | "crypto" | string;
-  accountName?: string | null;
-  mobileNumber?: string | null;
-  mobileNetwork?: string | null;
-  accountNumber?: string | null;
-  walletAddress?: string | null;
-  network?: string | null;
-  cryptoAsset?: string | null;
-}
-
 export interface OrderDetailsResponse {
   status: boolean;
   message: string;
-  data: {
-    _id: string;
-    orderNumber: string;
-    userId: string;
-    orderType: "buy" | "sell";
-    status: "pending" | "processing" | "completed" | "failed" | string;
-    totalAmount: number;
-    totalItems: number;
-    cardCurrency: string;
-    cardValue: number;
-    amountToReceive: number;
-    sellRate?: number;
-    buyRate?: number;
-    exchangeRate?: number;
-    payoutCurrency?: string;
-    calculatedAt: string;
-    paymentMethodId: {
-      type: string;
-      accountName?: string;
-      accountNumber?: string;
-      mobileNumber?: string;
-      mobileNetwork?: string;
-      walletAddress?: string;
-      network?: string;
-      cryptoAsset?: string;
-    };
-    items: OrderItem[];
-    hasImages: boolean;
-    imagesCount: number;
-    cardImages: string[];
-    rejectionReason?: string;
-    notes?: string;
-    additionalComments?: string;
-    createdAt: string;
-    updatedAt: string;
-  };
+  data: Order;
 }
 
 // ============= USER ORDERS LIST TYPES =============
@@ -159,12 +212,14 @@ interface OrderSummary {
   orderNumber: string;
   productName: string;
   brand: string;
-  type: "buy" | "sell";
+  type: OrderType;
   amount: number;
   date: string;
-  status: "pending" | "processing" | "completed" | "failed" | string;
+  status: OrderStatus;
+  cardStatus?: CardStatus;
   hasImages: boolean;
   imagesCount: number;
+  paymentMethod?: PaymentMethodSnapshot;
 }
 
 interface OrderPagination {
@@ -211,14 +266,14 @@ export interface GetOrderImagesResponse {
 
 export const ordersApi = {
   createBuyOrder: async (
-    payload: BuyOrderPayload
+    payload: BuyOrderPayload,
   ): Promise<BuyOrderResponse> => {
     const response = await api.post("/orders/buy", payload);
     return response.data;
   },
 
   createSellOrder: async (
-    payload: SellOrderPayload
+    payload: SellOrderPayload,
   ): Promise<SellOrderResponse> => {
     // Check if we have images to upload
     if (payload.cardImages && payload.cardImages.length > 0) {
@@ -271,13 +326,34 @@ export const ordersApi = {
     return response.data;
   },
 
-  claimPayment: async (orderId: string): Promise<ClaimPaymentResponse> => {
-    const response = await api.put(`/orders/${orderId}/claim-payment`);
+  claimPayment: async (
+    orderId: string,
+    paymentMethodId: string,
+    cardImages?: File[],
+  ): Promise<ClaimPaymentResponse> => {
+    const formData = new FormData();
+    formData.append("paymentMethodId", paymentMethodId);
+
+    if (cardImages && cardImages.length > 0) {
+      cardImages.forEach((image) => {
+        formData.append("cardImages", image);
+      });
+    }
+
+    const response = await api.put(
+      `/orders/${orderId}/claim-payment`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      },
+    );
     return response.data;
   },
 
   calculateOrder: async (
-    payload: CalculateOrderPayload
+    payload: CalculateOrderPayload,
   ): Promise<CalculateOrderResponse> => {
     const response = await api.post("/orders/calculate", payload);
     return response.data;
@@ -285,6 +361,11 @@ export const ordersApi = {
 
   getOrderImages: async (orderId: string): Promise<GetOrderImagesResponse> => {
     const response = await api.post(`/orders/${orderId}/images`);
+    return response.data;
+  },
+
+  cancelOrder: async (orderId: string): Promise<{ status: boolean; message: string }> => {
+    const response = await api.put(`/orders/${orderId}/cancel`);
     return response.data;
   },
 };

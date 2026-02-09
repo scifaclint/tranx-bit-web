@@ -5,7 +5,8 @@ export const PAYMENT_LOGOS: Record<string, string> = {
     btc: "/payments/bitcoin.svg",
     bitcoin: "/payments/bitcoin.svg",
     usdt: "/payments/tether-usdt.svg",
-    litecoin: "/payments/litecoin-logo.png"
+    litecoin: "/payments/litecoin-logo.png",
+    paystack: "/payments/paystack-seeklogo.svg"
 };
 
 export const NETWORK_LABELS: Record<string, string> = {

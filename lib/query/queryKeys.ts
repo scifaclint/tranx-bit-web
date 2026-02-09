@@ -23,8 +23,12 @@ export const queryKeys = {
     },
     transactions: {
       all: ["admin", "transactions"] as const,
-      list: (params?: { page?: number; limit?: number; type?: string; status?: string }) =>
-        ["admin", "transactions", "list", params] as const,
+      list: (params?: {
+        page?: number;
+        limit?: number;
+        type?: string;
+        status?: string;
+      }) => ["admin", "transactions", "list", params] as const,
     },
     withdrawals: {
       all: ["admin", "withdrawals"] as const,
@@ -39,16 +43,25 @@ export const queryKeys = {
       list: (params?: { page?: number; limit?: number; level?: string }) =>
         ["admin", "logs", "list", params] as const,
     },
+    payments: {
+      all: ["admin", "payments"] as const,
+      platform: ["admin", "payments", "platform"] as const,
+    },
   },
   payments: {
     all: ["payments"] as const,
     list: () => ["payments", "list"] as const,
+    platform: () => ["payments", "platform"] as const,
     supported: () => ["payments", "supported"] as const,
   },
   transactions: {
     all: ["transactions"] as const,
-    user: (params?: { page?: number; limit?: number; type?: string; status?: string }) =>
-      ["transactions", "user", params] as const,
+    user: (params?: {
+      page?: number;
+      limit?: number;
+      type?: string;
+      status?: string;
+    }) => ["transactions", "user", params] as const,
     detail: (id: string) => ["transactions", "detail", id] as const,
   },
 };
