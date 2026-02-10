@@ -29,6 +29,7 @@ interface UIState {
 
     // UI Actions
     setNotificationCenterOpen: (open: boolean) => void;
+    reset: () => void;
 }
 
 export const useUIStore = create<UIState>()(
@@ -63,6 +64,13 @@ export const useUIStore = create<UIState>()(
 
             // UI Actions
             setNotificationCenterOpen: (open) => set({ isNotificationCenterOpen: open }),
+
+            reset: () => set({
+                announcement: null,
+                isAnnouncementVisible: false,
+                dismissedAnnouncementIds: [],
+                isNotificationCenterOpen: false,
+            }),
         }),
         {
             name: "ui-store",

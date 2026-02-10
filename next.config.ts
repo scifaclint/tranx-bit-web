@@ -20,6 +20,10 @@ const nextConfig: NextConfig = {
         hostname:
           "tranxbit-private.84faabb69e96a5a11297b8259eb73867.r2.cloudflarestorage.com",
       },
+      {
+        protocol: "https",
+        hostname: "assets.tranxbit.com",
+      },
     ],
   },
   async headers() {

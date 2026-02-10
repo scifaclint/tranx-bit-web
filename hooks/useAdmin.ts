@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { authApi } from "@/lib/api/auth";
 import {
     adminApi,
@@ -22,6 +22,9 @@ export const useAdminOrders = (params?: {
     page?: number;
     limit?: number;
     status?: string;
+    cardStatus?: string;
+    search?: string;
+    orderType?: string;
 }) => {
     return useQuery({
         queryKey: queryKeys.admin.orders.list(params),
@@ -29,6 +32,33 @@ export const useAdminOrders = (params?: {
         staleTime: Infinity,
         refetchOnWindowFocus: false,
     });
+};
+
+export const useAdminAllOrderCounts = (tabs: { id: string, status?: string, cardStatus?: string }[]) => {
+    const results = useQueries({
+        queries: tabs.map(tab => ({
+            queryKey: [...queryKeys.admin.orders.list({ status: tab.status, cardStatus: tab.cardStatus }), "count"],
+            queryFn: () => adminApi.getAllOrders({
+                status: tab.status,
+                cardStatus: tab.cardStatus,
+                limit: 1 // We only need the total count from pagination
+            }),
+            staleTime: 5 * 60 * 1000, // 5 minutes cache for counts
+        }))
+    });
+
+    const counts: Record<string, number> = {};
+    results.forEach((result, index) => {
+        const tabId = tabs[index].id;
+        counts[tabId] = result.data?.data?.pagination?.totalOrders || 0;
+    });
+
+    return {
+        counts,
+        isLoading: results.some(r => r.isLoading),
+        isFetching: results.some(r => r.isFetching),
+        refetchAll: () => Promise.all(results.map(r => r.refetch()))
+    };
 };
 
 export const useAdminOrdersByStatus = (

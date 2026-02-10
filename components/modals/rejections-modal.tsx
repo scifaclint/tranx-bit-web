@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils"
 import { AdminOrder } from "@/lib/api/admin"
 import Image from "next/image"
 import { useState } from "react"
-import { XCircle } from "lucide-react"
+import { XCircle, Loader } from "lucide-react"
 
 interface RejectionModalProps {
     isOpen: boolean
@@ -24,6 +24,7 @@ interface RejectionModalProps {
 
 export default function RejectionModal({ isOpen, onClose, order }: RejectionModalProps) {
     const [selectedImage, setSelectedImage] = useState<string | null>(null)
+    const [imageLoading, setImageLoading] = useState(false)
     if (!order) return null;
 
     const isBuying = order.orderType === 'buy'
@@ -102,7 +103,10 @@ export default function RejectionModal({ isOpen, onClose, order }: RejectionModa
                                     <div
                                         key={idx}
                                         className="relative h-20 w-32 bg-muted border rounded-md overflow-hidden flex-shrink-0 group cursor-pointer"
-                                        onClick={() => setSelectedImage(img)}
+                                        onClick={() => {
+                                            setImageLoading(true);
+                                            setSelectedImage(img);
+                                        }}
                                     >
                                         <Image src={img} alt={`Card ${idx}`} fill className="object-cover transition-transform group-hover:scale-105" />
                                         <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -137,17 +141,26 @@ export default function RejectionModal({ isOpen, onClose, order }: RejectionModa
                     <DialogTitle className="sr-only">Image Preview</DialogTitle>
                     {selectedImage && (
                         <div className="relative w-full h-[85vh] flex items-center justify-center">
+                            {imageLoading && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
+                                    <Loader className="h-12 w-12 animate-spin text-white" />
+                                </div>
+                            )}
                             <Image
                                 src={selectedImage}
                                 alt="Full size preview"
                                 fill
                                 className="object-contain"
                                 priority
+                                onLoad={() => setImageLoading(false)}
                             />
                             <Button
                                 variant="ghost"
-                                className="absolute top-4 right-4 text-white bg-black/50 hover:bg-black/70 rounded-full h-10 w-10 p-0"
-                                onClick={() => setSelectedImage(null)}
+                                className="absolute top-4 right-4 text-white bg-black/50 hover:bg-black/70 rounded-full h-10 w-10 p-0 z-20"
+                                onClick={() => {
+                                    setSelectedImage(null);
+                                    setImageLoading(false);
+                                }}
                             >
                                 <XCircle className="h-6 w-6" />
                             </Button>

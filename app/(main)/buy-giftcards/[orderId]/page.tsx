@@ -125,10 +125,17 @@ export default function OrderDetailsPage() {
       paymentMethodId = cryptoMethod._id;
 
       try {
+        if (receiptFiles.length === 0) {
+          toast.error("Receipt required", {
+            description: "Please upload your payment receipt to proceed.",
+          });
+          return;
+        }
+
         await claimPaymentMutation.mutateAsync({
           orderId,
           paymentMethodId,
-          cardImages: receiptFiles.length > 0 ? receiptFiles : undefined,
+          cardImages: receiptFiles,
         });
         toast.success("Payment claimed successfully!", {
           description: "Your payment is now being verified.",
@@ -634,8 +641,8 @@ export default function OrderDetailsPage() {
 
                               {/* Upload Receipt */}
                               <div className="space-y-2">
-                                <Label htmlFor="cryptoReceipt" className="text-sm">
-                                  Upload Transfer Receipt (Optional)
+                                <Label htmlFor="cryptoReceipt" className="text-sm font-semibold">
+                                  Upload Transfer Receipt <span className="text-red-500">(Required)</span>
                                 </Label>
                                 <Input
                                   id="cryptoReceipt"

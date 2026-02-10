@@ -71,6 +71,8 @@ export interface AddPlatformPaymentPayload {
   walletAddress?: string;
   network?: string;
   cryptoAsset?: string;
+  accountNumber?: string;
+  bankName?: string;
   isActive: boolean;
 }
 
@@ -183,6 +185,8 @@ export interface AdminPlatformPayment {
   walletAddress?: string;
   network?: string;
   cryptoAsset?: string;
+  accountNumber?: string;
+  bankName?: string;
   isActive: boolean;
   createdAt: string;
 }
@@ -239,8 +243,10 @@ export interface AdminPagination {
 
 export type AdminOrderStatus =
   | "pending"
+  | "pending_payment"
   | "processing"
   | "completed"
+  | "cancelled"
   | "failed";
 
 export interface GetAllOrdersResponse {
@@ -443,6 +449,9 @@ export const adminApi = {
     page?: number;
     limit?: number;
     status?: string;
+    cardStatus?: string;
+    search?: string;
+    orderType?: string;
   }): Promise<GetAllOrdersResponse> => {
     const response = await api.get("/admin/orders", { params });
     return response.data;

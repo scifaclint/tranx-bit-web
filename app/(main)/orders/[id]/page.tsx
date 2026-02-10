@@ -38,6 +38,7 @@ import Image from "next/image";
 import "flag-icons/css/flag-icons.min.css";
 import ConfirmationModal from "@/components/modals/confirmation-modal";
 import CardValidationStatus from "@/components/features/orders/CardValidationStatus";
+import { TelegramIcon } from "@/components/design/social-icons";
 
 export default function TransactionDetailsPage() {
   const params = useParams();
@@ -560,7 +561,7 @@ export default function TransactionDetailsPage() {
                         </div>
                         <div className="flex items-center justify-between p-3 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-xl">
                           <p className="text-xs text-amber-800 dark:text-amber-200 font-medium">
-                            ⚠️ Links expire in 1 hour for security
+                            🔒 For your security, these encrypted images are viewable for 1 hour. You can refresh to generate a new secure link.
                           </p>
                           <Button
                             variant="ghost"
@@ -751,11 +752,20 @@ export default function TransactionDetailsPage() {
       </Card>
 
       {/* Footer Support */}
+      {/* Footer Support */}
       <div className="py-8 text-center bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl border border-borderColorPrimary">
-        <p className="text-sm text-zinc-500 font-medium px-6">
-          Need help? Our team is available 24/7. Chat with our support team
-          using the widget below.
+        <p className="text-sm text-zinc-500 font-medium px-6 mb-4">
+          Need help? Our team is available 24/7. Use our Live Chat widget or message us on Telegram.
         </p>
+        <Button
+          variant="outline"
+          size="icon"
+          className="rounded-full w-10 h-10 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+          onClick={() => window.open("https://t.me/tranxbit", "_blank")}
+        >
+          <TelegramIcon className="w-5 h-5" />
+          <span className="sr-only">Telegram</span>
+        </Button>
       </div>
 
       <ConfirmationModal

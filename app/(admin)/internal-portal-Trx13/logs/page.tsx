@@ -252,8 +252,11 @@ export default function LogsPage() {
             await clearLogsMutation.mutateAsync({ adminPin: pin });
             toast.success("Logs cleared successfully");
             setIsPinModalOpen(false);
-        } catch (error: any) {
-            toast.error(error.message || "Failed to clear logs");
+            // Refetch to ensure UI is in sync with server
+            await refetch();
+        } catch (error) {
+            // Error toast already shown by axios interceptor
+            // Keep modal open so user can retry with correct PIN
         }
     };
 

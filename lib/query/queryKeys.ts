@@ -12,7 +12,7 @@ export const queryKeys = {
   admin: {
     orders: {
       all: ["admin", "orders"] as const,
-      list: (params?: { page?: number; limit?: number; status?: string }) =>
+      list: (params?: { page?: number; limit?: number; status?: string; cardStatus?: string }) =>
         ["admin", "orders", "list", params] as const,
       byStatus: (status: string, page?: number) =>
         ["admin", "orders", "status", status, page] as const,

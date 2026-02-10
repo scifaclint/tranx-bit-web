@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { User } from "@/lib/api/auth";
+import { useUIStore } from "@/hooks/useUIStore";
 // import { toast } from "sonner";
 
 // interface DriveAuthStore {
@@ -46,6 +47,9 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       clearAuth: () => {
+        // Clear UI store as well
+        useUIStore.getState().reset();
+
         set({
           user: null,
           token: null,

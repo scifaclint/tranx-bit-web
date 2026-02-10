@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Download,
@@ -35,6 +35,7 @@ import { Loader } from "lucide-react";
 import { toast } from "sonner";
 
 import {
+  useAdminAllOrderCounts,
   useAdminOrders,
   useApproveOrder,
   useRejectOrder,
@@ -42,14 +43,25 @@ import {
 import { AdminOrder, AdminOrderStatus } from "@/lib/api/admin";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-type OrderStatus = "all" | "pending" | "processing" | "completed" | "failed";
+type OrderStatus =
+  | "all"
+  | "pending"
+  | "pending_payment"
+  | "processing"
+  | "awaiting_payment"
+  | "completed"
+  | "cancelled"
+  | "failed";
 
-const STATUS_MAP: Record<string, string | undefined> = {
-  all: undefined,
-  pending: "pending",
-  processing: "processing",
-  completed: "completed",
-  failed: "failed",
+const STATUS_MAP: Record<string, { status?: string; cardStatus?: string }> = {
+  all: { status: undefined },
+  pending: { status: "pending" },
+  pending_payment: { status: "pending_payment" },
+  processing: { status: "processing" },
+  awaiting_payment: { status: "processing", cardStatus: "valid" },
+  completed: { status: "completed" },
+  cancelled: { status: "cancelled" },
+  failed: { status: "failed" },
 };
 
 interface Order {
@@ -76,35 +88,60 @@ export default function CardOrderPage() {
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isRejectionModalOpen, setIsRejectionModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [orderType, setOrderType] = useState<"all" | "buy" | "sell">("all");
 
-  // Map OrderStatus to AdminOrderStatus or undefined for 'all'
-  const statusFilter = STATUS_MAP[activeTab];
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setCurrentPage(1); // Reset page on search
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Fetch counts for all tabs in parallel
+  const tabConfigs = [
+    { id: "all" },
+    { id: "pending", status: "pending" },
+    { id: "pending_payment", status: "pending_payment" },
+    { id: "processing", status: "processing" },
+    { id: "awaiting_payment", status: "processing", cardStatus: "valid" },
+    { id: "completed", status: "completed" },
+    { id: "cancelled", status: "cancelled" },
+    { id: "failed", status: "failed" },
+  ];
+
+  const {
+    counts,
+    isLoading: isCountsLoading,
+    isFetching: isFetchingTotals,
+    refetchAll: refetchTotals,
+  } = useAdminAllOrderCounts(tabConfigs);
+
+  // Map active tab to status/cardStatus filters
+  const { status: statusFilter, cardStatus: cardStatusFilter } = STATUS_MAP[activeTab];
 
   // Set limit: 100 for pending/processing, 20 for others
   const pageLimit =
-    activeTab === "pending" || activeTab === "processing" ? 100 : 20;
+    activeTab === "pending" || activeTab === "processing" || activeTab === "pending_payment" || activeTab === "awaiting_payment" ? 100 : 20;
 
   // Query for the filtered orders (active tab)
   const {
     data: ordersResponse,
-    isLoading,
+    isLoading: isOrdersLoading,
     refetch: refetchOrders,
     isFetching: isFetchingOrders,
   } = useAdminOrders({
     status: statusFilter,
+    cardStatus: cardStatusFilter,
     page: currentPage,
     limit: pageLimit,
+    search: debouncedSearch || undefined,
+    orderType: orderType === "all" ? undefined : orderType,
   });
 
-  // Separate query for the global total count (always 'all')
-  const {
-    data: allOrdersResponse,
-    refetch: refetchTotals,
-    isFetching: isFetchingTotals,
-  } = useAdminOrders({
-    status: undefined,
-    limit: 1, // We only need the pagination total
-  });
+  const isLoading = isOrdersLoading || isCountsLoading;
 
   const handleManualRefresh = async () => {
     try {
@@ -138,33 +175,49 @@ export default function CardOrderPage() {
   const selectedOrder = orders.find((o) => o._id === selectedOrderId);
 
   const pagination = ordersResponse?.data?.pagination;
-  const currentTotal = pagination?.totalOrders || 0;
-  const globalTotal = allOrdersResponse?.data?.pagination?.totalOrders || 0;
 
   const tabs = [
-    { id: "all", label: "Total", count: globalTotal, color: "text-foreground" },
+    { id: "all", label: "Total", count: counts["all"], color: "text-foreground" },
     {
       id: "pending",
       label: "Pending",
-      count: activeTab === "pending" ? currentTotal : 0,
+      count: counts["pending"],
       color: "text-orange-600",
     },
     {
+      id: "pending_payment",
+      label: "Waiting Receipt",
+      count: counts["pending_payment"],
+      color: "text-amber-500",
+    },
+    {
       id: "processing",
-      label: "Processing",
-      count: activeTab === "processing" ? currentTotal : 0,
+      label: "Reviewing",
+      count: counts["processing"],
       color: "text-blue-600",
+    },
+    {
+      id: "awaiting_payment",
+      label: "To Pay",
+      count: counts["awaiting_payment"],
+      color: "text-indigo-600 underline decoration-2 underline-offset-4 font-black",
     },
     {
       id: "completed",
       label: "Completed",
-      count: activeTab === "completed" ? currentTotal : 0,
+      count: counts["completed"],
       color: "text-green-600",
+    },
+    {
+      id: "cancelled",
+      label: "Cancelled",
+      count: counts["cancelled"],
+      color: "text-zinc-500",
     },
     {
       id: "failed",
       label: "Failed",
-      count: activeTab === "failed" ? currentTotal : 0,
+      count: counts["failed"],
       color: "text-red-600",
     },
   ];
@@ -250,224 +303,262 @@ export default function CardOrderPage() {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                {orderType === "all"
+                  ? "All Types"
+                  : orderType === "buy"
+                    ? "Buying Only"
+                    : "Selling Only"}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setOrderType("all")}>
+                All Types
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setOrderType("buy")}>
+                Buying Only
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setOrderType("sell")}>
+                Selling Only
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         <div className="mt-6">
-          <ScrollArea className="h-[calc(100vh-380px)]">
-            {/* DESKTOP TABLE VIEW */}
-            <div className="hidden lg:block rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[150px]">Order ID</TableHead>
-                    <TableHead className="w-[200px]">Customer</TableHead>
-                    <TableHead>Card</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Payout</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {orders.map((order) => (
-                    <TableRow
-                      key={order._id}
-                      className="h-12 hover:bg-muted/30 transition-colors"
-                    >
-                      <TableCell className="font-medium py-1">
-                        <span
-                          title={order?._id}
-                          className="truncate block w-[120px] font-mono text-[11px]"
-                        >
-                          #{order?.orderNumber || order?._id.slice(-8)}
-                        </span>
-                      </TableCell>
-                      <TableCell className="py-1">
-                        <div className="flex items-center gap-2">
-                          <Avatar className="h-7 w-7">
-                            <AvatarFallback className="text-[10px]">
-                              {order.userId?.firstName?.substring(0, 1)}
-                              {order.userId?.lastName?.substring(0, 1)}
-                            </AvatarFallback>
-                          </Avatar>
+          {isLoading && (
+            <div className="flex flex-col items-center justify-center py-20">
+              <Loader className="w-10 h-10 animate-spin text-primary" />
+              <p className="mt-4 text-sm text-muted-foreground font-medium">
+                Loading orders...
+              </p>
+            </div>
+          )}
+
+          {!isLoading && (
+            <ScrollArea className="h-[calc(100vh-380px)]">
+              {/* DESKTOP TABLE VIEW */}
+              <div className="hidden lg:block rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[150px]">Order ID</TableHead>
+                      <TableHead className="w-[200px]">Customer</TableHead>
+                      <TableHead>Card</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Payout</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {orders.map((order) => (
+                      <TableRow
+                        key={order._id}
+                        className="h-12 hover:bg-muted/30 transition-colors"
+                      >
+                        <TableCell className="font-medium py-1">
+                          <span
+                            title={order?._id}
+                            className="truncate block w-[120px] font-mono text-[11px]"
+                          >
+                            #{order?.orderNumber || order?._id.slice(-8)}
+                          </span>
+                        </TableCell>
+                        <TableCell className="py-1">
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-7 w-7">
+                              <AvatarFallback className="text-[10px]">
+                                {order.userId?.firstName?.substring(0, 1)}
+                                {order.userId?.lastName?.substring(0, 1)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex flex-col">
+                              <span className="text-[13px] font-bold">
+                                {order.userId?.firstName} {order.userId?.lastName}
+                              </span>
+                              <span
+                                title={order.userId?.email}
+                                className="text-[10px] text-muted-foreground truncate w-[130px]"
+                              >
+                                {order.userId?.email}
+                              </span>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="py-1 text-[13px] font-medium">
+                          {order.items?.[0]?.cardName || "N/A"}
+                        </TableCell>
+                        <TableCell className="py-1">
+                          <Badge
+                            variant={
+                              order.orderType === "buy" ? "default" : "secondary"
+                            }
+                            className="uppercase text-[9px] px-1.5 h-4 font-black"
+                          >
+                            {order.orderType}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="py-1 font-bold text-[13px]">
                           <div className="flex flex-col">
-                            <span className="text-[13px] font-bold">
-                              {order.userId?.firstName} {order.userId?.lastName}
+                            <span>
+                              {order.payoutCurrency}{" "}
+                              {order.totalAmount?.toLocaleString() || "0"}
                             </span>
-                            <span
-                              title={order.userId?.email}
-                              className="text-[10px] text-muted-foreground truncate w-[130px]"
-                            >
-                              {order.userId?.email}
+                            <span className="text-[10px] text-muted-foreground font-normal">
+                              Face Value: {order.cardCurrency} {order.cardValue?.toLocaleString() || "0"}
                             </span>
                           </div>
+                        </TableCell>
+                        <TableCell className="py-1">
+                          <Badge
+                            variant="outline"
+                            className={`text-[9px] px-1.5 h-4 capitalize font-bold tracking-tight
+                                                     ${order.status === "completed"
+                                ? "text-green-600 border-green-600 bg-green-50/50"
+                                : order.status === "pending"
+                                  ? "text-orange-600 border-orange-600 bg-orange-50/50"
+                                  : order.status === "pending_payment"
+                                    ? "text-amber-600 border-amber-600 bg-amber-50/50"
+                                    : order.status === "processing"
+                                      ? "text-blue-600 border-blue-600 bg-blue-50/50"
+                                      : order.status === "cancelled"
+                                        ? "text-zinc-500 border-zinc-500 bg-zinc-50/50"
+                                        : "text-red-500 border-red-500 bg-red-50/50"
+                              }`}
+                          >
+                            {order.status === "pending_payment" ? "Waiting Receipt" : order.status.replace("_", " ")}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="py-1 text-muted-foreground text-[11px]">
+                          {new Date(order.createdAt).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell className="text-right py-1">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0"
+                              >
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                              <DropdownMenuItem
+                                onClick={() => handleViewDetails(order._id)}
+                              >
+                                <Eye className="mr-2 h-4 w-4" /> View Details
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* MOBILE CARD VIEW */}
+              <div className="lg:hidden space-y-3 pb-10">
+                {orders.map((order) => {
+                  const statusColors =
+                    order.status === "completed"
+                      ? "text-green-600 bg-green-50 border-green-200"
+                      : order.status === "pending"
+                        ? "text-orange-600 bg-orange-50 border-orange-200"
+                        : order.status === "pending_payment"
+                          ? "text-amber-600 bg-amber-50 border-amber-200"
+                          : order.status === "processing"
+                            ? "text-blue-600 bg-blue-50 border-blue-200"
+                            : order.status === "cancelled"
+                              ? "text-zinc-500 bg-zinc-50 border-zinc-200"
+                              : "text-red-500 bg-red-50 border-red-200";
+
+                  return (
+                    <div
+                      key={order._id}
+                      className="p-4 border rounded-2xl bg-white dark:bg-backgroundSecondary shadow-sm space-y-4"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono text-[11px] font-bold text-muted-foreground uppercase">
+                          #{order.orderNumber || order._id.slice(-8)}
+                        </span>
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "text-[9px] px-2 py-0.5 capitalize font-black",
+                            statusColors,
+                          )}
+                        >
+                          {order.status === "pending_payment" ? "Waiting Receipt" : order.status.replace("_", " ")}
+                        </Badge>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-9 w-9">
+                          <AvatarFallback>
+                            {order.userId?.firstName?.substring(0, 1)}
+                            {order.userId?.lastName?.substring(0, 1)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex flex-col min-w-0 flex-1">
+                          <span className="text-sm font-bold truncate">
+                            {order.userId?.firstName} {order.userId?.lastName}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-tight">
+                            {order.items?.[0]?.cardName || "Unknown Card"}
+                          </span>
                         </div>
-                      </TableCell>
-                      <TableCell className="py-1 text-[13px] font-medium">
-                        {order.items?.[0]?.cardName || "N/A"}
-                      </TableCell>
-                      <TableCell className="py-1">
                         <Badge
                           variant={
                             order.orderType === "buy" ? "default" : "secondary"
                           }
-                          className="uppercase text-[9px] px-1.5 h-4 font-black"
+                          className="uppercase text-[8px] h-4 font-black"
                         >
                           {order.orderType}
                         </Badge>
-                      </TableCell>
-                      <TableCell className="py-1 font-bold text-[13px]">
+                      </div>
+
+                      <div className="flex items-center justify-between pt-3 border-t border-dashed">
                         <div className="flex flex-col">
-                          <span>
+                          <span className="text-[9px] text-muted-foreground font-black uppercase tracking-widest">
+                            Payout (Total)
+                          </span>
+                          <span className="text-base font-black text-foreground">
                             {order.payoutCurrency}{" "}
                             {order.totalAmount?.toLocaleString() || "0"}
                           </span>
-                          <span className="text-[10px] text-muted-foreground font-normal">
-                            Face Value: {order.cardCurrency} {order.cardValue?.toLocaleString() || "0"}
+                          <span className="text-[10px] text-muted-foreground uppercase font-bold">
+                            Face: {order.cardCurrency} {order.cardValue?.toLocaleString() || "0"}
                           </span>
                         </div>
-                      </TableCell>
-                      <TableCell className="py-1">
-                        <Badge
+                        <Button
                           variant="outline"
-                          className={`text-[9px] px-1.5 h-4 capitalize font-bold tracking-tight
-                                                    ${order.status ===
-                              "completed"
-                              ? "text-green-600 border-green-600 bg-green-50/50"
-                              : order.status ===
-                                "pending"
-                                ? "text-orange-600 border-orange-600 bg-orange-50/50"
-                                : order.status ===
-                                  "processing"
-                                  ? "text-blue-600 border-blue-600 bg-blue-50/50"
-                                  : "text-red-500 border-red-500 bg-red-50/50"
-                            }`}
+                          size="sm"
+                          className="h-8 rounded-xl px-4 text-xs font-bold bg-muted/20 border-borderColorPrimary"
+                          onClick={() => handleViewDetails(order._id)}
                         >
-                          {order.status.replace("_", " ")}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="py-1 text-muted-foreground text-[11px]">
-                        {new Date(order.createdAt).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell className="text-right py-1">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0"
-                            >
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem
-                              onClick={() => handleViewDetails(order._id)}
-                            >
-                              <Eye className="mr-2 h-4 w-4" /> View Details
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-
-            {/* MOBILE CARD VIEW */}
-            <div className="lg:hidden space-y-3 pb-10">
-              {orders.map((order) => {
-                const statusColors =
-                  order.status === "completed"
-                    ? "text-green-600 bg-green-50 border-green-200"
-                    : order.status === "pending"
-                      ? "text-orange-600 bg-orange-50 border-orange-200"
-                      : order.status === "processing"
-                        ? "text-blue-600 bg-blue-50 border-blue-200"
-                        : "text-red-500 bg-red-50 border-red-200";
-
-                return (
-                  <div
-                    key={order._id}
-                    className="p-4 border rounded-2xl bg-white dark:bg-backgroundSecondary shadow-sm space-y-4"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-mono text-[11px] font-bold text-muted-foreground uppercase">
-                        #{order.orderNumber || order._id.slice(-8)}
-                      </span>
-                      <Badge
-                        variant="outline"
-                        className={cn(
-                          "text-[9px] px-2 py-0.5 capitalize font-black",
-                          statusColors,
-                        )}
-                      >
-                        {order.status.replace("_", " ")}
-                      </Badge>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-9 w-9">
-                        <AvatarFallback>
-                          {order.userId?.firstName?.substring(0, 1)}
-                          {order.userId?.lastName?.substring(0, 1)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex flex-col min-w-0 flex-1">
-                        <span className="text-sm font-bold truncate">
-                          {order.userId?.firstName} {order.userId?.lastName}
-                        </span>
-                        <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-tight">
-                          {order.items?.[0]?.cardName || "Unknown Card"}
-                        </span>
+                          View Actions
+                        </Button>
                       </div>
-                      <Badge
-                        variant={
-                          order.orderType === "buy" ? "default" : "secondary"
-                        }
-                        className="uppercase text-[8px] h-4 font-black"
-                      >
-                        {order.orderType}
-                      </Badge>
                     </div>
-
-                    <div className="flex items-center justify-between pt-3 border-t border-dashed">
-                      <div className="flex flex-col">
-                        <span className="text-[9px] text-muted-foreground font-black uppercase tracking-widest">
-                          Payout (Total)
-                        </span>
-                        <span className="text-base font-black text-foreground">
-                          {order.payoutCurrency}{" "}
-                          {order.totalAmount?.toLocaleString() || "0"}
-                        </span>
-                        <span className="text-[10px] text-muted-foreground uppercase font-bold">
-                          Face: {order.cardCurrency} {order.cardValue?.toLocaleString() || "0"}
-                        </span>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8 rounded-xl px-4 text-xs font-bold bg-muted/20 border-borderColorPrimary"
-                        onClick={() => handleViewDetails(order._id)}
-                      >
-                        View Actions
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {orders.length === 0 && !isLoading && (
-              <div className="h-40 flex flex-col items-center justify-center border-2 border-dashed rounded-2xl text-muted-foreground">
-                <Search className="w-8 h-8 opacity-20 mb-2" />
-                <p className="font-medium">No orders found.</p>
+                  );
+                })}
               </div>
-            )}
-          </ScrollArea>
+
+              {orders.length === 0 && !isLoading && (
+                <div className="h-40 flex flex-col items-center justify-center border-2 border-dashed rounded-2xl text-muted-foreground">
+                  <Search className="w-8 h-8 opacity-20 mb-2" />
+                  <p className="font-medium">No orders found.</p>
+                </div>
+              )}
+            </ScrollArea>
+          )}
 
           {/* Pagination Controls */}
           {pagination && pagination.totalPages > 1 && (
