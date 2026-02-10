@@ -58,6 +58,7 @@ import { MoreVertical, Star, CheckCircle2 } from "lucide-react";
 import { PAYMENT_LOGOS, NETWORK_LABELS } from "@/lib/payment-constants";
 import { validateImageSizeAndType } from "@/lib/upload-utils";
 import PinSetupDialog from "@/components/modals/pin-set-up";
+import AccountDeletionModal from "@/components/modals/AccountDeletionModal";
 
 
 type TabType = "general" | "personal" | "kyc" | "payment" | "security";
@@ -764,38 +765,9 @@ export default function SettingsPage() {
         variant="danger"
       />
 
-      {/* Delete Account Confirmation */}
-      <ConfirmationModal
+      <AccountDeletionModal
         isOpen={deleteAccountOpen}
         onClose={() => setDeleteAccountOpen(false)}
-        onConfirm={() => {
-          // Account deletion will be implemented when backend is ready
-          toast.success("Account deletion request submitted", {
-            description:
-              "Your account will be deleted after verification. This action cannot be undone.",
-          });
-        }}
-        title="Delete Account"
-        description={
-          <div>
-            <p className="mb-3">
-              <strong>Warning:</strong> This will permanently delete your
-              account and all associated data including:
-            </p>
-            <ul className="list-disc list-inside space-y-1 mb-3">
-              <li>Personal information</li>
-              <li>Transaction history</li>
-              <li>Payment methods</li>
-              <li>Account balance</li>
-            </ul>
-            <p className="font-semibold">
-              This action cannot be undone. Are you absolutely sure?
-            </p>
-          </div>
-        }
-        confirmText="Yes, Delete My Account"
-        cancelText="Cancel"
-        variant="danger"
       />
 
       {/* Payment Method Modal */}

@@ -21,6 +21,7 @@ const publicRoutes = [
   "/terms-of-service",
   "/privacy-policy",
   "/about",
+  "/pending-delete"
 ];
 
 const restrictedRoutes: string[] = [];
@@ -139,6 +140,12 @@ function RouteGuardInner({ children }: RouteGuardProps) {
                 response.data.user.email,
               )}`,
             );
+            return;
+          }
+
+          if (destination === "reactivate-account") {
+            useAuthStore.getState().setUser(response.data.user);
+            router.replace("/pending-delete");
             return;
           }
 

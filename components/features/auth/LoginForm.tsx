@@ -38,7 +38,7 @@ export function LoginForm({
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const { setAuth } = useAuthStore();
+  const { setAuth, setUser } = useAuthStore();
   const router = useRouter();
 
   const identifierType = useMemo(() => {
@@ -72,6 +72,13 @@ export function LoginForm({
       if (results.status && results.data) {
         if (results.data.to === "verify-email") {
           onVerify(results.data.user.email);
+          setIsLoading(false);
+          return;
+        }
+
+        if (results.data.to === "reactivate-account") {
+          setUser(results.data.user);
+          router.push("/pending-delete");
           setIsLoading(false);
           return;
         }

@@ -39,6 +39,7 @@ export interface RegisterResponse {
       user_agent: string;
       registration_type: string;
       email_verified_at?: string | null;
+      scheduledDeletionAt?: string | null;
     };
   };
 }
@@ -81,6 +82,7 @@ export interface LoginResponse {
       wallet_balance?: string;
       referral_balance?: string;
       is_pin_set?: boolean;
+      scheduledDeletionAt?: string | null;
     };
   };
 }
@@ -101,6 +103,9 @@ interface ResendVerificationResponse {
 interface DeleteAccountResponse {
   status: boolean;
   message: string;
+  data?: {
+    scheduledDeletionAt: string;
+  };
 }
 
 export interface VerifyAdminResponse {
@@ -148,6 +153,7 @@ export interface User {
   pending_orders_count?: number;
   country?: string;
   role?: string;
+  scheduledDeletionAt?: string | null;
 }
 
 export interface UpdateUserPayload {
@@ -269,7 +275,7 @@ export const authApi = {
   },
 
   deleteAccount: async (password: string): Promise<DeleteAccountResponse> => {
-    const response = await api.post("/delete-account", { password });
+    const response = await api.post("/auth/delete", { password });
     return response.data;
   },
 
@@ -295,6 +301,16 @@ export const authApi = {
 
   setUserPin: async (data: SetPinPayload): Promise<SetPinResponse> => {
     const response = await api.post("/user/set-pin", data);
+    return response.data;
+  },
+
+  reactivateAccount: async (credentials: { email: string; password: string }): Promise<LoginResponse> => {
+    const response = await api.post("/auth/reactivate", credentials);
+    return response.data;
+  },
+
+  deletePermanently: async (credentials: { email: string; password: string }): Promise<LoginResponse> => {
+    const response = await api.post("/auth/delete-permanently", credentials);
     return response.data;
   },
 };
