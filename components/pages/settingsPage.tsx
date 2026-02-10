@@ -231,10 +231,11 @@ export default function SettingsPage() {
         setProfileImageFile(null); // Clear the file
       }
     } catch (error: any) {
-      console.error("Profile update error:", error);
-      toast.error("Failed to update profile", {
-        description: error?.message || "Please try again later",
-      });
+      // console.error("Profile update error:", error);
+      // toast.error("Failed to update profile", {
+      //   description: error?.message || "Please try again later",
+      // });
+      return
     } finally {
       setIsSaving(false);
       setLoadingMessage("");
@@ -252,7 +253,8 @@ export default function SettingsPage() {
         await deletePaymentMutation.mutateAsync(methodToDelete);
         toast.success("Payment method deleted");
       } catch (error) {
-        toast.error("Failed to delete payment method");
+        // toast.error("Failed to delete payment method");
+        return
       } finally {
         setMethodToDelete(null);
         setDeleteDialogOpen(false);
@@ -265,7 +267,8 @@ export default function SettingsPage() {
       await setDefaultPaymentMutation.mutateAsync(id);
       toast.success("Default payment method updated");
     } catch (error) {
-      toast.error("Failed to update default payment method");
+      // toast.error("Failed to update default payment method");
+      return
     }
   };
 

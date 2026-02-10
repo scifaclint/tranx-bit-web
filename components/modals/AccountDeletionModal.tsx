@@ -89,8 +89,9 @@ export default function AccountDeletionModal({ isOpen, onClose }: AccountDeletio
                 setStep("password");
             }
         } catch (error: any) {
-            toast.error(error.response?.data?.message || "Invalid password or server error");
+            // toast.error(error.response?.data?.message || "Invalid password or server error");
             setStep("password");
+            return
         } finally {
             setIsDeleting(false);
         }
