@@ -1,5 +1,5 @@
-import { Linkedin, Twitter, Facebook, Github, Youtube } from "lucide-react";
 import TranxBitLogo from "./tranx-bit-logo";
+import { FacebookIcon, DiscordIcon } from "./social-icons";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -71,39 +71,30 @@ export default function Footer() {
         <div className="relative">
           <div className="absolute -inset-1 rounded-lg bg-gradient-to-r from-indigo-500/20 via-pink-500/20 to-yellow-400/20 blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
           <div className="flex justify-center gap-7 py-3 px-6 relative">
-            <a href="#" className="group relative p-2" aria-label="LinkedIn">
-              <div className="absolute -inset-2 bg-blue-500 rounded-full opacity-0 group-hover:opacity-30 blur transition-all duration-300 group-hover:scale-105"></div>
-              <Linkedin
-                size={24}
-                className="text-gray-400 group-hover:text-white transition-all duration-300 transform group-hover:-translate-y-1 group-hover:drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]"
-              />
-            </a>
-            <a href="#" className="group relative p-2" aria-label="Twitter">
-              <div className="absolute -inset-2 bg-sky-500 rounded-full opacity-0 group-hover:opacity-30 blur transition-all duration-300 group-hover:scale-105"></div>
-              <Twitter
-                size={24}
-                className="text-gray-400 group-hover:text-white transition-all duration-300 transform group-hover:-translate-y-1 group-hover:drop-shadow-[0_0_8px_rgba(14,165,233,0.5)]"
-              />
-            </a>
-            <a href="#" className="group relative p-2" aria-label="Facebook">
+            <a
+              href="https://www.facebook.com/share/18vA9HAiZL/?mibextid=wwXIfr"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group relative p-2"
+              aria-label="Facebook"
+            >
               <div className="absolute -inset-2 bg-indigo-600 rounded-full opacity-0 group-hover:opacity-30 blur transition-all duration-300 group-hover:scale-105"></div>
-              <Facebook
+              <FacebookIcon
                 size={24}
                 className="text-gray-400 group-hover:text-white transition-all duration-300 transform group-hover:-translate-y-1 group-hover:drop-shadow-[0_0_8px_rgba(79,70,229,0.5)]"
               />
             </a>
-            <a href="#" className="group relative p-2" aria-label="GitHub">
-              <div className="absolute -inset-2 bg-gray-700 rounded-full opacity-0 group-hover:opacity-30 blur transition-all duration-300 group-hover:scale-105"></div>
-              <Github
+            <a
+              href="https://discord.gg/aSE85Z65h"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group relative p-2"
+              aria-label="Discord"
+            >
+              <div className="absolute -inset-2 bg-indigo-500 rounded-full opacity-0 group-hover:opacity-30 blur transition-all duration-300 group-hover:scale-105"></div>
+              <DiscordIcon
                 size={24}
-                className="text-gray-400 group-hover:text-white transition-all duration-300 transform group-hover:-translate-y-1 group-hover:drop-shadow-[0_0_8px_rgba(156,163,175,0.5)]"
-              />
-            </a>
-            <a href="#" className="group relative p-2" aria-label="YouTube">
-              <div className="absolute -inset-2 bg-red-500 rounded-full opacity-0 group-hover:opacity-30 blur transition-all duration-300 group-hover:scale-105"></div>
-              <Youtube
-                size={24}
-                className="text-gray-400 group-hover:text-white transition-all duration-300 transform group-hover:-translate-y-1 group-hover:drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]"
+                className="text-gray-400 group-hover:text-white transition-all duration-300 transform group-hover:-translate-y-1 group-hover:drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]"
               />
             </a>
           </div>

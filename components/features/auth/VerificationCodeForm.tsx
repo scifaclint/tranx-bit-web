@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { authApi } from "@/lib/api/auth";
 import { useAuthStore } from "@/stores";
 import { useRouter } from "next/navigation";
+import { sendGAEvent } from "@next/third-parties/google";
 interface VerificationCodeFormProps {
   email: string;
   onSuccess: () => void;
@@ -109,6 +110,7 @@ export function VerificationCodeForm({
       });
       if (results.status) {
         setAuth(results.data.user, results.data.token);
+        sendGAEvent({ event: "sign_up", value: "verification_success" });
         router.replace("/dashboard");
       }
       // onSuccess();
@@ -134,9 +136,8 @@ export function VerificationCodeForm({
       inputs.current[0]?.focus();
     } catch (error: any) {
       toast.error(
-        `${
-          error.response?.data?.message ||
-          "Failed to send code. Please try again."
+        `${error.response?.data?.message ||
+        "Failed to send code. Please try again."
         }`
       );
     } finally {
@@ -216,7 +217,7 @@ export function VerificationCodeForm({
           {code.map((digit, index) => (
             <input
               key={index}
-              ref={(el) => (inputs.current[index] = el)}
+              ref={(el) => { inputs.current[index] = el; }}
               type="text"
               inputMode="numeric"
               maxLength={1}

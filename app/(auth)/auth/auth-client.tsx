@@ -1,0 +1,227 @@
+"use client";
+
+import { Suspense } from "react";
+import { AnimatePresence } from "framer-motion";
+import { useState, useEffect } from "react";
+import { useTheme } from "next-themes";
+import TranxBitLogo from "@/components/design/tranx-bit-logo";
+import { LoginForm } from "@/components/features/auth/LoginForm";
+import { RegisterForm } from "@/components/features/auth/RegisterForms";
+import { ForgotPasswordForm } from "@/components/features/auth/ForgotPasswordForm";
+import { ResetPasswordSuccess } from "@/components/features/auth/ResetPasswordSuccess";
+import { VerificationCodeForm } from "@/components/features/auth/VerificationCodeForm";
+import { useAuthMode } from "@/stores/ui-authState";
+import TranxBitLoader from "@/components/design/Loading-screen";
+
+const headingTexts = [
+    "Buy & Sell Gift Cards Instantly",
+    "Secure Virtual Cards for Global Payments",
+    "Seamless Digital Payment Solutions",
+    "Your Gateway to Digital Finance",
+];
+
+function AuthPageInner() {
+    const { resolvedTheme } = useTheme();
+    const [mounted, setMounted] = useState(false);
+    const { authMode, setAuthMode, initializeFromUrl } = useAuthMode();
+    const [resetEmail, setResetEmail] = useState<string>("");
+    const [email, setEmail] = useState("");
+    const [currentTextIndex, setCurrentTextIndex] = useState(0);
+    const [displayText, setDisplayText] = useState("");
+
+    useEffect(() => {
+        let timeout: NodeJS.Timeout;
+        let currentIndex = 0;
+        let currentChar = 0;
+
+        const typeText = () => {
+            if (currentChar <= headingTexts[currentTextIndex].length) {
+                setDisplayText(headingTexts[currentTextIndex].slice(0, currentChar));
+                currentChar++;
+                timeout = setTimeout(typeText, 50); // Adjust typing speed here
+            } else {
+                // Wait before starting to erase
+                timeout = setTimeout(eraseText, 5000);
+            }
+        };
+
+        const eraseText = () => {
+            if (currentChar > 0) {
+                setDisplayText(headingTexts[currentTextIndex].slice(0, currentChar));
+                currentChar--;
+                timeout = setTimeout(eraseText, 30); // Adjust erasing speed here
+            } else {
+                // Move to next text
+                setCurrentTextIndex((prev) => (prev + 1) % headingTexts.length);
+            }
+        };
+
+        typeText();
+
+        return () => clearTimeout(timeout);
+    }, [currentTextIndex]);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+    useEffect(() => {
+        initializeFromUrl();
+        const params = new URLSearchParams(window.location.search);
+        const emailParam = params.get("email");
+        if (emailParam) {
+            setEmail(emailParam);
+        }
+    }, [initializeFromUrl]);
+    const updateUrlMode = (mode: string, emailParam?: string) => {
+        const url = new URL(window.location.href);
+        url.searchParams.set("mode", mode);
+
+        // Add email if provided
+        if (emailParam) {
+            url.searchParams.set("email", emailParam);
+        } else {
+            url.searchParams.delete("email");
+        }
+
+        // Preserve redirect parameter if it exists
+        const redirectUrl =
+            new URLSearchParams(window.location.search).get("redirect") ||
+            new URLSearchParams(window.location.search).get("returnUrl") ||
+            new URLSearchParams(window.location.search).get("return");
+        if (redirectUrl && !url.searchParams.has("redirect")) {
+            url.searchParams.set("redirect", redirectUrl);
+        }
+
+        window.history.replaceState({}, "", url.toString());
+    };
+
+    const handleSwitchToLogin = () => {
+        setAuthMode("login");
+        updateUrlMode("login");
+    };
+
+    const handleSwitchToRegister = () => {
+        setAuthMode("register");
+        updateUrlMode("register");
+    };
+
+    const handleForgotPassword = () => {
+        setAuthMode("forgot-password");
+        updateUrlMode("forgot-password");
+    };
+
+    const handleResetSuccess = (email: string) => {
+        setResetEmail(email);
+        setAuthMode("reset-success");
+        updateUrlMode("reset-success");
+    };
+
+    const handleVerification = (email: string) => {
+        setEmail(email);
+        setAuthMode("verify-email");
+        updateUrlMode("verify-email", email);
+    };
+
+    const handleRegister = (email: string) => {
+        setEmail(email);
+        setAuthMode("verify-email");
+        updateUrlMode("verify-email", email);
+    };
+
+    const renderAuthContent = () => {
+        switch (authMode) {
+            case "login":
+                return (
+                    <LoginForm
+                        onSwitchMode={handleSwitchToRegister}
+                        onForgotPassword={handleForgotPassword}
+                        onVerify={handleVerification}
+                    />
+                );
+            case "register":
+                return (
+                    <RegisterForm
+                        onSwitchMode={handleSwitchToLogin}
+                        onRegister={handleRegister}
+                    />
+                );
+            case "forgot-password":
+                return (
+                    <ForgotPasswordForm
+                        onSwitchMode={handleSwitchToLogin}
+                        onSuccess={handleResetSuccess}
+                    />
+                );
+            case "reset-success":
+                return (
+                    <ResetPasswordSuccess
+                        onBackToLogin={handleSwitchToLogin}
+                        email={resetEmail}
+                    />
+                );
+            case "verify-email":
+                return (
+                    <VerificationCodeForm
+                        email={email}
+                        onSuccess={() => {
+                            // Handle successful verification
+                        }}
+                        onBackToLogin={handleSwitchToLogin}
+                    />
+                );
+        }
+    };
+
+    return (
+        <div className="max-w-md mx-auto">
+            <div className="flex items-center justify-center gap-2 mb-5 ">
+                <TranxBitLogo
+                    size="medium"
+                    variant={resolvedTheme === "dark" ? "light" : "dark"}
+                />
+            </div>
+
+            {/* Heading - Mobile Only */}
+            <h1 className="text-center text-lg font-semibold mb-6 min-h-[28px] md:hidden">
+                {displayText}
+                <span className="animate-blink">|</span>
+            </h1>
+
+            <div className=" ">
+                <h2 className="text-muted-foreground mb-6 mt-4 text-center ">
+                    {authMode === "login" && "Login to your account"}
+                    {authMode === "register" && "Create new account"}
+                    {authMode === "forgot-password" && "Reset your password"}
+                    {authMode === "reset-success" && "Check your email"}
+                    {authMode === "verify-email" && "Verify your email"}
+                </h2>
+
+                <AnimatePresence mode="wait">{renderAuthContent()}</AnimatePresence>
+            </div>
+        </div>
+    );
+}
+
+export default function AuthClient() {
+    const { resolvedTheme } = useTheme();
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    return (
+        <Suspense
+            fallback={
+                <TranxBitLoader
+                    variant={resolvedTheme === "light" ? "light" : "dark"}
+                    isForm={true}
+                />
+            }
+        >
+            <div className="">
+                <AuthPageInner />
+            </div>
+        </Suspense>
+    );
+}

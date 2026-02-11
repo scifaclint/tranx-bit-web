@@ -26,6 +26,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { extractErrorMessage } from "@/lib/utils";
+import { sendGAEvent } from "@next/third-parties/google";
+
 
 const formVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -404,6 +406,7 @@ export const RegisterForm = ({
         });
 
         if (response && response.data.to === "verify-email") {
+          sendGAEvent({ event: "sign_up", value: "submission_success" });
           onRegister(formData.email);
           setIsLoading(false);
         }

@@ -49,7 +49,7 @@ export function useNotifications(limit = 10) {
             if (!audioRef.current) {
                 audioRef.current = new Audio("/sound/notification.mp3");
             }
-            audioRef.current.play().catch(err => console.log("Audio play blocked by browser:", err));
+            audioRef.current.play().catch(err => console.log("Audio play blocked by browser:",));
 
             // 2. Background Refresh User Data (Silent/No Await)
             refreshUser();

@@ -11,6 +11,7 @@ import { authApi } from "@/lib/api/auth";
 import { useAuthStore } from "@/stores";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { sendGAEvent } from "@next/third-parties/google";
 
 const formVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -83,6 +84,7 @@ export function LoginForm({
           return;
         }
         setAuth(results.data.user, results.data.token);
+        sendGAEvent({ event: "login", value: "success", method: "email_username" });
         toast.success("Login successful");
         router.replace("/dashboard");
         return;

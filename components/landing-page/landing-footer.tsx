@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { Send, ShieldCheck } from "lucide-react";
-import { WhatsAppIcon, TelegramIcon } from "../design/social-icons";
+import { FacebookIcon, DiscordIcon } from "../design/social-icons";
 import TranxBitLogo from "../design/tranx-bit-logo";
 import { useTheme } from "next-themes";
 import { useState, useEffect } from "react";
@@ -30,8 +30,12 @@ const FOOTER_LINKS = {
 };
 
 const SOCIALS = [
-  { icon: WhatsAppIcon, href: "https://wa.me/233534507042", label: "WhatsApp" },
-  { icon: TelegramIcon, href: "https://t.me/tranxbit", label: "Telegram" },
+  {
+    icon: FacebookIcon,
+    href: "https://www.facebook.com/share/18vA9HAiZL/?mibextid=wwXIfr",
+    label: "Facebook",
+  },
+  { icon: DiscordIcon, href: "https://discord.gg/aSE85Z65h", label: "Discord" },
 ];
 
 export function LandingFooter() {
