@@ -15,6 +15,7 @@ import Image from "next/image";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCards } from "@/hooks/useCards";
+import { useCreateBuyOrder } from "@/hooks/useOrders";
 import { BrandList } from "@/components/shared/brand-list";
 import { useIsMobile } from "@/hooks/use-mobile";
 import MobilePicker from "@/components/modals/mobile-picker";
@@ -35,8 +36,9 @@ export default function BuyGiftCardPage() {
   const isMobile = useIsMobile();
   const [mounted, setMounted] = useState(false);
   const { user } = useAuthStore();
+  const { mutateAsync: createBuyOrder } = useCreateBuyOrder();
   const [paymentMethod, setPaymentMethod] = useState<"mobile_money" | "tether">(
-    "mobile_money",
+    "tether",
   );
 
   // Calculation State
@@ -181,7 +183,7 @@ export default function BuyGiftCardPage() {
 
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
-      const response = await ordersApi.createBuyOrder(payload);
+      const response = await createBuyOrder(payload);
 
       if (response.status) {
         toast.success("Order created successfully!");
@@ -319,10 +321,12 @@ export default function BuyGiftCardPage() {
         <div className="flex gap-2 p-1 bg-zinc-100 dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-borderColorPrimary">
           <button
             type="button"
-            onClick={() => setPaymentMethod("mobile_money")}
-            className={`flex-1 px-4 py-2.5 rounded-lg font-medium text-sm transition-all ${paymentMethod === "mobile_money"
-                ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 shadow-sm"
-                : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-50"
+            onClick={() => {
+              toast.info("Almost there! This feature will be available in the next update");
+            }}
+            className={`flex-1 px-4 py-2.5 rounded-lg font-medium text-sm transition-all opacity-50 cursor-not-allowed ${paymentMethod === "mobile_money"
+              ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 shadow-sm"
+              : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-50"
               }`}
           >
             Mobile Money ({localCurrency})
@@ -331,8 +335,8 @@ export default function BuyGiftCardPage() {
             type="button"
             onClick={() => setPaymentMethod("tether")}
             className={`flex-1 px-4 py-2.5 rounded-lg font-medium text-sm transition-all ${paymentMethod === "tether"
-                ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 shadow-sm"
-                : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-50"
+              ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 shadow-sm"
+              : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-50"
               }`}
           >
             Tether (USDT)

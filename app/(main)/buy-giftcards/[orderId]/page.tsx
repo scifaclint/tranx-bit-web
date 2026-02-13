@@ -663,7 +663,7 @@ export default function OrderDetailsPage() {
                                   <Button
                                     onClick={handleClaimPayment}
                                     className="flex-1 bg-orange-600 hover:bg-orange-700 text-white"
-                                    disabled={claimPaymentMutation.isPending}
+                                    disabled={claimPaymentMutation.isPending || receiptFiles.length === 0}
                                   >
                                     {claimPaymentMutation.isPending ? (
                                       <>
