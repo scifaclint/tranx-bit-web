@@ -54,7 +54,7 @@ export function proxy(request: NextRequest) {
         if (isAppSubdomain) {
             // If on app subdomain, redirect to main domain home
             const url = new URL('/home', request.url);
-            url.hostname = hostname.replace('app.', '');
+            url.hostname = 'tranxbit.com'; // Hardcode to main domain for safety
             return NextResponse.redirect(url);
         } else {
             // If on main domain, redirect to /home
@@ -65,14 +65,14 @@ export function proxy(request: NextRequest) {
     // If we're on app subdomain but accessing a public page, redirect to main domain
     if (isAppSubdomain && isPublicPage) {
         const url = new URL(pathname, request.url);
-        url.hostname = hostname.replace('app.', '');
+        url.hostname = 'tranxbit.com'; // Hardcode to main domain for safety
         return NextResponse.redirect(url);
     }
 
-    // If we're on main domain but accessing an app page, redirect to app subdomain
+    // If we're on main domain (or www) but accessing an app page, redirect to app subdomain
     if (!isAppSubdomain && isAppPage) {
         const url = new URL(pathname, request.url);
-        url.hostname = `app.${hostname}`;
+        url.hostname = 'app.tranxbit.com'; // Hardcode to app subdomain for safety
         return NextResponse.redirect(url);
     }
 
