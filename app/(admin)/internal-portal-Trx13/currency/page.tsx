@@ -62,9 +62,10 @@ export default function CurrencyPage() {
     const handleRefresh = async () => {
         try {
             await refetch();
-            toast.success("Rates updated successfully");
+            // toast.success("Rates updated successfully");
         } catch (error) {
-            toast.error("Failed to refresh rates");
+            // toast.error("Failed to refresh rates");
+            return
         }
     };
 

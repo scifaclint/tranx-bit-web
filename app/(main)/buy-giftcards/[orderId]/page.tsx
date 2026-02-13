@@ -6,13 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+
 import {
   Copy,
   Check,
@@ -63,6 +57,8 @@ export default function OrderDetailsPage() {
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [isInitializing, setIsInitializing] = useState(false);
+  const [paymentView, setPaymentView] = useState<'address' | 'qr'>('address');
+  const [qrLoading, setQrLoading] = useState(true);
 
   const order = orderData?.data as Order | undefined;
 
@@ -585,33 +581,81 @@ export default function OrderDetailsPage() {
                           {/* Show USDT payment details */}
                           {getCryptoPaymentMethod() && (
                             <>
-                              <div>
-                                <Label className="text-xs text-gray-600 dark:text-gray-400">
-                                  Wallet Address
-                                </Label>
-                                <div className="flex items-center gap-2 mt-1">
-                                  <code className="flex-1 px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded font-mono text-xs break-all">
-                                    {getCryptoPaymentMethod()?.walletAddress}
-                                  </code>
-                                  <Button
-                                    size="icon"
-                                    variant="outline"
-                                    onClick={() =>
-                                      handleCopy(
-                                        getCryptoPaymentMethod()?.walletAddress ||
-                                        "",
-                                        "wallet",
-                                      )
-                                    }
-                                  >
-                                    {copiedField === "wallet" ? (
-                                      <Check className="w-4 h-4 text-green-600" />
-                                    ) : (
-                                      <Copy className="w-4 h-4" />
-                                    )}
-                                  </Button>
-                                </div>
+                              <div className="flex gap-2 p-1 bg-zinc-100 dark:bg-zinc-800 rounded-lg w-fit">
+                                <button
+                                  type="button"
+                                  onClick={() => setPaymentView("address")}
+                                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${paymentView === "address"
+                                    ? "bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-zinc-100"
+                                    : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                                    }`}
+                                >
+                                  Copy Address
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setPaymentView("qr")}
+                                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${paymentView === "qr"
+                                    ? "bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-zinc-100"
+                                    : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                                    }`}
+                                >
+                                  Scan QR
+                                </button>
                               </div>
+
+                              {paymentView === "address" ? (
+                                <div>
+                                  <Label className="text-xs text-gray-600 dark:text-gray-400">
+                                    Wallet Address
+                                  </Label>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <code className="flex-1 px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded font-mono text-xs break-all">
+                                      {getCryptoPaymentMethod()?.walletAddress}
+                                    </code>
+                                    <Button
+                                      size="icon"
+                                      variant="outline"
+                                      onClick={() =>
+                                        handleCopy(
+                                          getCryptoPaymentMethod()?.walletAddress ||
+                                          "",
+                                          "wallet",
+                                        )
+                                      }
+                                    >
+                                      {copiedField === "wallet" ? (
+                                        <Check className="w-4 h-4 text-green-600" />
+                                      ) : (
+                                        <Copy className="w-4 h-4" />
+                                      )}
+                                    </Button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex flex-col items-center p-4 bg-white dark:bg-white rounded-2xl min-h-[224px] justify-center relative">
+                                  {qrLoading && (
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-white rounded-2xl z-10">
+                                      <Loader className="w-8 h-8 animate-spin text-zinc-400" />
+                                      <p className="text-[10px] mt-2 text-zinc-400">Fetching QR...</p>
+                                    </div>
+                                  )}
+                                  <div className="relative w-48 h-48">
+                                    <Image
+                                      src="https://assets.tranxbit.com/payment-methods/usdt-payment-trx1344.jpeg"
+                                      alt="USDT QR Code"
+                                      fill
+                                      className={`object-contain transition-opacity duration-300 ${qrLoading ? "opacity-0" : "opacity-100"}`}
+                                      onLoad={() => setQrLoading(false)}
+                                    />
+                                  </div>
+                                  {!qrLoading && (
+                                    <p className="text-[10px] mt-2 text-zinc-400 font-medium">
+                                      Scan to pay via USDT (TRC20)
+                                    </p>
+                                  )}
+                                </div>
+                              )}
 
                               <div>
                                 <Label className="text-xs text-gray-600 dark:text-gray-400">

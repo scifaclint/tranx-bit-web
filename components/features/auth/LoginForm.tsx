@@ -13,6 +13,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { sendGAEvent } from "@next/third-parties/google";
 
+import { Turnstile } from "@marsidev/react-turnstile";
+
 const formVariants = {
   hidden: { opacity: 0, y: 20 },
   visible: {
@@ -38,6 +40,7 @@ export function LoginForm({
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   const { setAuth, setUser } = useAuthStore();
   const router = useRouter();
@@ -58,6 +61,11 @@ export function LoginForm({
       return;
     }
 
+    if (!captchaToken) {
+      toast.error("Please complete the security check");
+      return;
+    }
+
     setIsLoading(true);
 
     // Add a 2 second delay to simulate connecting to backend
@@ -68,6 +76,7 @@ export function LoginForm({
         identifier: identifier.trim(),
         identifierType: identifierType,
         password: password,
+        captcha_token: captchaToken,
       });
 
       if (results.status && results.data) {
@@ -93,6 +102,8 @@ export function LoginForm({
       }
     } catch (error: any) {
       setPassword("");
+      // Reset captcha on failure
+      setCaptchaToken(null);
     } finally {
       setIsLoading(false);
     }
@@ -164,12 +175,21 @@ export function LoginForm({
           </Button>
         </div>
 
+        <div className="flex justify-center py-2">
+          <Turnstile
+            siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+            onSuccess={(token) => setCaptchaToken(token)}
+            onExpire={() => setCaptchaToken(null)}
+            onError={() => setCaptchaToken(null)}
+          />
+        </div>
+
         <Button
           variant="secondary"
           type="button"
           onClick={handleSubmit}
           className="w-full bg-black hover:bg-neutral-900 hover:scale-[1.01] active:scale-[0.99] text-white h-12 mt-6 transition-all duration-300"
-          disabled={isLoading}
+          disabled={isLoading || !captchaToken}
         >
           {isLoading ? (
             <>

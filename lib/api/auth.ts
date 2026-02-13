@@ -5,6 +5,7 @@ export interface LoginCredentials {
   identifier: string;
   identifierType: "email" | "username";
   password: string;
+  captcha_token?: string;
 }
 
 export interface RegisterCredentials {
@@ -17,7 +18,8 @@ export interface RegisterCredentials {
   phone?: string;
   country?: string;
   code?: string;
-  referral_username?: string
+  referral_username?: string;
+  captcha_token?: string;
 }
 
 export interface RegisterResponse {

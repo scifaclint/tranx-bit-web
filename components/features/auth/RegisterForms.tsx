@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/select";
 import { extractErrorMessage } from "@/lib/utils";
 import { sendGAEvent } from "@next/third-parties/google";
+import { Turnstile } from "@marsidev/react-turnstile";
 
 
 const formVariants = {
@@ -178,6 +179,7 @@ export const RegisterForm = ({
 }: RegisterFormProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   const { formData, validation, updateFormData } = useFormValidation();
   const [showPasswordHelp, setShowPasswordHelp] = useState(false);
@@ -348,12 +350,11 @@ export const RegisterForm = ({
       basicFieldsValid &&
       allPasswordRequirementsMet &&
       passwordNotForbidden &&
-      (usernameAvailable === true || usernameAvailable === null);
-
-
+      (usernameAvailable === true || usernameAvailable === null) &&
+      !!captchaToken;
 
     return isValid;
-  }, [validation, hasForbiddenPassword, formData.password]);
+  }, [validation, hasForbiddenPassword, formData.password, captchaToken]);
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -403,6 +404,7 @@ export const RegisterForm = ({
           password_confirmation: formData.confirmPassword,
           country: formData.country,
           referral_username: formData.referral_username,
+          captcha_token: captchaToken || undefined,
         });
 
         if (response && response.data.to === "verify-email") {
@@ -443,6 +445,7 @@ export const RegisterForm = ({
                 value={formData.firstName}
                 onChange={(e) => updateFormData("firstName", e.target.value)}
                 required
+                autoComplete="given-name"
                 className="border-borderColorPrimary focus-visible:outline-none h-10"
               />
               {formData.firstName && (
@@ -458,6 +461,7 @@ export const RegisterForm = ({
                 value={formData.lastName}
                 onChange={(e) => updateFormData("lastName", e.target.value)}
                 required
+                autoComplete="family-name"
                 className="border-borderColorPrimary focus-visible:outline-none h-10"
               />
               {formData.lastName && (
@@ -477,6 +481,7 @@ export const RegisterForm = ({
                 onChange={(e) => updateFormData("username", e.target.value)}
                 onBlur={handleUsernameBlur}
                 required
+                autoComplete="username"
                 className="border-borderColorPrimary focus-visible:outline-none h-10 pr-10"
               />
               <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
@@ -551,6 +556,7 @@ export const RegisterForm = ({
               value={formData.email}
               onChange={(e) => updateFormData("email", e.target.value)}
               required
+              autoComplete="email"
               className="border-borderColorPrimary focus-visible:outline-none h-10"
             />
             {formData.email && (
@@ -618,6 +624,7 @@ export const RegisterForm = ({
                   updateFormData("phone", value);
                 }}
                 required
+                autoComplete="tel"
                 className="border-borderColorPrimary focus-visible:outline-none h-10 flex-1"
               />
             </div>
@@ -643,6 +650,7 @@ export const RegisterForm = ({
                   }}
                   onFocus={() => setShowPasswordHelp(true)}
                   required
+                  autoComplete="new-password"
                   className="border-borderColorPrimary focus-visible:outline-none h-10"
                 />
               </PopoverTrigger>
@@ -712,6 +720,7 @@ export const RegisterForm = ({
                 updateFormData("confirmPassword", e.target.value)
               }
               required
+              autoComplete="new-password"
               className="border-borderColorPrimary focus-visible:outline-none h-10"
             />
             {formData.confirmPassword && (
@@ -792,6 +801,15 @@ export const RegisterForm = ({
                 ) : null}
               </motion.div>
             )}
+          </div>
+
+          <div className="flex justify-center py-2">
+            <Turnstile
+              siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+              onSuccess={(token) => setCaptchaToken(token)}
+              onExpire={() => setCaptchaToken(null)}
+              onError={() => setCaptchaToken(null)}
+            />
           </div>
 
           <Button
