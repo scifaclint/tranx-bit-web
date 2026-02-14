@@ -17,7 +17,7 @@ const FOOTER_LINKS = {
   ],
   Company: [
     { name: "About Us", href: "/about" },
-    { name: "Contact Support", href: "mailto:tranxbit94@gmail.com" },
+    { name: "Contact Support", href: "mailto:support@tranxbit.com" },
     // { name: "Careers", href: "/careers" },
     // { name: "Blog", href: "/blog" },
   ],

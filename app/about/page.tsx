@@ -325,10 +325,10 @@ export default function AboutUsPage() {
                       Contact Us
                     </p>
                     <a
-                      href="mailto:tranxbit94@gmail.com"
+                      href="mailto:contact@tranxbit.com"
                       className="text-2xl font-black hover:underline flex items-center gap-2"
                     >
-                      tranxbit94@gmail.com
+                      contact@tranxbit.com
                       <ArrowRight className="w-5 h-5" />
                     </a>
                   </div>

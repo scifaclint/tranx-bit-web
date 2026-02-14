@@ -415,7 +415,7 @@ export default function PrivacyPolicyPage() {
                                 <div className="flex flex-col sm:flex-row gap-8">
                                     <div className="space-y-1">
                                         <p className="text-[10px] uppercase tracking-widest opacity-50 font-bold">Official Email</p>
-                                        <a href="mailto:tranxbit94@gmail.com" className="text-xl font-black hover:underline">tranxbit94@gmail.com</a>
+                                        <a href="mailto:contact@tranxbit.com" className="text-xl font-black hover:underline">contact@tranxbit.com</a>
                                     </div>
                                 </div>
                             </div>

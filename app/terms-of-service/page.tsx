@@ -388,7 +388,7 @@ export default function TermsOfServicePage() {
                                     </div>
                                     <div className="p-4 bg-zinc-50 dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 flex items-center gap-3">
                                         <Mail className="w-5 h-5 text-zinc-400" />
-                                        <span className="text-sm">tranxbit94@gmail.com</span>
+                                        <span className="text-sm">support@tranxbit.com</span>
                                     </div>
                                 </div>
                             </div>
@@ -478,8 +478,8 @@ export default function TermsOfServicePage() {
                             </div>
                             <div className="space-y-4 text-zinc-600 dark:text-zinc-400 leading-relaxed text-lg">
                                 <p>If you have any questions or concerns, please contact us:</p>
-                                <a href="mailto:tranxbit94@gmail.com" className="inline-flex items-center gap-2 text-black dark:text-white font-black text-2xl hover:gap-4 transition-all">
-                                    tranxbit94@gmail.com
+                                <a href="mailto:support@tranxbit.com" className="inline-flex items-center gap-2 text-black dark:text-white font-black text-2xl hover:gap-4 transition-all">
+                                    support@tranxbit.com
                                     <ChevronRight className="w-6 h-6" />
                                 </a>
                             </div>
