@@ -9,6 +9,12 @@ export interface Card {
   sellRate: number;
   buyRate: number | null;
   denominations: number[];
+  rates?: {
+    currency: string;
+    sellRate: number;
+    buyRate: number;
+    _id?: string;
+  }[];
   description?: string;
   imageUrl: string;
   instructions?: string;

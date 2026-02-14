@@ -162,13 +162,14 @@ export default function AdminPaymentMethodModal({
                 toast.success("Platform payment method updated");
             } else {
                 await addPaymentMutation.mutateAsync(payload);
-                toast.success("Platform payment method added");
+                // toast.success("Platform payment method added");
+
             }
             onClose();
         } catch (error: any) {
-            toast.error(
-                error?.response?.data?.message || "Failed to save payment method",
-            );
+            // toast.error(
+            //     error?.response?.data?.message || "Failed to save payment method",
+            // );
         }
     };
 
