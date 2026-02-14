@@ -127,7 +127,11 @@ export default function AddCardsModal({ isOpen, onClose, initialData }: AddCards
                 maxQuantity: initialData.maxQuantity || 100,
                 status: initialData.status === "disabled" ? "inactive" : (initialData.status as any) || "active",
                 instructions: initialData.instructions || "",
-                rates: initialData.rates || []
+                rates: initialData.rates?.map(r => ({
+                    currency: r.currency.toUpperCase(),
+                    buyRate: r.buyRate ?? 0,
+                    sellRate: r.sellRate ?? 0
+                })) || []
             })
             if (initialData.denominations && initialData.denominations.length > 0) {
                 // Handle both old object structure and new number array if necessary during transition

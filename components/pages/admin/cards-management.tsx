@@ -192,6 +192,11 @@ export default function CardsManageMentPage() {
             status: card.status === "active" ? "active" : "disabled",
             instructions: card.instructions,
             denominations: card.denominations,
+            rates: card.rates && Array.isArray(card.rates) ? card.rates.map(r => ({
+                currency: r.currency.toUpperCase(),
+                buyRate: r.buyRate,
+                sellRate: r.sellRate
+            })) : []
         })
         setIsAddModalOpen(true)
     }

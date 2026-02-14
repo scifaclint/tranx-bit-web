@@ -70,6 +70,22 @@ export default function TransactionPage() {
     return currency?.symbol || currencyId.toUpperCase();
   };
 
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      return new Intl.DateTimeFormat('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      }).format(date);
+    } catch (e) {
+      return dateString;
+    }
+  };
+
   // Read filters from URL query parameters on mount
   useEffect(() => {
     const statusParam = searchParams.get("status");
@@ -97,22 +113,22 @@ export default function TransactionPage() {
     value: FilterStatus;
     icon: React.ElementType;
   }[] = [
-    { label: "All Status", value: "all", icon: Filter },
-    { label: "Pending", value: "pending", icon: Clock },
-    { label: "Processing", value: "processing", icon: TrendingUp },
-    { label: "Completed", value: "completed", icon: CheckCircle2 },
-    { label: "Failed", value: "failed", icon: XCircle },
-  ];
+      { label: "All Status", value: "all", icon: Filter },
+      { label: "Pending", value: "pending", icon: Clock },
+      { label: "Processing", value: "processing", icon: TrendingUp },
+      { label: "Completed", value: "completed", icon: CheckCircle2 },
+      { label: "Failed", value: "failed", icon: XCircle },
+    ];
 
   const typeFilters: {
     label: string;
     value: FilterType;
     icon: React.ElementType;
   }[] = [
-    { label: "All Types", value: "all", icon: Filter },
-    { label: "Buy", value: "buy", icon: TrendingUp },
-    { label: "Sell", value: "sell", icon: TrendingDown },
-  ];
+      { label: "All Types", value: "all", icon: Filter },
+      { label: "Buy", value: "buy", icon: TrendingUp },
+      { label: "Sell", value: "sell", icon: TrendingDown },
+    ];
 
   const getStatusLabel = () => {
     return (
@@ -202,11 +218,10 @@ export default function TransactionPage() {
                   <DropdownMenuItem
                     key={filter.value}
                     onClick={() => setStatusFilter(filter.value)}
-                    className={`cursor-pointer flex items-center gap-2 ${
-                      statusFilter === filter.value
+                    className={`cursor-pointer flex items-center gap-2 ${statusFilter === filter.value
                         ? "bg-black text-white dark:bg-white dark:text-black"
                         : ""
-                    }`}
+                      }`}
                   >
                     <Icon className="h-4 w-4" />
                     {filter.label}
@@ -238,11 +253,10 @@ export default function TransactionPage() {
                   <DropdownMenuItem
                     key={filter.value}
                     onClick={() => setTypeFilter(filter.value)}
-                    className={`cursor-pointer flex items-center gap-2 ${
-                      typeFilter === filter.value
+                    className={`cursor-pointer flex items-center gap-2 ${typeFilter === filter.value
                         ? "bg-black text-white dark:bg-white dark:text-black"
                         : ""
-                    }`}
+                      }`}
                   >
                     <Icon className="h-4 w-4" />
                     {filter.label}
@@ -326,16 +340,15 @@ export default function TransactionPage() {
                         </div>
                         <Badge
                           variant="outline"
-                          className={`text-[10px] py-0 h-5 font-semibold ${
-                            transaction.status.toLowerCase() === "completed"
+                          className={`text-[10px] py-0 h-5 font-semibold ${transaction.status.toLowerCase() === "completed"
                               ? "bg-green-500/10 text-green-500 border-green-500/20"
                               : transaction.status.toLowerCase() ===
-                                    "pending" ||
-                                  transaction.status.toLowerCase() ===
-                                    "processing"
+                                "pending" ||
+                                transaction.status.toLowerCase() ===
+                                "processing"
                                 ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
                                 : "bg-red-500/10 text-red-500 border-red-500/20"
-                          }`}
+                            }`}
                         >
                           {transaction.status.charAt(0).toUpperCase() +
                             transaction.status.slice(1).toLowerCase()}
@@ -352,7 +365,7 @@ export default function TransactionPage() {
                               {transaction.type.toUpperCase()}
                             </Badge>
                             <span className="text-[10px] text-muted-foreground">
-                              {transaction.date}
+                              {formatDate(transaction.date)}
                             </span>
                           </div>
                           <div className="text-lg font-bold tabular-nums">
@@ -411,28 +424,27 @@ export default function TransactionPage() {
                     </div>
 
                     <div className="text-sm text-muted-foreground">
-                      {transaction.date}
+                      {formatDate(transaction.date)}
                     </div>
 
                     <div>
                       <Badge
                         variant="outline"
-                        className={`w-fit text-xs font-medium flex items-center gap-1.5 ${
-                          transaction.status.toLowerCase() === "completed"
+                        className={`w-fit text-xs font-medium flex items-center gap-1.5 ${transaction.status.toLowerCase() === "completed"
                             ? "border-green-300 bg-green-50 text-green-700 dark:border-green-700 dark:bg-green-950/30 dark:text-green-400"
                             : transaction.status.toLowerCase() === "pending" ||
-                                transaction.status.toLowerCase() ===
-                                  "processing"
+                              transaction.status.toLowerCase() ===
+                              "processing"
                               ? "border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-400"
                               : "border-red-300 bg-red-50 text-red-700 dark:border-red-700 dark:bg-red-950/30 dark:text-red-400"
-                        }`}
+                          }`}
                       >
                         {transaction.status.toLowerCase() === "completed" && (
                           <CheckCircle2 className="h-3 w-3" />
                         )}
                         {(transaction.status.toLowerCase() === "pending" ||
                           transaction.status.toLowerCase() ===
-                            "processing") && <Clock className="h-3 w-3" />}
+                          "processing") && <Clock className="h-3 w-3" />}
                         {transaction.status.toLowerCase() === "failed" && (
                           <XCircle className="h-3 w-3" />
                         )}
