@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { motion } from "framer-motion";
 // import { formVariants } from "@/lib/utils";
-import { Loader, Check, X } from "lucide-react";
+import { Loader, Check, X, Eye, EyeOff } from "lucide-react";
 import { authApi } from "@/lib/api/auth";
 // import { useAuthStore } from "@/stores";
 import Image from "next/image";
@@ -330,6 +330,23 @@ export const RegisterForm = ({
   const hasForbiddenPassword =
     isPasswordSameAsEmail || isPasswordSameAsUsername;
 
+  // Calculate the single "Next Requirement" for mobile users
+  // Re-ordered: Complexity first, Length last
+  const nextPasswordRequirement = useMemo(() => {
+    const p = validation.password;
+    if (!formData.password) return null;
+    if (!p.hasUpperCase) return "At least one uppercase letter required";
+    if (!p.hasSpecialChar) return "At least one special character required";
+    if (!p.hasNumber) return "At least one number required";
+    if (!p.hasLowerCase) return "At least one lowercase letter required";
+    if (!p.hasMinLength) return "Minimum 8 characters required";
+    return null; // All met
+  }, [validation.password, formData.password]);
+
+  const isPasswordValid = useMemo(() => {
+    return Object.values(validation.password).slice(0, 5).every(Boolean);
+  }, [validation.password]);
+
   // Compute if form is valid for submission
   const isFormValid = useMemo(() => {
     const allPasswordRequirementsMet = Object.values(validation.password).every(
@@ -360,39 +377,33 @@ export const RegisterForm = ({
     async (e: React.FormEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      // console.log(formData);
-      setIsLoading(true);
-
-      // Add a 2 second delay to simulate connecting to backend
-      await new Promise((resolve) => setTimeout(resolve, 2000));
 
       try {
-        if (!validation.username) {
-          throw new Error("Username must be at least 3 characters");
+        // Validation Checks
+        if (!validation.firstName) throw new Error("First name must be at least 2 characters");
+        if (!validation.lastName) throw new Error("Last name must be at least 2 characters");
+        if (!validation.username) throw new Error("Username is invalid or too short");
+        if (usernameAvailable === false) throw new Error("This username is already taken");
+
+        if (!validation.email) throw new Error("Please enter a valid email address");
+        if (!validation.phone) throw new Error("Please enter a valid phone number");
+
+        // Password Requirements
+        const p = validation.password;
+        if (!p.hasMinLength) throw new Error("Password must be at least 8 characters");
+        if (!p.hasUpperCase) throw new Error("Password must have an uppercase letter");
+        if (!p.hasSpecialChar) throw new Error("Password must have a special character");
+        if (!p.hasNumber) throw new Error("Password must have a number");
+        if (!p.hasLowerCase) throw new Error("Password must have a lowercase letter");
+        if (!p.passwordsMatch) throw new Error("Passwords do not match");
+
+        if (hasForbiddenPassword) {
+          throw new Error(isPasswordSameAsEmail ? "Password cannot be your email" : "Password cannot be your username");
         }
 
-        if (!validation.email) {
-          throw new Error("Please enter a valid email address");
-        }
+        if (!captchaToken) throw new Error("Please complete the security check (CAPTCHA)");
 
-        if (!validation.phone) {
-          throw new Error("Please enter a valid phone number");
-        }
-
-        if (!Object.values(validation.password).every(Boolean)) {
-          throw new Error("Please ensure your password meets all requirements");
-        }
-
-        if (isPasswordSameAsEmail) {
-          throw new Error("Password cannot be the same as your email");
-        }
-
-        if (isPasswordSameAsUsername) {
-          throw new Error("Password cannot be your username");
-        }
-
-        // Registration logic here - will be implemented when backend is ready
-        // For now, simulate successful registration
+        setIsLoading(true);
 
         const response = await authApi.register({
           firstName: formData.firstName,
@@ -409,19 +420,23 @@ export const RegisterForm = ({
 
         if (response && response.data.to === "verify-email") {
           sendGAEvent({ event: "sign_up", value: "submission_success" });
+          toast.success("Account created successfully!");
           onRegister(formData.email);
-          setIsLoading(false);
         }
       } catch (error: any) {
         setIsLoading(false);
+        const message = error instanceof Error ? error.message : extractErrorMessage(error);
+        toast.error(message || "Registration failed");
       }
     },
     [
       formData,
       validation,
+      hasForbiddenPassword,
       isPasswordSameAsEmail,
-      isPasswordSameAsUsername,
       onRegister,
+      usernameAvailable,
+      captchaToken
     ],
   );
 
@@ -637,73 +652,119 @@ export const RegisterForm = ({
           </div>
 
           <div className="space-y-2">
-            <Popover open={showPasswordHelp} onOpenChange={setShowPasswordHelp}>
-              <PopoverTrigger asChild>
-                <Input
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Create password"
-                  value={formData.password}
-                  onChange={(e) => {
-                    updateFormData("password", e.target.value);
-                    if (!showPasswordHelp && e.target.value)
-                      setShowPasswordHelp(true);
-                  }}
-                  onFocus={() => setShowPasswordHelp(true)}
-                  required
-                  autoComplete="new-password"
-                  className="border-borderColorPrimary focus-visible:outline-none h-10"
-                />
-              </PopoverTrigger>
-              <PopoverContent
-                side="top"
-                align="start"
-                className="w-[340px] p-4 "
-                onOpenAutoFocus={(e) => e.preventDefault()}
-                onCloseAutoFocus={(e) => e.preventDefault()}
-              >
-                <div className="space-y-3">
-                  <div className="text-sm font-medium">
-                    Strength: {passwordStrength}%
+            {/* Desktop Popover */}
+            <div className="hidden md:block">
+              <Popover open={showPasswordHelp} onOpenChange={setShowPasswordHelp}>
+                <PopoverTrigger asChild>
+                  <div className="relative">
+                    <Input
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Create password"
+                      value={formData.password}
+                      onChange={(e) => {
+                        updateFormData("password", e.target.value);
+                        if (!showPasswordHelp && e.target.value)
+                          setShowPasswordHelp(true);
+                      }}
+                      onFocus={() => setShowPasswordHelp(true)}
+                      required
+                      autoComplete="new-password"
+                      className={`border-borderColorPrimary focus-visible:outline-none h-10 pr-10 ${formData.password && !isPasswordValid ? "border-red-500 focus-visible:ring-red-500" :
+                        formData.password && isPasswordValid ? "border-green-500 focus-visible:ring-green-500" : ""
+                        }`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      title={showPassword ? "Hide password" : "Show password"}
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
                   </div>
-                  <Progress
-                    value={passwordStrength}
-                    className="h-2"
-                    indicatorClassName={passwordBarColor}
-                  />
-                  <div className="space-y-1">
+                </PopoverTrigger>
+                <PopoverContent
+                  side="top"
+                  align="start"
+                  className="w-[340px] p-4 "
+                  onOpenAutoFocus={(e) => e.preventDefault()}
+                  onCloseAutoFocus={(e) => e.preventDefault()}
+                >
+                  <div className="space-y-3">
                     <div className="text-sm font-medium">
-                      Password Requirements:
+                      Strength: {passwordStrength}%
                     </div>
-                    <PasswordValidationItem
-                      isValid={validation.password.hasMinLength}
-                      text="at least 8 characters"
+                    <Progress
+                      value={passwordStrength}
+                      className="h-2"
+                      indicatorClassName={passwordBarColor}
                     />
-                    <PasswordValidationItem
-                      isValid={validation.password.hasNumber}
-                      text="at least 1 number"
-                    />
-                    <PasswordValidationItem
-                      isValid={validation.password.hasUpperCase}
-                      text="at least 1 uppercase letter"
-                    />
-                    <PasswordValidationItem
-                      isValid={validation.password.hasLowerCase}
-                      text="at least 1 lowercase letter"
-                    />
-                    <PasswordValidationItem
-                      isValid={validation.password.hasSpecialChar}
-                      text="at least 1 special character"
-                    />
+                    <div className="space-y-1">
+                      <div className="text-sm font-medium">
+                        Password Requirements:
+                      </div>
+                      <PasswordValidationItem
+                        isValid={validation.password.hasMinLength}
+                        text="at least 8 characters"
+                      />
+                      <PasswordValidationItem
+                        isValid={validation.password.hasNumber}
+                        text="at least 1 number"
+                      />
+                      <PasswordValidationItem
+                        isValid={validation.password.hasUpperCase}
+                        text="at least 1 uppercase letter"
+                      />
+                      <PasswordValidationItem
+                        isValid={validation.password.hasLowerCase}
+                        text="at least 1 lowercase letter"
+                      />
+                      <PasswordValidationItem
+                        isValid={validation.password.hasSpecialChar}
+                        text="at least 1 special character"
+                      />
+                    </div>
                   </div>
-                  <p className="text-xs text-foreground">
-                    Avoid passwords you use on other sites or that are easy to
-                    guess.
-                  </p>
-                </div>
-              </PopoverContent>
-            </Popover>
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {/* Mobile View - No Popover, Single Hint */}
+            <div className="md:hidden relative">
+              <Input
+                type={showPassword ? "text" : "password"}
+                placeholder="Create password"
+                value={formData.password}
+                onChange={(e) => updateFormData("password", e.target.value)}
+                required
+                autoComplete="new-password"
+                className={`border-borderColorPrimary focus-visible:outline-none h-10 pr-10 ${formData.password && !isPasswordValid ? "border-red-500 focus-visible:ring-red-500" :
+                  formData.password && isPasswordValid ? "border-green-500 focus-visible:ring-green-500" : ""
+                  }`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                title={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+
+            {/* Mobile-only Priority Hint */}
+            {nextPasswordRequirement && (
+              <motion.p
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="md:hidden text-[10px] font-medium text-red-500 px-1"
+              >
+                * {nextPasswordRequirement}
+              </motion.p>
+            )}
+
             {hasForbiddenPassword && (
-              <div className="text-xs text-red-500">
+              <div className="text-xs text-red-500 px-1">
                 {isPasswordSameAsEmail
                   ? "Password cannot be the same as your email."
                   : "Password cannot be your username."}
@@ -712,43 +773,42 @@ export const RegisterForm = ({
           </div>
 
           <div className="space-y-2">
-            <Input
-              type={showPassword ? "text" : "password"}
-              placeholder="Confirm password"
-              value={formData.confirmPassword}
-              onChange={(e) =>
-                updateFormData("confirmPassword", e.target.value)
-              }
-              required
-              autoComplete="new-password"
-              className="border-borderColorPrimary focus-visible:outline-none h-10"
-            />
-            {formData.confirmPassword && (
-              <ValidationItem
-                isValid={validation.password.passwordsMatch}
-                text="Passwords match"
+            <div className="relative">
+              <Input
+                type={showPassword ? "text" : "password"}
+                placeholder="Confirm password"
+                value={formData.confirmPassword}
+                onChange={(e) =>
+                  updateFormData("confirmPassword", e.target.value)
+                }
+                required
+                autoComplete="new-password"
+                className={`border-borderColorPrimary focus-visible:outline-none h-10 pr-10 ${formData.confirmPassword && (!validation.password.passwordsMatch || !isPasswordValid)
+                  ? "border-red-500 focus-visible:ring-red-500"
+                  : formData.confirmPassword && validation.password.passwordsMatch && isPasswordValid
+                    ? "border-green-500 focus-visible:ring-green-500"
+                    : ""
+                  }`}
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground mr-1"
+                title={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+            {formData.confirmPassword && (
+              <div className="px-1">
+                <ValidationItem
+                  isValid={validation.password.passwordsMatch && isPasswordValid}
+                  text={validation.password.passwordsMatch && isPasswordValid ? "Passwords match & valid" : "Passwords do not match or requirements not met"}
+                />
+              </div>
             )}
           </div>
 
-          <div className="flex justify-start pt-1 pb-2">
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="show-password-register"
-                checked={showPassword}
-                onCheckedChange={(checked) =>
-                  setShowPassword(checked as boolean)
-                }
-                className="border-borderColorPrimary focus-visible:outline-none"
-              />
-              <label
-                htmlFor="show-password-register"
-                className="text-sm text-muted-foreground cursor-pointer"
-              >
-                Show password
-              </label>
-            </div>
-          </div>
 
           <div className="space-y-1">
             <div className="relative">
@@ -815,7 +875,7 @@ export const RegisterForm = ({
           <Button
             variant="secondary"
             type="submit"
-            disabled={isLoading || !isFormValid}
+            disabled={isLoading}
             className="w-full bg-black hover:bg-gray-900 text-white h-10 mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? (
