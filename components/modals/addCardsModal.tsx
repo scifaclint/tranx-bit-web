@@ -200,37 +200,32 @@ export default function AddCardsModal({ isOpen, onClose, initialData }: AddCards
             data.append('image', selectedFile)
         }
 
-        if (initialData?.id) {
-            setPendingFormData(data)
-            setIsPinModalOpen(true)
-            return
-        }
-
-        try {
-            await addCardMutation.mutateAsync(data)
-            toast.success("Card added successfully")
-            onClose()
-        } catch (error) {
-            toast.error("Failed to save card")
-        }
+        setPendingFormData(data)
+        setIsPinModalOpen(true)
     }
 
     const handleConfirmUpdate = async (pin: string) => {
-        if (!pendingFormData || !initialData?.id) return
+        if (!pendingFormData) return
 
-        pendingFormData.append('adminPin', pin)
+        pendingFormData.set('adminPin', pin)
 
         try {
-            await updateCardMutation.mutateAsync({
-                cardId: initialData.id,
-                payload: pendingFormData
-            })
-            toast.success("Card updated successfully")
+            if (isEditing && initialData?.id) {
+                await updateCardMutation.mutateAsync({
+                    cardId: initialData.id,
+                    payload: pendingFormData
+                })
+                toast.success("Card updated successfully")
+            } else {
+                await addCardMutation.mutateAsync(pendingFormData)
+                toast.success("Card added successfully")
+            }
             setIsPinModalOpen(false)
             setPendingFormData(null)
             onClose()
         } catch (error) {
-            toast.error("Failed to update card")
+            // toast.error("Failed to update/save card")
+            return
         }
     }
 

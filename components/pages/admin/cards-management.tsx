@@ -212,7 +212,8 @@ export default function CardsManageMentPage() {
             await deleteCardMutation.mutateAsync(cardIdToDelete)
             toast.success("Card deleted successfully")
         } catch (error) {
-            toast.error("Failed to delete card")
+            // toast.error("Failed to delete card")
+            return
         } finally {
             setIsDeleteDialogOpen(false)
             setCardIdToDelete(null)
@@ -241,7 +242,8 @@ export default function CardsManageMentPage() {
             setIsPinModalOpen(false)
             setPendingToggleData(null)
         } catch (error) {
-            toast.error("Failed to update card status")
+            // toast.error("Failed to update card status")
+            return
         }
     }
 
