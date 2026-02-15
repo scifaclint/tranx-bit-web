@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Wallet, ListChecks, ArrowRight, Plus, Copy, Check, ChevronDown } from "lucide-react";
+import { Wallet, ListChecks, ArrowRight, Plus, Copy, Check, ChevronDown, Info, Gift } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import "flag-icons/css/flag-icons.min.css";
 import { Separator } from "@/components/ui/separator";
@@ -32,6 +32,15 @@ import {
 } from "@/components/ui/tooltip";
 import PinSetupDialog from "@/components/modals/pin-set-up";
 import WithdrawalModal from "@/components/modals/withdrawal";
+import {
+    Drawer,
+    DrawerClose,
+    DrawerContent,
+    DrawerDescription,
+    DrawerFooter,
+    DrawerHeader,
+    DrawerTitle,
+} from "@/components/ui/drawer";
 
 export default function DashboardWidgets() {
     const router = useRouter();
@@ -44,6 +53,7 @@ export default function DashboardWidgets() {
     // Withdrawal Modal State
     const [showWithdrawalModal, setShowWithdrawalModal] = useState(false);
     const [withdrawalSource, setWithdrawalSource] = useState<'main' | 'referral'>('main');
+    const [showReferralInfo, setShowReferralInfo] = useState(false);
 
     const ads = [
         { src: "/ads/amazon-ads.svg", alt: "Amazon Gift Cards" },
@@ -183,14 +193,41 @@ export default function DashboardWidgets() {
 
                                 {user && (
                                     <div className="mt-3 flex items-center gap-2">
-                                        <div className="px-2 py-0.5 rounded-md bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-white/10">
-                                            <span className="text-[12px] font-bold text-zinc-900 dark:text-zinc-100">
-                                                {currency.symbol}{parseFloat(user.referral_balance || "0").toFixed(2)}
-                                            </span>
-                                        </div>
-                                        <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
-                                            Referral Bonus
-                                        </span>
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <button
+                                                        onClick={() => {
+                                                            if (window.innerWidth < 640) {
+                                                                setShowReferralInfo(true);
+                                                            }
+                                                        }}
+                                                        className="flex items-center gap-1.5 group/info"
+                                                    >
+                                                        <div className="px-2 py-0.5 rounded-md bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-white/10 group-hover/info:border-zinc-400 dark:group-hover/info:border-zinc-600 transition-colors">
+                                                            <span className="text-[12px] font-bold text-zinc-900 dark:text-zinc-100">
+                                                                {currency.symbol}{parseFloat(user.referral_balance || "0").toFixed(2)}
+                                                            </span>
+                                                        </div>
+                                                        <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 group-hover/info:text-zinc-600 dark:group-hover/info:text-zinc-300 transition-colors">
+                                                            Referral Bonus
+                                                        </span>
+                                                        <Info className="w-3 h-3 text-zinc-400 group-hover/info:text-zinc-600 dark:group-hover/info:text-zinc-300 transition-colors" />
+                                                    </button>
+                                                </TooltipTrigger>
+                                                <TooltipContent side="bottom" align="start" className="max-w-[280px] p-3 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 shadow-xl hidden sm:block">
+                                                    <div className="space-y-2">
+                                                        <p className="text-[13px] font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                                                            <Gift className="w-4 h-4 text-blue-500" />
+                                                            Refer & Earn!
+                                                        </p>
+                                                        <p className="text-[12px] leading-relaxed text-zinc-500 dark:text-zinc-400">
+                                                            Get a <span className="font-bold text-zinc-900 dark:text-zinc-100">10% bonus</span> on the face value of every gift card your friends trade. For every $100 they trade, you earn <span className="font-bold text-zinc-900 dark:text-zinc-100">10 GH₵</span> (or Naira equivalent) instantly.
+                                                        </p>
+                                                    </div>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
                                     </div>
                                 )}
 
@@ -385,6 +422,44 @@ export default function DashboardWidgets() {
                 currencySymbol={currency.symbol}
                 onSuccess={handleWithdrawalSuccess}
             />
+
+            {/* Referral Info Drawer for Mobile */}
+            <Drawer open={showReferralInfo} onOpenChange={setShowReferralInfo}>
+                <DrawerContent className="px-4 pb-8">
+                    <DrawerHeader>
+                        <div className="mx-auto bg-blue-50 dark:bg-blue-900/20 p-3 rounded-2xl mb-2">
+                            <Gift className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <DrawerTitle className="text-2xl font-bold text-center">Refer & Earn!</DrawerTitle>
+                        <DrawerDescription className="text-center text-zinc-500 dark:text-zinc-400 text-base mt-2">
+                            Get a <span className="font-bold text-zinc-900 dark:text-zinc-100">10% bonus</span> on the face value of every gift card your friends trade.
+                        </DrawerDescription>
+                    </DrawerHeader>
+
+                    <div className="bg-zinc-50 dark:bg-white/5 rounded-2xl p-5 my-4 border border-zinc-100 dark:border-white/10">
+                        <p className="text-zinc-600 dark:text-zinc-400 text-sm leading-relaxed text-center">
+                            For every <span className="font-bold text-zinc-900 dark:text-zinc-100">$100</span> they trade, you earn <span className="font-bold text-zinc-900 dark:text-zinc-100">10 GH₵</span> (or the Naira equivalent) instantly upon approval!
+                        </p>
+                    </div>
+
+                    <DrawerFooter className="p-0 space-y-3">
+                        <Button
+                            className="w-full h-12 rounded-xl bg-black dark:bg-white text-white dark:text-black font-bold"
+                            onClick={() => {
+                                handleCopyReferral();
+                                setShowReferralInfo(false);
+                            }}
+                        >
+                            Copy My Referral Link
+                        </Button>
+                        <DrawerClose asChild>
+                            <Button variant="ghost" className="w-full h-12 rounded-xl text-zinc-500">
+                                Maybe later
+                            </Button>
+                        </DrawerClose>
+                    </DrawerFooter>
+                </DrawerContent>
+            </Drawer>
         </div>
     );
 }
