@@ -89,7 +89,7 @@ export default function UserHeader({ onOpenMobileMenu }: UserHeaderProps) {
                   size="sm"
                   className="rounded-xl hidden sm:flex"
                   onClick={() => {
-                    window.open("/internal-portal-Trx13/cards", "_blank");
+                    window.open("/internal-portal-Trx13/dashboard", "_blank");
                   }}
                 >
                   Admin Portal

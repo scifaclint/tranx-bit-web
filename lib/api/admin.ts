@@ -415,6 +415,70 @@ export interface UpdateSystemSettingsPayload extends Partial<SystemSettings> {
   adminPin: string;
 }
 
+// ============= ANALYTICS TYPES =============
+
+export interface DashboardAnalyticsResponse {
+  status: boolean;
+  message: string;
+  data: {
+    kpi: {
+      users: {
+        total: number;
+        newToday: number;
+      };
+      orders: {
+        total: number;
+        pending: number;
+        buyTotal: number;
+        sellTotal: number;
+      };
+      revenue: {
+        sellGHS: number;
+        buyGHS: number;
+      };
+      withdrawals: {
+        pendingCount: number;
+        pendingTotalGHS: number;
+      };
+    };
+    charts: {
+      userSignupTrend: Array<{
+        date: string;
+        count: number;
+      }>;
+      ordersTrend: Array<{
+        date: string;
+        buyCount: number;
+        sellCount: number;
+        totalCount: number;
+      }>;
+      revenueTrend: Array<{
+        date: string;
+        sellGHS: number;
+        buyGHS: number;
+      }>;
+      transactionBreakdown: Array<{
+        type: string;
+        count: number;
+        totalGHS: number;
+      }>;
+      topCards: Array<{
+        cardBrand: string;
+        cardName: string;
+        orderCount: number;
+        totalValueGHS: number;
+        buyCount: number;
+        sellCount: number;
+      }>;
+    };
+    meta: {
+      rangeStart: string;
+      rangeEnd: string;
+      generatedAt: string;
+    };
+  };
+}
+
 // ============= API METHODS =============
 
 export const adminApi = {
@@ -569,6 +633,11 @@ export const adminApi = {
 
   deletePlatformPayment: async (id: string): Promise<{ status: boolean; message: string }> => {
     const response = await api.delete(`/admin/payments/platform/${id}`);
+    return response.data;
+  },
+
+  getDashboardAnalytics: async (): Promise<DashboardAnalyticsResponse> => {
+    const response = await api.get("/admin/analytics/dashboard");
     return response.data;
   },
 };

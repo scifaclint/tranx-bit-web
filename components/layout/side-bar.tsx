@@ -94,12 +94,12 @@ const Sidebar = ({
 
   // Admin navigation items
   const adminNavItems = [
-    // {
-    //   id: "dashboard",
-    //   label: "Dashboard",
-    //   icon: LayoutDashboard,
-    //   href: `${AdminBaseRoute}/dashboard`,
-    // },
+    {
+      id: "dashboard",
+      label: "Dashboard",
+      icon: LayoutDashboard,
+      href: `${AdminBaseRoute}/dashboard`,
+    },
     {
       id: "cards",
       label: "Cards",
@@ -155,9 +155,9 @@ const Sidebar = ({
     // Use startsWith for buy and sell routes to keep them active on sub-routes
     const isActive =
       item.href === "/buy-giftcards" ||
-      item.href === "/sell-giftcards" ||
-      item.href === "/orders" ||
-      item.href.includes(`${AdminBaseRoute}/`)
+        item.href === "/sell-giftcards" ||
+        item.href === "/orders" ||
+        item.href.includes(`${AdminBaseRoute}/`)
         ? pathname.startsWith(item.href)
         : pathname === item.href;
 
@@ -170,19 +170,18 @@ const Sidebar = ({
         onClick={
           isLogout
             ? (e) => {
-                e.preventDefault();
-                setShowLogoutModal(true);
-              }
+              e.preventDefault();
+              setShowLogoutModal(true);
+            }
             : undefined
         }
         className={`
           w-full flex items-center gap-3 justify-start h-12 rounded-lg transition-all duration-300
-          ${
-            isActive
-              ? // Active state with fafafa background and gray text
-                "bg-primary/10 text-primary"
-              : // Inactive state with hover
-                "hover:bg-muted"
+          ${isActive
+            ? // Active state with fafafa background and gray text
+            "bg-primary/10 text-primary"
+            : // Inactive state with hover
+            "hover:bg-muted"
           }
           ${isCollapsed ? "justify-center px-0" : "px-4"}
         `}
@@ -225,9 +224,8 @@ const Sidebar = ({
       <>
         {/* Logo Area */}
         <div
-          className={`p-6 bg-transparent border-b border-borderColorPrimary ${
-            isCollapsed ? "px-4" : ""
-          }`}
+          className={`p-6 bg-transparent border-b border-borderColorPrimary ${isCollapsed ? "px-4" : ""
+            }`}
         >
           {/* <TranxBitLogo size="medium" variant={logoVariant} /> */}
           {isCollapsed ? (

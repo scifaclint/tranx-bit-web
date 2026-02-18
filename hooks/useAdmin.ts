@@ -139,6 +139,14 @@ export const useAdminPlatformPayments = () => {
     });
 };
 
+export const useAdminAnalytics = () => {
+    return useQuery({
+        queryKey: queryKeys.admin.analytics.dashboard,
+        queryFn: () => adminApi.getDashboardAnalytics(),
+        staleTime: 30 * 60 * 1000, // 30 minutes
+    });
+};
+
 // ============= MUTATIONS =============
 
 export const useApproveOrder = () => {

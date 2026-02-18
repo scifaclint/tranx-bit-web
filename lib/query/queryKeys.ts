@@ -47,6 +47,9 @@ export const queryKeys = {
       all: ["admin", "payments"] as const,
       platform: ["admin", "payments", "platform"] as const,
     },
+    analytics: {
+      dashboard: ["admin", "analytics", "dashboard"] as const,
+    },
   },
   payments: {
     all: ["payments"] as const,
