@@ -1,7 +1,7 @@
 import { toast } from "sonner";
 
-export const validateImageSizeAndType = (file: File): boolean => {
-    const MAX_SIZE = 3 * 1024 * 1024; // 3MB
+export const validateImageSizeAndType = (file: File, maxMB: number = 3): boolean => {
+    const MAX_SIZE = maxMB * 1024 * 1024;
 
     if (!file.type.startsWith("image/")) {
         toast.error("Invalid file type", {
@@ -11,8 +11,8 @@ export const validateImageSizeAndType = (file: File): boolean => {
     }
 
     if (file.size > MAX_SIZE) {
-        toast.error("Image too large", {
-            description: "Please select an image smaller than 3MB",
+        toast.error(`Image too large`, {
+            description: `Please select an image smaller than ${maxMB}MB`,
         });
         return false;
     }

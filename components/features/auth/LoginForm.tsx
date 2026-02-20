@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { extractErrorMessage } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -41,6 +41,7 @@ export function LoginForm({
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const turnstileRef = useRef<any>(null);
 
   const { setAuth, setUser } = useAuthStore();
   const router = useRouter();
@@ -104,6 +105,9 @@ export function LoginForm({
       setPassword("");
       // Reset captcha on failure
       setCaptchaToken(null);
+      turnstileRef.current?.reset();
+      const message = extractErrorMessage(error);
+      toast.error(message || "Login failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -177,6 +181,7 @@ export function LoginForm({
 
         <div className="flex justify-center py-2">
           <Turnstile
+            ref={turnstileRef}
             siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
             onSuccess={(token) => setCaptchaToken(token)}
             onExpire={() => setCaptchaToken(null)}

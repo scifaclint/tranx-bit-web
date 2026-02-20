@@ -60,6 +60,7 @@ import { useAuthStore } from "@/stores";
 import { useUser } from "@/components/providers/userProvider";
 import MobilePicker from "@/components/modals/mobile-picker";
 import { BrandList } from "@/components/shared/brand-list";
+import { validateImageSizeAndType } from "@/lib/upload-utils";
 
 // CURRENCIES array removed - now using useCurrencies() hook
 
@@ -99,7 +100,8 @@ function SellGiftCardsContent() {
   // Form State
   const [selectedBrand, setSelectedBrand] = useState("");
   const [amount, setAmount] = useState("");
-  const [giftCardCode, setGiftCardCode] = useState("");
+  const [giftCardCodes, setGiftCardCodes] = useState<string[]>([]);
+  const [currentCode, setCurrentCode] = useState("");
   const [comment, setComment] = useState("");
   const [cardImages, setCardImages] = useState<File[]>([]);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("");
@@ -217,8 +219,16 @@ function SellGiftCardsContent() {
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
     const files = e.target.files;
-    if (files && files[0] && cardImages.length < 1) {
-      setCardImages([files[0]]);
+    if (files) {
+      const newFiles = Array.from(files).filter(file => validateImageSizeAndType(file, 10));
+      setCardImages(prev => {
+        const combined = [...prev, ...newFiles];
+        if (combined.length > 4) {
+          toast.error("Maximum 4 images allowed");
+          return combined.slice(0, 4);
+        }
+        return combined;
+      });
     }
     // Reset input so the same file can be uploaded again if removed
     e.target.value = "";
@@ -226,6 +236,17 @@ function SellGiftCardsContent() {
 
   const removeImage = (index: number) => {
     setCardImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const addGiftCardCode = () => {
+    if (currentCode.trim()) {
+      setGiftCardCodes(prev => [...prev, currentCode.trim()]);
+      setCurrentCode("");
+    }
+  };
+
+  const removeGiftCardCode = (index: number) => {
+    setGiftCardCodes(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async () => {
@@ -240,8 +261,8 @@ function SellGiftCardsContent() {
       return;
     }
 
-    if (cardType === "ecodes" && !giftCardCode) {
-      toast.error("Please enter your gift card code");
+    if (cardType === "ecodes" && giftCardCodes.length === 0 && !currentCode) {
+      toast.error("Please enter at least one gift card code");
       return;
     }
 
@@ -267,12 +288,18 @@ function SellGiftCardsContent() {
       // Add 2-second delay for better UX
       await new Promise(resolve => setTimeout(resolve, 2000));
 
+      // Finalize codes before submitting
+      const finalCodes = [...giftCardCodes];
+      if (currentCode.trim()) {
+        finalCodes.push(currentCode.trim());
+      }
+
       const payload = {
         cardId: selectedBrand,
         cardValue: parseFloat(amount),
         paymentMethodId: selectedPaymentMethod,
         card_currency: cardCurrency.toUpperCase(),
-        giftCardCodes: cardType === "ecodes" ? giftCardCode : undefined,
+        giftCardCodes: cardType === "ecodes" ? finalCodes : undefined,
         payoutCurrency,
         expectedPayout: calculationData?.payoutAmount,
         calculatedAt: calculationData?.calculatedAt,
@@ -825,29 +852,74 @@ function SellGiftCardsContent() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label>Gift Card Code</Label>
-                <Input
-                  placeholder="e.g. ABCD EFGH IJKL"
-                  value={giftCardCode}
-                  onChange={(e) => {
-                    let val = e.target.value.toUpperCase();
-                    // Allow letters, numbers, dashes and spaces (temporary for formatting)
-                    // But we strip multiple spaces or weird characters
-                    const raw = val.replace(/[^A-Z0-9-\s]/g, "").replace(/\s+/g, " "); // Allow spaces, then collapse multiple spaces
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label>Gift Card Codes</Label>
+                  <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider">
+                    {giftCardCodes.length} {giftCardCodes.length === 1 ? "Code" : "Codes"} Added
+                  </span>
+                </div>
 
-                    if (raw.includes("-")) {
-                      // If they explicitly use dashes, keep it raw but uppercase
-                      setGiftCardCode(raw);
-                    } else {
-                      // If just alphanumeric, auto-insert spaces every 4 characters
-                      const alphanumericOnly = raw.replace(/\s/g, ""); // Remove spaces for formatting
-                      const formatted = alphanumericOnly.match(/.{1,4}/g)?.join(" ") || alphanumericOnly;
-                      setGiftCardCode(formatted);
-                    }
-                  }}
-                  className="h-12 rounded-xl border-zinc-200 dark:border-borderColorPrimary focus-visible:ring-black/5 font-mono text-base tracking-wider"
-                />
+                {/* Codes List */}
+                <div className="flex flex-wrap gap-2">
+                  <AnimatePresence mode="popLayout">
+                    {giftCardCodes.map((code, index) => (
+                      <motion.div
+                        key={`${code}-${index}`}
+                        initial={{ opacity: 0, scale: 0.8, x: -10 }}
+                        animate={{ opacity: 1, scale: 1, x: 0 }}
+                        exit={{ opacity: 0, scale: 0.8, x: 10 }}
+                        className="flex items-center gap-2 px-3 py-1.5 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg group"
+                      >
+                        <span className="text-xs font-mono font-medium tracking-wider">{code}</span>
+                        <button
+                          onClick={() => removeGiftCardCode(index)}
+                          className="text-zinc-400 hover:text-red-500 transition-colors"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                </div>
+
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Input
+                      placeholder="Enter code and press Enter or Add"
+                      value={currentCode}
+                      onChange={(e) => {
+                        let val = e.target.value.toUpperCase();
+                        const raw = val.replace(/[^A-Z0-9-\s]/g, "").replace(/\s+/g, " ");
+                        if (raw.includes("-")) {
+                          setCurrentCode(raw);
+                        } else {
+                          const alphanumericOnly = raw.replace(/\s/g, "");
+                          const formatted = alphanumericOnly.match(/.{1,4}/g)?.join(" ") || alphanumericOnly;
+                          setCurrentCode(formatted);
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          addGiftCardCode();
+                        }
+                      }}
+                      className="h-12 rounded-xl border-zinc-200 dark:border-borderColorPrimary focus-visible:ring-black/5 font-mono text-base tracking-wider"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    onClick={addGiftCardCode}
+                    disabled={!currentCode.trim()}
+                    className="h-12 w-12 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-700 p-0"
+                  >
+                    <Plus className="w-5 h-5" />
+                  </Button>
+                </div>
+                <p className="text-[11px] text-zinc-500 italic">
+                  Press Enter or click the plus button to add multiple codes.
+                </p>
               </div>
 
               {renderPaymentPicker()}
@@ -866,7 +938,7 @@ function SellGiftCardsContent() {
               <Button
                 onClick={handleSubmit}
                 className="w-full h-12 bg-black dark:bg-white text-white dark:text-black font-bold rounded-xl hover:opacity-90 active:scale-[0.98] transition-all"
-                disabled={!selectedBrand || !amount || !giftCardCode || !selectedPaymentMethod || isSubmitting}
+                disabled={!selectedBrand || !amount || (giftCardCodes.length === 0 && !currentCode) || !selectedPaymentMethod || isSubmitting}
               >
                 {isSubmitting ? (
                   <div className="flex items-center gap-2">
@@ -903,16 +975,16 @@ function SellGiftCardsContent() {
               <div className="space-y-3">
                 <div className="flex flex-col gap-1">
                   <div className="flex items-center justify-between">
-                    <Label>Attach Card Image</Label>
+                    <Label>Attach Card Images</Label>
                     <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider">
-                      {cardImages.length}/1 Image
+                      {cardImages.length}/4 Images
                     </span>
                   </div>
                   <p className="text-[11px] text-zinc-500 italic">
-                    Please capture part of the card where the codes/pins are clearly visible.
+                    Please capture parts of the card where the codes/pins are clearly visible.
                   </p>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3">
                   <AnimatePresence mode="popLayout">
                     {cardImages.map((file, index) => {
                       if (!file) return null;
@@ -922,21 +994,22 @@ function SellGiftCardsContent() {
                           initial={{ opacity: 0, scale: 0.9 }}
                           animate={{ opacity: 1, scale: 1 }}
                           exit={{ opacity: 0, scale: 0.9 }}
-                          className="relative h-32 border border-zinc-200 dark:border-borderColorPrimary rounded-2xl overflow-hidden group bg-zinc-50 dark:bg-zinc-900/50"
+                          className="relative h-24 sm:h-28 border border-zinc-200 dark:border-borderColorPrimary rounded-xl overflow-hidden group bg-zinc-50 dark:bg-zinc-900/50"
                         >
-                          <div className="absolute top-2 right-2 z-20">
+                          <div className="absolute top-1.5 right-1.5 z-20">
                             <button
+                              type="button"
                               onClick={() => removeImage(index)}
-                              className="w-8 h-8 bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/30 rounded-full flex items-center justify-center text-white transition-all transform active:scale-90"
+                              className="w-6 h-6 bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/30 rounded-full flex items-center justify-center text-white transition-all transform active:scale-90"
                             >
-                              <X className="h-4 w-4" />
+                              <X className="h-3.5 w-3.5" />
                             </button>
                           </div>
-                          <div className="absolute inset-0 flex flex-col items-center justify-center p-3 text-center">
-                            <div className="w-8 h-8 bg-blue-500/10 rounded-full flex items-center justify-center mb-2">
-                              <Check className="h-4 w-4 text-blue-500" />
+                          <div className="absolute inset-0 flex flex-col items-center justify-center p-2 text-center">
+                            <div className="w-7 h-7 bg-blue-500/10 rounded-full flex items-center justify-center mb-1">
+                              <Check className="h-3.5 w-3.5 text-blue-500" />
                             </div>
-                            <span className="text-[10px] text-zinc-500 font-medium truncate w-full px-2">
+                            <span className="text-[9px] text-zinc-500 font-medium truncate w-full px-1">
                               {file.name}
                             </span>
                           </div>
@@ -944,22 +1017,22 @@ function SellGiftCardsContent() {
                       );
                     })}
 
-                    {cardImages.length < 1 && (
+                    {cardImages.length < 4 && (
                       <motion.div
                         key="add-card-image"
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
-                        className="h-full"
                       >
                         <button
+                          type="button"
                           onClick={() => fileInputRef.current?.click()}
-                          className="w-full flex flex-col items-center justify-center h-32 border-2 border-dashed border-zinc-200 dark:border-borderColorPrimary rounded-2xl cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-all gap-2 group"
+                          className="w-full h-24 sm:h-28 flex flex-col items-center justify-center border-2 border-dashed border-zinc-200 dark:border-borderColorPrimary rounded-xl cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-all gap-1.5 group"
                         >
-                          <div className="w-10 h-10 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                            <Plus className="h-5 w-5 text-zinc-500" />
+                          <div className="w-8 h-8 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <Plus className="h-4 w-4 text-zinc-500" />
                           </div>
-                          <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Add Image</span>
+                          <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Add Image</span>
                         </button>
                       </motion.div>
                     )}
@@ -969,6 +1042,7 @@ function SellGiftCardsContent() {
                     ref={fileInputRef}
                     type="file"
                     accept="image/*"
+                    multiple
                     className="hidden"
                     onChange={handleImageUpload}
                   />
@@ -991,7 +1065,7 @@ function SellGiftCardsContent() {
               <Button
                 onClick={handleSubmit}
                 className="w-full h-12 bg-black dark:bg-white text-white dark:text-black font-bold rounded-xl hover:opacity-90 active:scale-[0.98] transition-all"
-                disabled={!selectedBrand || !amount || (cardType === "ecodes" ? !giftCardCode : cardImages.length === 0) || !selectedPaymentMethod || isSubmitting}
+                disabled={!selectedBrand || !amount || (cardType === "physical" && cardImages.length === 0) || !selectedPaymentMethod || isSubmitting}
               >
                 {isSubmitting ? (
                   <div className="flex items-center gap-2">

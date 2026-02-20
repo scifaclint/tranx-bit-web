@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -180,6 +180,7 @@ export const RegisterForm = ({
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const turnstileRef = useRef<any>(null);
 
   const { formData, validation, updateFormData } = useFormValidation();
   const [showPasswordHelp, setShowPasswordHelp] = useState(false);
@@ -425,8 +426,10 @@ export const RegisterForm = ({
         }
       } catch (error: any) {
         setIsLoading(false);
-        const message = error instanceof Error ? error.message : extractErrorMessage(error);
-        toast.error(message || "Registration failed");
+        setCaptchaToken(null);
+        turnstileRef.current?.reset();
+        // const message = error instanceof Error ? error.message : extractErrorMessage(error);
+        // toast.error(message || "Registration failed");
       }
     },
     [
@@ -865,6 +868,7 @@ export const RegisterForm = ({
 
           <div className="flex justify-center py-2">
             <Turnstile
+              ref={turnstileRef}
               siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
               onSuccess={(token) => setCaptchaToken(token)}
               onExpire={() => setCaptchaToken(null)}

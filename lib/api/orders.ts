@@ -126,7 +126,7 @@ export interface SellOrderPayload {
   expectedPayout?: number;
   calculatedAt?: string;
   additionalComments?: string;
-  giftCardCodes?: string;
+  giftCardCodes?: string[];
   cardImages?: File[]; // For FormData submission
 }
 
@@ -293,8 +293,8 @@ export const ordersApi = {
       if (payload.additionalComments) {
         formData.append("additionalComments", payload.additionalComments);
       }
-      if (payload.giftCardCodes) {
-        formData.append("giftCardCodes", payload.giftCardCodes);
+      if (payload.giftCardCodes && payload.giftCardCodes.length > 0) {
+        formData.append("giftCardCodes", JSON.stringify(payload.giftCardCodes));
       }
 
       // Append all images
