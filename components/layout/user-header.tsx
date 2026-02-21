@@ -30,16 +30,20 @@ interface UserHeaderProps {
 
 export default function UserHeader({ onOpenMobileMenu }: UserHeaderProps) {
   const { user } = useAuthStore();
-  const { unreadCount } = useNotifications();
-  const { isNotificationCenterOpen, setNotificationCenterOpen } = useUIStore();
   const pathname = usePathname();
+  const isAdminRoute = pathname.startsWith("/internal-portal-Trx13");
+
+  const { unreadCount: totalUnread } = useNotifications();
+  const { unreadCount: chatUnread } = useNotifications(10, { type: "order_chat" });
+
+  const displayUnreadCount = isAdminRoute ? chatUnread : totalUnread;
+
+  const { isNotificationCenterOpen, setNotificationCenterOpen } = useUIStore();
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [greetingInfo, setGreetingInfo] = useState({
     greeting: "Welcome",
     message: "",
   });
-
-  const isAdminRoute = pathname.startsWith("/internal-portal-Trx13");
 
   React.useEffect(() => {
     if (user) {
@@ -121,21 +125,27 @@ export default function UserHeader({ onOpenMobileMenu }: UserHeaderProps) {
         </TooltipProvider>
 
         <Sheet
-          open={isNotificationCenterOpen}
+          open={!isAdminRoute && isNotificationCenterOpen}
           onOpenChange={setNotificationCenterOpen}
         >
           <SheetTrigger asChild>
             <button
               className="relative p-2 rounded-full hover:bg-muted transition-colors"
-              onClick={() => setNotificationCenterOpen(true)}
+              onClick={() => {
+                if (isAdminRoute) {
+                  useUIStore.getState().openChat();
+                } else {
+                  setNotificationCenterOpen(true);
+                }
+              }}
             >
               <Bell size={20} className="text-foreground" />
-              {unreadCount > 0 && (
+              {displayUnreadCount > 0 && (
                 <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full" />
               )}
             </button>
           </SheetTrigger>
-          <NotificationCenter />
+          {!isAdminRoute && <NotificationCenter />}
         </Sheet>
         <ProfileDropdown />
       </div>

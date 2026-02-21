@@ -3,6 +3,10 @@ export const queryKeys = {
     all: ["orders"] as const,
     user: (page?: number) => ["orders", "user", page] as const,
     detail: (orderId: string) => ["orders", "detail", orderId] as const,
+    chat: (orderId: string) => ["orders", "chat", orderId, "history"] as const,
+  },
+  chat: {
+    inbox: (params?: { page?: number; limit?: number; search?: string }) => ["chat", "admin", "inbox", params] as const,
   },
   cards: {
     all: ["cards", "all"] as const,

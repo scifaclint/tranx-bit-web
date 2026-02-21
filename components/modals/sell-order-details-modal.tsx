@@ -10,10 +10,11 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, XCircle, Copy, Loader } from "lucide-react";
+import { CheckCircle, XCircle, Copy, Loader, MessageSquare } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useApproveOrder, useRejectOrder, useUpdateCardStatus } from "@/hooks/useAdmin";
+import { useUIStore } from "@/hooks/useUIStore";
 import { toast } from "sonner";
 import { AdminOrder } from "@/lib/api/admin";
 import Image from "next/image";
@@ -482,7 +483,21 @@ export default function SellOrderDetailsModal({
                     </div>
                 </div>
 
-                <DialogFooter className="gap-2 sm:gap-0 border-t pt-4">
+                <DialogFooter className="gap-2 sm:gap-2 border-t pt-4">
+                    <Button
+                        variant="ghost"
+                        className="w-full sm:w-auto text-primary hover:text-primary hover:bg-primary/5 font-bold uppercase tracking-wider text-[11px]"
+                        onClick={() => {
+                            useUIStore.getState().openChat(order._id, {
+                                userName: `${order.userId.firstName} ${order.userId.lastName}`,
+                                orderNumber: order.orderNumber
+                            });
+                            onClose();
+                        }}
+                    >
+                        <MessageSquare className="mr-2 h-4 w-4" />
+                        Start Chat
+                    </Button>
                     {order.status !== "completed" && order.status !== "cancelled" && order.status !== "failed" && (
                         <Button
                             variant="outline"

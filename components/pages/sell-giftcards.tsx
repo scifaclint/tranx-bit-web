@@ -886,7 +886,7 @@ function SellGiftCardsContent() {
                 <div className="flex gap-2">
                   <div className="relative flex-1">
                     <Input
-                      placeholder="Enter code and press Enter or Add"
+                      placeholder="Enter your codes "
                       value={currentCode}
                       onChange={(e) => {
                         let val = e.target.value.toUpperCase();

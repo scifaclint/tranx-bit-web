@@ -8,62 +8,40 @@ import { useUser } from "@/components/providers/userProvider";
 
 export const NOTIFICATION_KEYS = {
     all: ["notifications"] as const,
-    infinite: (limit: number) => [...NOTIFICATION_KEYS.all, "infinite", { limit }] as const,
-    unreadCount: () => [...NOTIFICATION_KEYS.all, "unread-count"] as const,
+    infinite: (limit: number, filter?: Record<string, any>) =>
+        [...NOTIFICATION_KEYS.all, "infinite", { limit, ...filter }] as const,
+    unreadCount: (filter?: Record<string, any>) =>
+        [...NOTIFICATION_KEYS.all, "unread-count", filter] as const,
 };
 
-export function useNotifications(limit = 10) {
+export function useNotifications(limit = 10, filter?: { type?: string; excludeType?: string }) {
     const queryClient = useQueryClient();
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const { refreshUser } = useUser();
 
     // 1. Fetch infinite notifications
-    // ... lines omitted ...
     const infiniteQuery = useInfiniteQuery({
-        queryKey: NOTIFICATION_KEYS.infinite(limit),
-        queryFn: ({ pageParam = 1 }) => notificationsApi.getNotifications(pageParam as number, limit),
+        queryKey: NOTIFICATION_KEYS.infinite(limit, filter),
+        queryFn: ({ pageParam = 1 }) =>
+            notificationsApi.getNotifications(pageParam as number, limit, filter),
         initialPageParam: 1,
         getNextPageParam: (lastPage) => {
             const { currentPage, totalPages } = lastPage.data.pagination;
             return currentPage < totalPages ? currentPage + 1 : undefined;
         },
-        staleTime: 30000, // 30 seconds
-        refetchInterval: 30000, // Background polling every 30s
+        staleTime: Infinity,
     });
 
     // 2. Fetch unread count
     const unreadCountQuery = useQuery({
-        queryKey: NOTIFICATION_KEYS.unreadCount(),
-        queryFn: () => notificationsApi.getUnreadCount(),
-        staleTime: 30000,
-        refetchInterval: 30000, // Background polling every 30s
+        queryKey: NOTIFICATION_KEYS.unreadCount(filter),
+        queryFn: () => notificationsApi.getUnreadCount(filter),
+        staleTime: Infinity,
     });
 
     const unreadCount = unreadCountQuery.data?.data.unreadCount ?? 0;
-    const prevUnreadCount = useRef(unreadCount);
 
-    // Play sound when unread count increases + background refresh + persistent toast
-    useEffect(() => {
-        if (unreadCount > prevUnreadCount.current) {
-            // 1. Play Sound
-            if (!audioRef.current) {
-                audioRef.current = new Audio("/sound/notification.mp3");
-            }
-            audioRef.current.play().catch(err => console.log("Audio play blocked by browser:",));
-
-            // 2. Background Refresh User Data (Silent/No Await)
-            refreshUser();
-
-            // 3. Show Toast Notification
-            toast.info("New Notification Received", {
-                description: "You have a new activity update.",
-                duration: 5000, // Auto-dismiss after 5 seconds
-            });
-        }
-        prevUnreadCount.current = unreadCount;
-    }, [unreadCount, refreshUser]);
-
-    // 3. Mutation: Mark as Read
+    // Mutation: Mark as Read
     const markAsReadMutation = useMutation({
         mutationFn: (id: string) => notificationsApi.markAsRead(id),
         onSuccess: () => {
@@ -76,10 +54,10 @@ export function useNotifications(limit = 10) {
 
     // 4. Mutation: Mark All as Read
     const markAllAsReadMutation = useMutation({
-        mutationFn: () => notificationsApi.markAllAsRead(),
+        mutationFn: () => notificationsApi.markAllAsRead(filter),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: NOTIFICATION_KEYS.all });
-            toast.success("All notifications marked as read");
+            toast.success("Notifications marked as read");
         },
         onError: (error: any) => {
             toast.error(error?.response?.data?.message || "Failed to mark all as read");
@@ -99,10 +77,10 @@ export function useNotifications(limit = 10) {
 
     // 6. Mutation: Clear All
     const clearAllMutation = useMutation({
-        mutationFn: () => notificationsApi.clearAll(),
+        mutationFn: () => notificationsApi.clearAll(filter),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: NOTIFICATION_KEYS.all });
-            toast.success("Clear all notifications successfully");
+            toast.success("Clear notifications successfully");
         },
         onError: (error: any) => {
             toast.error(error?.response?.data?.message || "Failed to clear notifications");

@@ -220,6 +220,11 @@ interface OrderSummary {
   hasImages: boolean;
   imagesCount: number;
   paymentMethod?: PaymentMethodSnapshot;
+  chatStatus?: "open" | "closed";
+  lastMessage?: string;
+  lastMessageAt?: string;
+  unreadCount?: number;
+  adminUnreadCount?: number;
 }
 
 interface OrderPagination {
@@ -259,6 +264,58 @@ export interface GetOrderImagesResponse {
   data: {
     images: string[];
     expiresIn: number;
+  };
+}
+
+// ============= CHAT HISTORY TYPES =============
+
+export interface ChatAttachment {
+  name: string;
+  key: string;
+  mimeType: string;
+  url: string;
+}
+
+export interface ChatMessage {
+  _id: string;
+  orderId: string;
+  senderId: string;
+  senderType: "user" | "admin";
+  message: string;
+  attachments: ChatAttachment[];
+  createdAt: string;
+  updatedAt: string;
+  isEditable?: boolean;
+}
+
+export interface ChatHistoryResponse {
+  status: boolean;
+  message: string;
+  data: ChatMessage[];
+}
+
+export interface SendMessagePayload {
+  message: string;
+  attachments: {
+    name: string;
+    key: string;
+    mimeType: string;
+  }[];
+}
+
+export interface SendMessageResponse {
+  status: boolean;
+  data: ChatMessage & {
+    userUnreadCount: number;
+    adminUnreadCount: number;
+  };
+}
+
+export interface ChatUploadUrlResponse {
+  status: boolean;
+  data: {
+    uploadUrl: string;
+    key: string;
   };
 }
 
@@ -366,6 +423,55 @@ export const ordersApi = {
 
   cancelOrder: async (orderId: string): Promise<{ status: boolean; message: string }> => {
     const response = await api.put(`/orders/${orderId}/cancel`);
+    return response.data;
+  },
+
+  getChatHistory: async (orderId: string): Promise<ChatHistoryResponse> => {
+    const response = await api.get(`/orders/${orderId}/chat/history`);
+    console.log(response.data)
+    return response.data;
+  },
+
+  sendChatMessage: async (
+    orderId: string,
+    payload: SendMessagePayload,
+  ): Promise<SendMessageResponse> => {
+    const response = await api.post(`/orders/${orderId}/chat/message`, payload);
+    return response.data;
+  },
+
+  getChatUploadUrl: async (
+    orderId: string,
+    fileName: string,
+    contentType: string,
+  ): Promise<ChatUploadUrlResponse> => {
+    const response = await api.get(`/orders/${orderId}/chat/upload-url`, {
+      params: { fileName, contentType },
+    });
+    return response.data;
+  },
+
+  markChatAsRead: async (orderId: string): Promise<{ status: boolean; message: string }> => {
+    const response = await api.patch(`/orders/${orderId}/chat/read`);
+    return response.data;
+  },
+
+  updateChatMessage: async (
+    orderId: string,
+    messageId: string,
+    message: string,
+  ): Promise<{ status: boolean; message: string; data: ChatMessage }> => {
+    const response = await api.patch(`/orders/${orderId}/chat/message/${messageId}`, {
+      message,
+    });
+    return response.data;
+  },
+
+  deleteChatMessage: async (
+    orderId: string,
+    messageId: string,
+  ): Promise<{ status: boolean; message: string }> => {
+    const response = await api.delete(`/orders/${orderId}/chat/message/${messageId}`);
     return response.data;
   },
 };

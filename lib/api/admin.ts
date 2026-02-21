@@ -479,6 +479,41 @@ export interface DashboardAnalyticsResponse {
   };
 }
 
+// ============= CHAT TYPES =============
+
+export interface AdminChatUser {
+  _id: string;
+  email: string;
+  username: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  status: string;
+}
+
+export interface AdminChatConversation {
+  orderId: string;
+  orderNumber: string;
+  user: AdminChatUser;
+  lastMessage: string;
+  lastMessageAt: string;
+  unreadCount: number;
+  status: string;
+  chatStatus: "open" | "closed";
+}
+
+export interface AdminChatInboxResponse {
+  status: boolean;
+  data: {
+    conversations: AdminChatConversation[];
+    pagination: {
+      currentPage: number;
+      totalPages: number;
+      totalConversations: number;
+    };
+  };
+}
+
 // ============= API METHODS =============
 
 export const adminApi = {
@@ -638,6 +673,15 @@ export const adminApi = {
 
   getDashboardAnalytics: async (): Promise<DashboardAnalyticsResponse> => {
     const response = await api.get("/admin/analytics/dashboard");
+    return response.data;
+  },
+
+  getAdminChatInbox: async (params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+  }): Promise<AdminChatInboxResponse> => {
+    const response = await api.get("/admin/chat/inbox", { params });
     return response.data;
   },
 };

@@ -20,6 +20,14 @@ interface UIState {
 
     // UI Visibility States
     isNotificationCenterOpen: boolean;
+    isChatOpen: boolean;
+    activeOrderId: string | null;
+    activeOrderMetadata: {
+        userName?: string;
+        orderNumber?: string;
+    } | null;
+    chatView: "inbox" | "room";
+    notificationTab: "alerts" | "messages";
 
     // Announcement Actions
     showAnnouncement: (announcement: Announcement) => void;
@@ -29,6 +37,10 @@ interface UIState {
 
     // UI Actions
     setNotificationCenterOpen: (open: boolean) => void;
+    setChatOpen: (open: boolean) => void;
+    setChatView: (view: "inbox" | "room") => void;
+    setNotificationTab: (tab: "alerts" | "messages") => void;
+    openChat: (orderId?: string, metadata?: { userName?: string; orderNumber?: string }) => void;
     reset: () => void;
 }
 
@@ -39,6 +51,11 @@ export const useUIStore = create<UIState>()(
             isAnnouncementVisible: false,
             dismissedAnnouncementIds: [],
             isNotificationCenterOpen: false,
+            isChatOpen: false,
+            activeOrderId: null,
+            activeOrderMetadata: null,
+            chatView: "inbox",
+            notificationTab: "alerts",
 
             // Announcement Logic
             showAnnouncement: (announcement: Announcement) => {
@@ -64,12 +81,29 @@ export const useUIStore = create<UIState>()(
 
             // UI Actions
             setNotificationCenterOpen: (open) => set({ isNotificationCenterOpen: open }),
+            setChatOpen: (open) => set({ isChatOpen: open }),
+            setChatView: (view) => set({ chatView: view }),
+            setNotificationTab: (tab) => set({ notificationTab: tab }),
+
+            openChat: (orderId, metadata) => {
+                set({
+                    isChatOpen: true,
+                    activeOrderId: orderId, // No longer falling back to null, orderId can be null
+                    activeOrderMetadata: metadata || null,
+                    chatView: orderId ? "room" : "inbox"
+                });
+            },
 
             reset: () => set({
                 announcement: null,
                 isAnnouncementVisible: false,
                 dismissedAnnouncementIds: [],
                 isNotificationCenterOpen: false,
+                isChatOpen: false,
+                activeOrderId: null,
+                activeOrderMetadata: null,
+                chatView: "inbox",
+                notificationTab: "alerts",
             }),
         }),
         {

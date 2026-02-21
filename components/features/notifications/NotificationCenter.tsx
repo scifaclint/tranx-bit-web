@@ -1,45 +1,47 @@
 "use client";
 
-import { useUIStore } from "@/hooks/useUIStore";
-import { useNotifications } from "@/hooks/useNotifications";
-import { APINotification } from "@/hooks/useUIStore";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
     SheetContent,
     SheetHeader,
     SheetTitle,
     SheetDescription,
 } from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-    Bell,
     BellOff,
-    CheckCheck,
-    Trash2,
-    Info,
-    CheckCircle2,
-    AlertTriangle,
-    AlertCircle,
-    X,
     Loader2,
-    ChevronDown,
-    ExternalLink,
+    Trash2,
+    CheckCheck,
+    Info,
+    MessageSquare,
+    AlertCircle,
+    ShoppingBag,
+    CreditCard,
+    ArrowUpCircle,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { formatDistanceToNow } from "date-fns";
 import { motion, AnimatePresence, useMotionValue } from "framer-motion";
-import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useNotifications } from "@/hooks/useNotifications";
+import { cn } from "@/lib/utils";
+import { useRouter, usePathname } from "next/navigation";
+import { formatDistanceToNow } from "date-fns";
+import { useUIStore } from "@/hooks/useUIStore";
+import { Notification as APINotification } from "@/lib/api/notifications";
 
 const NotificationIcon = ({ type }: { type: string }) => {
     switch (type) {
-        case "success":
-        case "card_status_update":
-            return <CheckCircle2 className="w-5 h-5 text-green-500" />;
-        case "warning":
-            return <AlertTriangle className="w-5 h-5 text-amber-500" />;
-        case "error":
-            return <AlertCircle className="w-5 h-5 text-red-500" />;
+        case "order_status":
+            return <ShoppingBag className="w-5 h-5 text-primary" />;
+        case "payment":
+            return <CreditCard className="w-5 h-5 text-green-500" />;
+        case "deposit":
+            return <ArrowUpCircle className="w-5 h-5 text-blue-500" />;
+        case "alert":
+            return <AlertCircle className="w-5 h-5 text-amber-500" />;
+        case "order_chat":
+            return <MessageSquare className="w-5 h-5 text-rose-500" />;
         default:
             return <Info className="w-5 h-5 text-blue-500" />;
     }
@@ -58,19 +60,39 @@ const NotificationItem = ({ notification, onMarkRead, onDelete }: NotificationIt
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const router = useRouter();
 
-    const handleToggleExpand = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        setIsExpanded(!isExpanded);
-        if (!notification.isRead) {
-            onMarkRead(notification._id);
-        }
-    };
+    const handleLinkClick = (e?: React.MouseEvent) => {
+        if (e) e.stopPropagation();
 
-    const handleLinkClick = (e: React.MouseEvent) => {
-        e.stopPropagation();
+        // Special handling for chat notifications to open the internal chat sheet
+        if (notification.type === "order_chat" && (notification.metadata?.orderId || notification.metadata?.orderNumber)) {
+            useUIStore.getState().openChat(
+                (notification.metadata.orderId || notification.metadata.orderNumber) as string,
+                { orderNumber: notification.metadata.orderNumber }
+            );
+            return;
+        }
+
         if (notification.link) {
             router.push(notification.link);
             useUIStore.getState().setNotificationCenterOpen(false);
+        }
+    };
+
+    const handleToggleExpand = (e: React.MouseEvent) => {
+        e.stopPropagation();
+
+        // For chat notifications, row click should open the chat directly instead of expanding
+        if (notification.type === "order_chat") {
+            handleLinkClick();
+            if (!notification.isRead) {
+                onMarkRead(notification._id);
+            }
+            return;
+        }
+
+        setIsExpanded(!isExpanded);
+        if (!notification.isRead) {
+            onMarkRead(notification._id);
         }
     };
 
@@ -179,75 +201,36 @@ const NotificationItem = ({ notification, onMarkRead, onDelete }: NotificationIt
                                     <div className="flex items-center justify-between gap-2">
                                         <p
                                             className={cn(
-                                                "text-sm font-semibold leading-none",
-                                                !notification.isRead
-                                                    ? "text-foreground"
-                                                    : "text-muted-foreground"
+                                                "text-sm font-semibold text-foreground",
+                                                !notification.isRead && "text-primary"
                                             )}
                                         >
                                             {notification.title}
                                         </p>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-                                                {formatDistanceToNow(new Date(notification.createdAt), {
-                                                    addSuffix: true,
-                                                })
-                                                    .replace("about ", "")
-                                                    .replace("less than ", "")}
-                                            </span>
-                                            <ChevronDown className={cn("w-3.5 h-3.5 text-muted-foreground transition-transform duration-200", isExpanded && "rotate-180")} />
-                                        </div>
+                                        <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                                            {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+                                        </span>
                                     </div>
-
-                                    <AnimatePresence initial={false}>
-                                        {!isExpanded ? (
-                                            <motion.p
-                                                initial={{ opacity: 0 }}
-                                                animate={{ opacity: 1 }}
-                                                exit={{ opacity: 0 }}
-                                                className="text-xs text-muted-foreground leading-relaxed line-clamp-2"
-                                            >
-                                                {notification.message}
-                                            </motion.p>
-                                        ) : (
-                                            <motion.div
-                                                initial={{ height: 0, opacity: 0 }}
-                                                animate={{ height: "auto", opacity: 1 }}
-                                                exit={{ height: 0, opacity: 0 }}
-                                                transition={{ duration: 0.2 }}
-                                                className="overflow-hidden space-y-3 pt-1"
-                                            >
-                                                <p className="text-xs text-foreground leading-relaxed">
-                                                    {notification.message}
-                                                </p>
-
-                                                {notification.link && (
-                                                    <Button
-                                                        variant="link"
-                                                        size="sm"
-                                                        className="h-auto p-0 text-primary flex items-center gap-1.5 font-semibold text-[11px] uppercase tracking-wider"
-                                                        onClick={handleLinkClick}
-                                                    >
-                                                        View Details
-                                                        <ExternalLink className="w-3 h-3" />
-                                                    </Button>
-                                                )}
-                                            </motion.div>
+                                    <p
+                                        className={cn(
+                                            "text-xs text-muted-foreground leading-relaxed transition-all",
+                                            !isExpanded && "line-clamp-2"
                                         )}
-                                    </AnimatePresence>
+                                    >
+                                        {notification.message}
+                                    </p>
+
+                                    {notification.link && !notification.type.includes("chat") && (
+                                        <Button
+                                            variant="link"
+                                            className="p-0 h-auto text-xs text-primary font-bold mt-1"
+                                            onClick={handleLinkClick}
+                                        >
+                                            View Details
+                                        </Button>
+                                    )}
                                 </div>
                             </div>
-
-                            {/* Desktop-only delete button (revealed on hover) */}
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setShowDeleteConfirm(true);
-                                }}
-                                className="absolute right-2 top-4 p-2 rounded-full opacity-0 lg:group-hover:opacity-100 hover:bg-muted transition-all"
-                            >
-                                <X className="w-3.5 h-3.5 text-muted-foreground" />
-                            </button>
                         </motion.div>
                     </>
                 )}
@@ -257,18 +240,67 @@ const NotificationItem = ({ notification, onMarkRead, onDelete }: NotificationIt
 };
 
 export default function NotificationCenter() {
+    const pathname = usePathname();
+    const isAdminMode = pathname.startsWith("/internal-portal-Trx13");
+
+    const { notificationTab, setNotificationTab } = useUIStore();
+    const activeTab = notificationTab;
+
+    // We fetch both sources to get unread counts for the tabs
+    const alertsSource = useNotifications(10, { excludeType: "order_chat" });
+    const messagesSource = useNotifications(10, { type: "order_chat" });
+
+    // Determine which data to actually display based on the active tab
+    const current = activeTab === "alerts" ? alertsSource : messagesSource;
     const {
-        notifications,
-        unreadCount,
+        notifications: rawNotifications,
         isLoading,
-        isFetchingNextPage,
         hasNextPage,
+        isFetchingNextPage,
         fetchNextPage,
         markAsRead,
         markAllAsRead,
         deleteNotification,
         clearAll,
-    } = useNotifications();
+    } = current;
+
+    // Sync tab with admin mode if necessary
+    useEffect(() => {
+        if (isAdminMode && activeTab !== "messages") {
+            setNotificationTab("messages");
+        }
+    }, [isAdminMode, activeTab, setNotificationTab]);
+
+    // Grouping logic for the "Messages" tab
+    const displayNotifications = useMemo(() => {
+        if (activeTab !== "messages") return rawNotifications;
+
+        const groups: Record<string, APINotification> = {};
+        const result: APINotification[] = [];
+
+        rawNotifications.forEach((n) => {
+            const orderId = n.metadata?.orderId || n.metadata?.orderNumber;
+
+            // If it's not a chat notification or has no order context, keep it discrete
+            if (n.type !== "order_chat" || !orderId) {
+                result.push(n);
+                return;
+            }
+
+            if (!groups[orderId]) {
+                // Initialize group with a shallow copy to avoid mutating the original
+                groups[orderId] = { ...n };
+                result.push(groups[orderId]);
+            } else {
+                // Aggregate: newest item is already in groups[orderId] due to chronological sort
+                if (!n.isRead) groups[orderId].isRead = false;
+            }
+        });
+
+        return result;
+    }, [rawNotifications, activeTab]);
+
+    const notifications = displayNotifications;
 
     const [showClearConfirm, setShowClearConfirm] = useState(false);
     const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -294,37 +326,52 @@ export default function NotificationCenter() {
 
     return (
         <SheetContent className="w-full sm:max-w-md flex flex-col p-0 gap-0 border-l border-border/40 bg-background/95 backdrop-blur-xl">
-            <SheetHeader className="p-6 border-b border-border/40">
-                <div className="flex items-center justify-between">
+            <SheetHeader className="p-6 pb-0 border-b border-border/40">
+                <div className="flex items-center justify-between mb-4">
                     <div>
                         <SheetTitle className="text-xl font-bold flex items-center gap-2">
-                            Notifications
-                            {unreadCount > 0 && (
-                                <span className="bg-primary text-primary-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                                    {unreadCount}
-                                </span>
-                            )}
+                            {isAdminMode ? "Message Inbox" : "Notifications"}
                         </SheetTitle>
                         <SheetDescription className="mt-1 text-xs">
-                            Stay updated with your latest activities
+                            {isAdminMode
+                                ? "Manage your order conversations"
+                                : "Stay updated with your latest activities"
+                            }
                         </SheetDescription>
                     </div>
-                    <div className="flex gap-1">
-                        {notifications.length > 0 && (
-                            <>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-8 w-8 p-0 hover:bg-muted"
-                                    onClick={() => markAllAsRead()}
-                                    title="Mark all as read"
-                                >
-                                    <CheckCheck className="w-4 h-4" />
-                                </Button>
-                            </>
-                        )}
-                    </div>
                 </div>
+
+                <Tabs defaultValue={isAdminMode ? "messages" : "alerts"} value={activeTab} className="w-full" onValueChange={(v) => setNotificationTab(v as "alerts" | "messages")}>
+                    <TabsList className={cn(
+                        "w-full grid h-12 p-1 bg-muted/50 rounded-xl mb-4",
+                        isAdminMode ? "grid-cols-1" : "grid-cols-2"
+                    )}>
+                        {!isAdminMode && (
+                            <TabsTrigger
+                                value="alerts"
+                                className="rounded-lg text-xs font-bold uppercase tracking-wider relative"
+                            >
+                                Alerts
+                                {alertsSource.unreadCount > 0 && (
+                                    <span className="ml-2 bg-primary text-primary-foreground text-[10px] w-4 h-4 flex items-center justify-center rounded-full">
+                                        {alertsSource.unreadCount}
+                                    </span>
+                                )}
+                            </TabsTrigger>
+                        )}
+                        <TabsTrigger
+                            value="messages"
+                            className="rounded-lg text-xs font-bold uppercase tracking-wider relative"
+                        >
+                            {isAdminMode ? "Order Chats" : "Messages"}
+                            {messagesSource.unreadCount > 0 && (
+                                <span className="ml-2 bg-rose-500 text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full">
+                                    {messagesSource.unreadCount}
+                                </span>
+                            )}
+                        </TabsTrigger>
+                    </TabsList>
+                </Tabs>
             </SheetHeader>
 
             <ScrollArea className="flex-1">
@@ -373,7 +420,7 @@ export default function NotificationCenter() {
                 )}
             </ScrollArea>
 
-            {notifications.length > 0 && (
+            {notifications.length > 0 && activeTab !== "messages" && (
                 <div className="p-4 bg-muted/30 border-t border-border/40 mt-auto">
                     <AnimatePresence mode="wait">
                         {showClearConfirm ? (

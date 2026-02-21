@@ -15,6 +15,7 @@ import {
     UpdateCardStatusPayload,
     AddPlatformPaymentPayload,
     UpdatePlatformPaymentPayload,
+    AdminChatInboxResponse,
 } from "@/lib/api/admin";
 import { queryKeys } from "@/lib/query/queryKeys";
 
@@ -144,6 +145,19 @@ export const useAdminAnalytics = () => {
         queryKey: queryKeys.admin.analytics.dashboard,
         queryFn: () => adminApi.getDashboardAnalytics(),
         staleTime: 30 * 60 * 1000, // 30 minutes
+    });
+};
+
+export const useAdminChatInbox = (params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+}, options?: any) => {
+    return useQuery<AdminChatInboxResponse>({
+        queryKey: queryKeys.chat.inbox(params),
+        queryFn: () => adminApi.getAdminChatInbox(params),
+        staleTime: 60 * 1000, // 1 minute
+        ...options
     });
 };
 

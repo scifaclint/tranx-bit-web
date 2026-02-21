@@ -47,9 +47,13 @@ export const notificationsApi = {
     /**
      * Fetch paginated notifications
      */
-    getNotifications: async (page = 1, limit = 10): Promise<NotificationResponse> => {
+    getNotifications: async (
+        page = 1,
+        limit = 10,
+        params?: { type?: string; excludeType?: string }
+    ): Promise<NotificationResponse> => {
         const response = await axiosInstance.get(`/notifications`, {
-            params: { page, limit },
+            params: { page, limit, ...params },
         });
         return response.data;
     },
@@ -57,8 +61,13 @@ export const notificationsApi = {
     /**
      * Get unread notification count
      */
-    getUnreadCount: async (): Promise<UnreadCountResponse> => {
-        const response = await axiosInstance.get(`/notifications/unread-count`);
+    getUnreadCount: async (params?: {
+        type?: string;
+        excludeType?: string;
+    }): Promise<UnreadCountResponse> => {
+        const response = await axiosInstance.get(`/notifications/unread-count`, {
+            params,
+        });
         return response.data;
     },
 
@@ -73,8 +82,13 @@ export const notificationsApi = {
     /**
      * Mark all notifications as read
      */
-    markAllAsRead: async (): Promise<{ status: boolean; message: string }> => {
-        const response = await axiosInstance.patch(`/notifications/read-all`);
+    markAllAsRead: async (params?: {
+        type?: string;
+        excludeType?: string;
+    }): Promise<{ status: boolean; message: string }> => {
+        const response = await axiosInstance.patch(`/notifications/read-all`, null, {
+            params,
+        });
         return response.data;
     },
 
@@ -89,8 +103,13 @@ export const notificationsApi = {
     /**
      * Clear all notifications
      */
-    clearAll: async (): Promise<{ status: boolean; message: string }> => {
-        const response = await axiosInstance.delete(`/notifications/`);
+    clearAll: async (params?: {
+        type?: string;
+        excludeType?: string;
+    }): Promise<{ status: boolean; message: string }> => {
+        const response = await axiosInstance.delete(`/notifications/`, {
+            params,
+        });
         return response.data;
     },
 };

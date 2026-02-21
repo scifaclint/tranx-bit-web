@@ -107,7 +107,7 @@ export function LoginForm({
       setCaptchaToken(null);
       turnstileRef.current?.reset();
       const message = extractErrorMessage(error);
-      toast.error(message || "Login failed. Please try again.");
+      // toast.error(message || "Login failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
